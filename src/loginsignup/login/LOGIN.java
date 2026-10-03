@@ -2,6 +2,8 @@ package loginsignup.login;
 
 import loginsignup.login.loggedin.MainScreen;
 import mainpack.MyClass;
+import utils.UtilityMethods;
+import utils.Variables;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -11,6 +13,7 @@ import java.sql.SQLException;
 
 public class LOGIN extends JFrame {
     private JTextField userTextField;
+
     public void setUserText(String userText) {
         userTextField.setText(userText);
     }
@@ -20,6 +23,7 @@ public class LOGIN extends JFrame {
     }
 
     private JTextField passwordField;
+
     public JTextField getPasswordField() {
         return passwordField;
     }
@@ -29,7 +33,7 @@ public class LOGIN extends JFrame {
     private JButton QUITButton;
     private JButton BACKButton;
     private JPanel panel;
-    private JCheckBox isProduction;
+    private JCheckBox isDevMode;
     private JTextField databaseField;
     private String loginID;
     private String password;
@@ -61,6 +65,24 @@ public class LOGIN extends JFrame {
 
     public LOGIN() {
 //        init();
+        isDevMode.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (isDevMode.isSelected()) {
+                    String tempPass = JOptionPane.showInputDialog(LOGIN.this, "input devveloper password:");
+
+                    if (!UtilityMethods.parseString(tempPass).equals("gurukripa")) {
+
+                        JOptionPane.showMessageDialog(LOGIN.this, "wrong dev pass.. if you are not a developer.. please stay away bro");
+                        isDevMode.setSelected(false);
+                        Variables.devMode = false;
+                    }else {
+                        Variables.devMode =true;
+
+                    }
+                }else {Variables.devMode =false;}
+            }
+        });
     }
 
     public void init() {
@@ -102,15 +124,15 @@ public class LOGIN extends JFrame {
                 url = "jdbc:mysql://" + host + ":" + port + "/" + database;
                 password = passwordField.getText();
 
-               try( Connection con = MyClass.createConnection();
+                try (Connection con = MyClass.createConnection();
                 ) {
-                   if (con == null) {
-                       nullLoginParameters();
-                       return;
-                   }
-               } catch (SQLException ex) {
-                   throw new RuntimeException(ex);
-               }
+                    if (con == null) {
+                        nullLoginParameters();
+                        return;
+                    }
+                } catch (SQLException ex) {
+                    throw new RuntimeException(ex);
+                }
 
                 MyClass.mainScreen = new MainScreen();
                 MyClass.mainScreen.init();
@@ -129,5 +151,9 @@ public class LOGIN extends JFrame {
         database = null;
         loginID = null;
         password = null;
+    }
+
+    public void setDevModeSelected(boolean b) {
+        isDevMode.setSelected(b);
     }
 }

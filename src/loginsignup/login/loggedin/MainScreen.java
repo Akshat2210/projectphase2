@@ -10,6 +10,7 @@ import loginsignup.login.loggedin.ordermanagement.OrderScreen;
 import loginsignup.login.loggedin.transactionsandaccounts.Transactions;
 import loginsignup.login.loggedin.transactionsandaccounts.newtransaction.NewTransaction;
 import mainpack.MyClass;
+import utils.Variables;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -121,7 +122,11 @@ public class MainScreen extends JFrame {
 
         this.setContentPane(panel);
         pack();
-
+        if (Variables.devMode) {
+            developerField.setEnabled(true);
+        } else {
+            developerField.setEnabled(false);
+        }
         billingButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -135,6 +140,8 @@ public class MainScreen extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 MyClass.login.nullLoginParameters();
+                Variables.devMode = false;
+                MyClass.login.setDevModeSelected(false);
                 MyClass.login.setVisible(true);
                 dispose();
             }
@@ -192,11 +199,11 @@ public class MainScreen extends JFrame {
                 setVisible(false);
             }
         });
-        textField.addActionListener(new ActionListener() {
+        developerField.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                String text = textField.getText();
+                String text = developerField.getText();
                 if (text.startsWith("delete ")) {
                     String date = text.substring(7);
                     try {
@@ -319,10 +326,12 @@ public class MainScreen extends JFrame {
 
 
     }
-    public void clickOrderManagementButton(){
+
+    public void clickOrderManagementButton() {
         orderManagementButton.doClick();
     }
-    public void clickLogoutButton(){
+
+    public void clickLogoutButton() {
         logoutButton.doClick();
 
     }
@@ -336,7 +345,7 @@ public class MainScreen extends JFrame {
     private JButton addPartyButton;
     private JButton inventoryManagementButton;
     private JButton accountingAndLedgerButton;
-    private JTextField textField;
+    private JTextField developerField;
 
     public void setBillingButtonEnabled(boolean b) {
         billingButton.setEnabled(b);
