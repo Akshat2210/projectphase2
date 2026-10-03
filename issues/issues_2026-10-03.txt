@@ -1,0 +1,74 @@
+AccountingSoftwarePro - Improvement Review
+Date: 2026-10-03
+
+Priority 1 - Security and data protection
+
+1. Remove exposed database credentials immediately.
+   - A root database password is hard-coded in src/mainpack/MyClass.java.
+   - Store credentials outside source code and rotate the exposed password.
+
+2. Make login and signup password fields secure.
+   - Password fields currently use JTextField and are handled as Strings.
+   - Use JPasswordField and clear password arrays after use.
+
+3. Eliminate command injection and password exposure in batch files.
+   - Signup and backup construct batch commands from user/database/password text.
+   - Passwords can be exposed in command lines and generated .bat files.
+   - Replace generated batch files with safer process execution and protected configuration.
+
+Priority 2 - Financial correctness and operational safety
+
+4. Make deletion of old bills and transactions safer.
+   - Require a clear confirmation, backup check, preview of affected records, audit log,
+     and a recoverable archive before deletion.
+
+5. Use BigDecimal for money values.
+   - Billing calculations currently use double, which can cause rounding errors.
+   - Use BigDecimal for prices, tax, totals, balances, and quantities where appropriate.
+
+6. Standardize database transactions and error recovery.
+   - Ensure every multi-step billing, inventory, and ledger operation is atomic.
+   - Give users a clear outcome when a rollback happens and retain an audit record.
+
+Priority 3 - Code structure and reliability
+
+7. Separate the user interface, business rules, and database code.
+   - Large screen classes contain SQL, accounting calculations, and UI actions together.
+   - Create services for business logic, repositories for database access, and small data models.
+
+8. Avoid global mutable application state.
+   - MyClass stores many windows and login state as public static fields.
+   - Use an application context and dependency injection instead.
+
+9. Improve database error handling and resource management.
+   - Replace broad catch(Exception), printStackTrace, and generic error dialogs.
+   - Use consistent logging, typed exceptions, user-friendly messages, and try-with-resources.
+
+10. Parameterize every SQL query.
+    - Some SQL is built by joining values into query text.
+    - Use PreparedStatement consistently to prevent malformed input and SQL injection.
+
+11. Move slow work off the Swing user-interface thread.
+    - Backup and signup wait for external processes and may freeze the application.
+    - Use SwingWorker/background tasks with progress and cancellation support.
+
+Priority 4 - Long-term maintainability
+
+12. Add automated tests.
+    - Add unit tests for totals, tax, inventory deductions, ledgers, and rollback behavior.
+    - Add integration tests using a temporary test database.
+
+13. Adopt Maven or Gradle for dependency management.
+    - The lib folder includes duplicate library versions and Javadoc jars.
+    - Use a build file with pinned dependencies and reproducible builds.
+
+14. Improve naming and cleanup.
+    - Correct unclear and misspelled names such as purcahseBill, MyClass, and tempBack.bat.
+    - Remove debug output and centralize user-facing text for consistency/localization.
+
+Recommended first sprint
+
+1. Fix exposed credentials and password handling.
+2. Remove unsafe batch-file command construction.
+3. Protect destructive data operations.
+4. Convert money calculations from double to BigDecimal.

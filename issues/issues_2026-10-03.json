@@ -1,0 +1,153 @@
+{
+  "project": "AccountingSoftwarePro",
+  "review_date": "2026-10-03",
+  "status_values": [
+    "open",
+    "in_progress",
+    "blocked",
+    "completed",
+    "wont_fix"
+  ],
+  "issues": [
+    {
+      "id": "ISSUE-001",
+      "title": "Remove exposed database credentials",
+      "priority": "critical",
+      "status": "open",
+      "details": "A root database password is hard-coded in src/mainpack/MyClass.java. Store credentials outside source code and rotate the exposed password.",
+      "files": ["src/mainpack/MyClass.java"],
+      "notes": [],
+      "completed_date": null
+    },
+    {
+      "id": "ISSUE-002",
+      "title": "Make login and signup password fields secure",
+      "priority": "critical",
+      "status": "open",
+      "details": "Password fields use JTextField and are handled as Strings. Use JPasswordField and clear password arrays after use.",
+      "files": ["src/loginsignup/login/LOGIN.java", "src/loginsignup/signup/SignUp.java"],
+      "notes": [],
+      "completed_date": null
+    },
+    {
+      "id": "ISSUE-003",
+      "title": "Eliminate command injection and password exposure in batch files",
+      "priority": "critical",
+      "status": "open",
+      "details": "Signup and backup construct batch commands from user, database, and password text. Replace generated batch files with safer process execution and protected configuration.",
+      "files": ["src/loginsignup/signup/SignUp.java", "src/loginsignup/login/loggedin/MainScreen.java"],
+      "notes": [],
+      "completed_date": null
+    },
+    {
+      "id": "ISSUE-004",
+      "title": "Make deletion of old bills and transactions safer",
+      "priority": "high",
+      "status": "open",
+      "details": "Require a clear confirmation, backup check, preview of affected records, audit log, and a recoverable archive before deletion.",
+      "files": ["src/loginsignup/login/loggedin/MainScreen.java"],
+      "notes": [],
+      "completed_date": null
+    },
+    {
+      "id": "ISSUE-005",
+      "title": "Use BigDecimal for money values",
+      "priority": "high",
+      "status": "open",
+      "details": "Billing calculations use double, which can cause rounding errors. Use BigDecimal for prices, tax, totals, balances, and applicable quantities.",
+      "files": ["src/loginsignup/login/loggedin/billing/newBill/NewBill.java"],
+      "notes": [],
+      "completed_date": null
+    },
+    {
+      "id": "ISSUE-006",
+      "title": "Standardize database transactions and error recovery",
+      "priority": "high",
+      "status": "open",
+      "details": "Ensure every multi-step billing, inventory, and ledger operation is atomic, reports rollback outcomes clearly, and retains an audit record.",
+      "files": [],
+      "notes": [],
+      "completed_date": null
+    },
+    {
+      "id": "ISSUE-007",
+      "title": "Separate user interface, business rules, and database code",
+      "priority": "medium",
+      "status": "open",
+      "details": "Large screen classes contain SQL, accounting calculations, and UI actions together. Introduce services, repositories, and small data models.",
+      "files": [],
+      "notes": [],
+      "completed_date": null
+    },
+    {
+      "id": "ISSUE-008",
+      "title": "Avoid global mutable application state",
+      "priority": "medium",
+      "status": "open",
+      "details": "MyClass stores many windows and login state as public static fields. Use an application context and dependency injection instead.",
+      "files": ["src/mainpack/MyClass.java"],
+      "notes": [],
+      "completed_date": null
+    },
+    {
+      "id": "ISSUE-009",
+      "title": "Improve database error handling and resource management",
+      "priority": "medium",
+      "status": "open",
+      "details": "Replace broad catch(Exception), printStackTrace, and generic dialogs with consistent logging, typed exceptions, clear user messages, and try-with-resources.",
+      "files": [],
+      "notes": [],
+      "completed_date": null
+    },
+    {
+      "id": "ISSUE-010",
+      "title": "Parameterize every SQL query",
+      "priority": "medium",
+      "status": "open",
+      "details": "Some SQL is built by joining values into query text. Use PreparedStatement consistently.",
+      "files": [],
+      "notes": [],
+      "completed_date": null
+    },
+    {
+      "id": "ISSUE-011",
+      "title": "Move slow work off the Swing user-interface thread",
+      "priority": "medium",
+      "status": "open",
+      "details": "Backup and signup wait for external processes and may freeze the application. Use SwingWorker or background tasks with progress and cancellation support.",
+      "files": ["src/loginsignup/signup/SignUp.java", "src/loginsignup/login/loggedin/MainScreen.java"],
+      "notes": [],
+      "completed_date": null
+    },
+    {
+      "id": "ISSUE-012",
+      "title": "Add automated tests",
+      "priority": "medium",
+      "status": "open",
+      "details": "Add unit tests for totals, tax, inventory deductions, ledgers, and rollback behavior, plus integration tests using a temporary database.",
+      "files": [],
+      "notes": [],
+      "completed_date": null
+    },
+    {
+      "id": "ISSUE-013",
+      "title": "Adopt Maven or Gradle for dependency management",
+      "priority": "low",
+      "status": "open",
+      "details": "The lib folder includes duplicate library versions and Javadoc jars. Use a build file with pinned dependencies and reproducible builds.",
+      "files": ["lib"],
+      "notes": [],
+      "completed_date": null
+    },
+    {
+      "id": "ISSUE-014",
+      "title": "Improve naming and cleanup",
+      "priority": "low",
+      "status": "open",
+      "details": "Correct unclear and misspelled names, remove debug output, and centralize user-facing text for consistency and localization.",
+      "files": [],
+      "notes": [],
+      "completed_date": null
+    }
+  ]
+}
