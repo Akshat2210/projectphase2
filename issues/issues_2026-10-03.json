@@ -148,6 +148,56 @@
       "files": [],
       "notes": [],
       "completed_date": null
+    },
+    {
+      "id": "ISSUE-015",
+      "title": "Keep bill saving and transaction linking in one database transaction",
+      "priority": "critical",
+      "status": "open",
+      "details": "NewBill commits the bill, bill details, inventory, and customer balance before linkBillToTransactions updates matching transactions through a separate connection. If transaction linking fails, the saved bill and the customer's outstanding balance can disagree. Use one transaction for every part of bill submission.",
+      "files": ["src/loginsignup/login/loggedin/billing/newBill/NewBill.java"],
+      "notes": ["Reviewed for production readiness on 2026-10-04."],
+      "completed_date": null
+    },
+    {
+      "id": "ISSUE-016",
+      "title": "Prevent inventory from becoming negative at the database level",
+      "priority": "critical",
+      "status": "open",
+      "details": "New Bill and Generate Order Slip subtract stock without a database condition requiring enough remaining quantity. UI warnings are not sufficient when two users or windows sell the same item. Reject the save when any conditional inventory update affects zero rows, unless an explicit approved oversell policy is implemented.",
+      "files": ["src/loginsignup/login/loggedin/billing/newBill/NewBill.java", "src/loginsignup/login/loggedin/ordermanagement/generateorder/OrderGenerateForm.java"],
+      "notes": ["Reviewed for production readiness on 2026-10-04."],
+      "completed_date": null
+    },
+    {
+      "id": "ISSUE-017",
+      "title": "Do not terminate the application for an order-slip data error",
+      "priority": "critical",
+      "status": "open",
+      "details": "NewBill calls System.exit(-1) when an expected order-slip item cannot be found. This closes the production application and can interrupt active work. Show an error, roll back the current bill transaction, and keep the application running.",
+      "files": ["src/loginsignup/login/loggedin/billing/newBill/NewBill.java"],
+      "notes": ["Reviewed for production readiness on 2026-10-04."],
+      "completed_date": null
+    },
+    {
+      "id": "ISSUE-018",
+      "title": "Roll back and close draft order-slip transactions when the form is cancelled",
+      "priority": "critical",
+      "status": "open",
+      "details": "Generate Order Slip creates a draft row in an uncommitted transaction during initialization. Back and Reset dispose the form without rolling back and closing that transaction, which can leave database locks and abandoned draft work. Centralize cancellation in a method that rolls back, closes, and then exits the form.",
+      "files": ["src/loginsignup/login/loggedin/ordermanagement/generateorder/OrderGenerateForm.java"],
+      "notes": ["Reviewed for production readiness on 2026-10-04."],
+      "completed_date": null
+    },
+    {
+      "id": "ISSUE-019",
+      "title": "Make bill PDF storage production-safe",
+      "priority": "high",
+      "status": "open",
+      "details": "Generated bill PDFs use a relative billsOut path and an unsanitized customer name. The final folder can vary with the application's working directory, and Windows-invalid filename characters can make saving fail. Configure one production folder and sanitize the customer-name portion of each filename.",
+      "files": ["src/loginsignup/login/loggedin/billing/newBill/NewBill.java"],
+      "notes": ["Reviewed for production readiness on 2026-10-04."],
+      "completed_date": null
     }
   ]
 }
