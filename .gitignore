@@ -27,6 +27,9 @@ bin/
 ### Mac OS ###
 .DS_Store
 
+billsOut/
+billsOut
+
 
 
 
