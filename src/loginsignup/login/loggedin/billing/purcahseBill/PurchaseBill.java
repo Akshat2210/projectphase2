@@ -2,7 +2,9 @@ package loginsignup.login.loggedin.billing.purcahseBill;
 
 import mainpack.MyClass;
 import utils.UtilityMethods;
+
 import static utils.DBStructure.*;
+
 import javax.swing.*;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
@@ -44,11 +46,7 @@ public class PurchaseBill extends JFrame {
     int designIDIndex;
     int itemNameIndex;
 
-    private Connection con = null;
 
-    public Connection getCon() {
-        return con;
-    }
 
     private boolean returnIsCellEditable(int row, int col, int[][] extraIndices) {
         if (col == snoIndex) return false;
@@ -67,144 +65,126 @@ public class PurchaseBill extends JFrame {
 
     private boolean designIDexists(String designID) {
         String query = "SELECT 1 FROM inventory WHERE DesignID = ? LIMIT 1";
-        try (PreparedStatement stmt = getCon().prepareStatement(query)) {
-            stmt.setString(1, designID);
-            try (ResultSet rs = stmt.executeQuery()) {
-                return rs.next(); // true if at least one row is found
+        try (Connection con = MyClass.createConnection()) {
+            try (PreparedStatement stmt = con.prepareStatement(query)) {
+                stmt.setString(1, designID);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    return rs.next(); // true if at least one row is found
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return false; // or throw a custom exception if you prefer
             }
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false; // or throw a custom exception if you prefer
+            JOptionPane.showMessageDialog(PurchaseBill.this, e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
     int insertData() {
 
+        String customerName = customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString();
+        String billDetailQuery = "INSERT INTO " + BILLDETAILS_TABLE + " (" + BILLDETAILS_BILL_ID + ", " + BILLDETAILS_SNO + ", " + BILLDETAILS_DESIGN_ID + ", " + BILLDETAILS_ITEM_NAME + ", " + BILLDETAILS_QUANTITY + ", " + BILLDETAILS_RAW_COST + ", " + BILLDETAILS_TOTAL_FINAL_COST + ", " + "" + BILLDETAILS_ORDER_TYPE + ", " + BILLDETAILS_LABOUR_COST + ", " + BILLDETAILS_TOTAL_BASE_COSTING + ", " + BILLDETAILS_GOLD_RATE + ", " + BILLDETAILS_GOLD_PLATING_WEIGHT + ", " + BILLDETAILS_TOTAL_GOLD_COST + ") " + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String billsTableQuery = "update " + BILLS_TABLE + " set " + BILLS_DATE + " = ?," + BILLS_CUSTOMER_NAME + "=? where " + BILLS_BILL_ID + "=?";
+        String updateInventoryQuery = "UPDATE " + INVENTORY_TABLE + " SET " + INVENTORY_TOTAL_QUANTITY + " = " + INVENTORY_TOTAL_QUANTITY + " + ? WHERE " + INVENTORY_DESIGN_ID + " = ?";
+        String insertInventoryQuery = "INSERT INTO " + INVENTORY_TABLE + "(" + INVENTORY_DESIGN_ID + ", " + INVENTORY_TOTAL_QUANTITY + ", " + INVENTORY_ITEM_NAME + ", " + INVENTORY_BUY_PRICE + ") VALUES (?, ?, ?, ?)";
+        String updateOtherQuery = "update inventory set " + INVENTORY_BUY_PRICE + " = ? , itemname=? where DesignID = ?";
+        String customerTableQuery = "update " + CUSTOMERS_TABLE + " set " + CUSTOMERS_BALANCE + " = " + CUSTOMERS_BALANCE + " - ? where " + CUSTOMERS_CUSTOMER_NAME + " = ?";
 
-        try   {
-            String customerName = customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString();
-            String billDetailQuery = "INSERT INTO "+BILLDETAILS_TABLE+" ("+BILLDETAILS_BILL_ID+", "+BILLDETAILS_SNO+", "+BILLDETAILS_DESIGN_ID+", "+BILLDETAILS_ITEM_NAME+", "+BILLDETAILS_QUANTITY+", "+BILLDETAILS_RAW_COST+", "+BILLDETAILS_TOTAL_FINAL_COST+", " + ""+BILLDETAILS_ORDER_TYPE+", "+BILLDETAILS_LABOUR_COST+", "+BILLDETAILS_TOTAL_BASE_COSTING+", "+BILLDETAILS_GOLD_RATE+", "+BILLDETAILS_GOLD_PLATING_WEIGHT+", "+BILLDETAILS_TOTAL_GOLD_COST+") " + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            String billsTableQuery = "update "+BILLS_TABLE+" set "+BILLS_DATE+" = ?,"+BILLS_CUSTOMER_NAME+"=? where "+BILLS_BILL_ID+"=?";
-            String updateInventoryQuery = "UPDATE "+INVENTORY_TABLE+" SET "+INVENTORY_TOTAL_QUANTITY+" = "+INVENTORY_TOTAL_QUANTITY+" + ? WHERE "+INVENTORY_DESIGN_ID+" = ?";
-            String insertInventoryQuery = "INSERT INTO "+INVENTORY_TABLE+"("+INVENTORY_DESIGN_ID+", "+INVENTORY_TOTAL_QUANTITY+", "+INVENTORY_ITEM_NAME+", "+INVENTORY_BUY_PRICE+") VALUES (?, ?, ?, ?)";
-            String updateOtherQuery = "update inventory set "+INVENTORY_BUY_PRICE+" = ? , itemname=? where DesignID = ?";
-            String customerTableQuery = "update "+CUSTOMERS_TABLE+" set "+CUSTOMERS_BALANCE+" = "+CUSTOMERS_BALANCE+" - ? where "+CUSTOMERS_CUSTOMER_NAME+" = ?";
-
-
-            PreparedStatement billsTableStatement = getCon().prepareStatement(billsTableQuery);
-            PreparedStatement customersTableStatement = getCon().prepareStatement(customerTableQuery);
-            PreparedStatement updateStmt = getCon().prepareStatement(updateInventoryQuery);
-            PreparedStatement insertStmt = getCon().prepareStatement(insertInventoryQuery);
-            PreparedStatement billStmt = getCon().prepareStatement(billDetailQuery);
-            PreparedStatement updateRawPriceStatement = getCon().prepareStatement(updateOtherQuery);
-
-            System.out.println("called");
-            billsTableStatement.setTimestamp(1, Timestamp.valueOf(UtilityMethods.getDate(dateComboBox.getSelectedItem())));
-            billsTableStatement.setString(2, customerName);
-            billsTableStatement.setInt(3, billid);
-            BigDecimal grandTotal = BigDecimal.ZERO;
-            for (int i = 0; i < model.getRowCount() - 1; i++) {
-                System.out.println("in loop");
-                Object snoObj = model.getValueAt(i, snoIndex);
-                Object designIDObj = model.getValueAt(i, designIDIndex);
-                Object itemNameObj = model.getValueAt(i, itemNameIndex);
-                Object quantityObj = model.getValueAt(i, quantityIndex);
-                Object rawCostObj = model.getValueAt(i, rawCostIndex);
-                Object totalCostObj = model.getValueAt(i, totalIndex);
-
-                int sno = snoObj == null ? 0 : Integer.parseInt(snoObj.toString());
-                String designID = designIDObj == null ? "" : designIDObj.toString();
-                String itemName = itemNameObj == null ? "" : itemNameObj.toString();
-                int quantity = quantityObj == null || quantityObj.toString().isEmpty() ? 0 : Integer.parseInt(quantityObj.toString());
-                BigDecimal rawCost = rawCostObj == null ? BigDecimal.ZERO : new BigDecimal(rawCostObj.toString());
-                BigDecimal totalCost = totalCostObj == null || totalCostObj.toString().isEmpty() ? BigDecimal.ZERO : new BigDecimal(totalCostObj.toString());
-                System.out.println("quantity is " + quantity);
-                if (quantity == 0) {
-                    try {
-                        getCon().rollback();
+        try (Connection con = MyClass.createConnection()) {
+            try (PreparedStatement billsTableStatement = con.prepareStatement(billsTableQuery); PreparedStatement customersTableStatement = con.prepareStatement(customerTableQuery); PreparedStatement updateStmt = con.prepareStatement(updateInventoryQuery); PreparedStatement insertStmt = con.prepareStatement(insertInventoryQuery); PreparedStatement billStmt = con.prepareStatement(billDetailQuery); PreparedStatement updateRawPriceStatement = con.prepareStatement(updateOtherQuery);) {
+                con.setAutoCommit(false);
+                billsTableStatement.setTimestamp(1, Timestamp.valueOf(UtilityMethods.getDate(dateComboBox.getSelectedItem())));
+                billsTableStatement.setString(2, customerName);
+                billsTableStatement.setInt(3, billid);
+                BigDecimal grandTotal = BigDecimal.ZERO;
+                for (int i = 0; i < model.getRowCount() - 1; i++) {
+                    Object snoObj = model.getValueAt(i, snoIndex);
+                    Object designIDObj = model.getValueAt(i, designIDIndex);
+                    Object itemNameObj = model.getValueAt(i, itemNameIndex);
+                    Object quantityObj = model.getValueAt(i, quantityIndex);
+                    Object rawCostObj = model.getValueAt(i, rawCostIndex);
+                    Object totalCostObj = model.getValueAt(i, totalIndex);
+                    int sno = snoObj == null ? 0 : Integer.parseInt(snoObj.toString());
+                    String designID = designIDObj == null ? "" : designIDObj.toString();
+                    String itemName = itemNameObj == null ? "" : itemNameObj.toString();
+                    int quantity = quantityObj == null || quantityObj.toString().isEmpty() ? 0 : Integer.parseInt(quantityObj.toString());
+                    BigDecimal rawCost = rawCostObj == null ? BigDecimal.ZERO : new BigDecimal(rawCostObj.toString());
+                    BigDecimal totalCost = totalCostObj == null || totalCostObj.toString().isEmpty() ? BigDecimal.ZERO : new BigDecimal(totalCostObj.toString());
+                    if (quantity == 0) {
                         MyClass.purchaseBill = new PurchaseBill();
                         MyClass.purchaseBill.init(model, getStringValue(customerComboBox.getSelectedItem()), getStringValue(dateComboBox.getSelectedItem()));
                         MyClass.purchaseBill.setVisible(true);
                         dispose();
                         return ROLLBACKDONE;
-                    } catch (SQLException ex) {
-                        ex.printStackTrace();
-                        return ERROR_DONE;
                     }
+                    billStmt.setInt(1, getBillid());
+                    billStmt.setInt(2, sno);
+                    billStmt.setString(3, designID);
+                    billStmt.setString(4, itemName);
+                    billStmt.setInt(5, -quantity);
+                    billStmt.setBigDecimal(6, rawCost);
+                    billStmt.setBigDecimal(7, totalCost.negate());
+                    grandTotal = grandTotal.add(totalCost);
+                    // Fill remaining required fields with defaults
+                    billStmt.setString(8, "purchase"); // example OrderType
+                    billStmt.setBigDecimal(9, BigDecimal.ZERO); // LabourCost
+                    billStmt.setBigDecimal(10, BigDecimal.ZERO); // TotalBaseCosting
+                    billStmt.setBigDecimal(11, BigDecimal.ZERO); // GoldRate
+                    billStmt.setBigDecimal(12, BigDecimal.ZERO); // GoldPlatingWeight
+                    billStmt.setBigDecimal(13, BigDecimal.ZERO); // TotalGoldCost
+                    billStmt.addBatch();
+                    designID = model.getValueAt(i, designIDIndex) == null ? "" : model.getValueAt(i, designIDIndex).toString();
+                    quantity = getIntegerValue(model.getValueAt(i, quantityIndex));
+                    itemName = model.getValueAt(i, itemNameIndex) == null ? "" : model.getValueAt(i, itemNameIndex).toString();
+                    int price = model.getValueAt(i, rawCostIndex) == null ? 0 : getIntegerValue(model.getValueAt(i, rawCostIndex));
+                    System.out.println(designIDexists(designID));
+                    if (designIDexists(designID)) {
+                        if (designID.contentEquals("")) continue;
+                        updateStmt.setInt(1, quantity);
+                        updateStmt.setString(2, designID);
+                        updateRawPriceStatement.setDouble(1, price);
+                        updateRawPriceStatement.setString(2, itemName);
+                        updateRawPriceStatement.setString(3, designID);
+                        updateRawPriceStatement.addBatch();
+                        updateStmt.addBatch();
 
-
+                    } else {
+                        if (designID.contentEquals("")) continue;
+                        insertStmt.setString(1, designID);
+                        insertStmt.setInt(2, quantity);
+                        insertStmt.setString(3, itemName);
+                        insertStmt.setInt(4, price);
+                        insertStmt.addBatch();
+                    }
                 }
-                billStmt.setInt(1, getBillid());
-                billStmt.setInt(2, sno);
-                billStmt.setString(3, designID);
-                billStmt.setString(4, itemName);
-                billStmt.setInt(5, -quantity);
-                billStmt.setBigDecimal(6, rawCost);
-                billStmt.setBigDecimal(7, totalCost.negate());
-                grandTotal = grandTotal.add(totalCost);
-                // Fill remaining required fields with defaults
-                billStmt.setString(8, "purchase"); // example OrderType
-                billStmt.setBigDecimal(9, BigDecimal.ZERO); // LabourCost
-                billStmt.setBigDecimal(10, BigDecimal.ZERO); // TotalBaseCosting
-                billStmt.setBigDecimal(11, BigDecimal.ZERO); // GoldRate
-                billStmt.setBigDecimal(12, BigDecimal.ZERO); // GoldPlatingWeight
-                billStmt.setBigDecimal(13, BigDecimal.ZERO); // TotalGoldCost
-                billStmt.addBatch();
-                designID = model.getValueAt(i, designIDIndex) == null ? "" : model.getValueAt(i, designIDIndex).toString();
-                quantity = getIntegerValue(model.getValueAt(i, quantityIndex));
-                itemName = model.getValueAt(i, itemNameIndex) == null ? "" : model.getValueAt(i, itemNameIndex).toString();
-                int price = model.getValueAt(i, rawCostIndex) == null ? 0 : getIntegerValue(model.getValueAt(i, rawCostIndex));
-                System.out.println(designIDexists(designID));
-                if (designIDexists(designID)) {
-                    if (designID.contentEquals("")) continue;
-                    updateStmt.setInt(1, quantity);
-                    updateStmt.setString(2, designID);
-                    updateRawPriceStatement.setDouble(1, price);
-                    updateRawPriceStatement.setString(2, itemName);
-                    updateRawPriceStatement.setString(3, designID);
-                    updateRawPriceStatement.addBatch();
-                    updateStmt.addBatch();
-
-                } else {
-                    if (designID.contentEquals("")) continue;
-                    insertStmt.setString(1, designID);
-                    insertStmt.setInt(2, quantity);
-                    insertStmt.setString(3, itemName);
-                    insertStmt.setInt(4, price);
-                    insertStmt.addBatch();
+                customersTableStatement.setBigDecimal(1, grandTotal);
+                customersTableStatement.setString(2, customerName);
+                customersTableStatement.executeUpdate();
+                billsTableStatement.executeUpdate();
+                billStmt.executeBatch();
+                updateStmt.executeBatch();
+                updateRawPriceStatement.executeBatch();
+                insertStmt.executeBatch();
+                con.commit();
+                JOptionPane.showMessageDialog(MyClass.purchaseBill, "Inventory successfully updated.");
+                return SUCCESS_DONE;
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(MyClass.purchaseBill, "Error: " + ex.getMessage());
+                try {
+                    con.rollback();
+                    dispose();
+                } catch (SQLException e) {
+                    MyClass.purchaseBill = new PurchaseBill();
+                    MyClass.purchaseBill.init();
+                    MyClass.purchaseBill.setVisible(true);
+                    throw new RuntimeException(e);
                 }
-
-                System.out.println("workiing");
-
+                return ERROR_DONE;
             }
-            System.out.println(grandTotal.doubleValue());
-            customersTableStatement.setBigDecimal(1, grandTotal);
-            customersTableStatement.setString(2, customerName);
-            System.out.println(grandTotal.doubleValue() + " is the grand total of this bill");
-            customersTableStatement.executeUpdate();
-            billsTableStatement.executeUpdate();
-            billStmt.executeBatch();
-            updateStmt.executeBatch();
-            updateRawPriceStatement.executeBatch();
-            insertStmt.executeBatch();
-            getCon().commit();
-
-
-            JOptionPane.showMessageDialog(MyClass.purchaseBill, "Inventory successfully updated.");
-            return SUCCESS_DONE;
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(MyClass.purchaseBill, "Error: " + ex.getMessage());
-            try {
-                getCon().rollback();
-                dispose();
-
-            } catch (SQLException e) {
-                MyClass.purchaseBill = new PurchaseBill();
-                MyClass.purchaseBill.init();
-                MyClass.purchaseBill.setVisible(true);
-                throw new RuntimeException(e);
-            }
-            return ERROR_DONE;
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(MyClass.purchaseBill, "Error: " + e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
@@ -248,41 +228,26 @@ public class PurchaseBill extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 System.out.println(billid);
-                try {
-                    int returnCode;
-                    if (customerComboBox.getSelectedItem() != null && customerComboBox.getSelectedIndex() != 0) {
-                        if ((returnCode = insertData()) == SUCCESS_DONE) {
-                            getCon().commit();
-                            getCon().close();
-                            dispose();
-                                MyClass.purchaseBill = new PurchaseBill();
 
-                            MyClass.purchaseBill.init();
-                            MyClass.purchaseBill.setVisible(true);
-                        } else if (returnCode == ROLLBACKDONE) {
-                            JOptionPane.showMessageDialog(MyClass.purchaseBill, "rollback sucess");
-                        } else {
-                            JOptionPane.showMessageDialog(MyClass.purchaseBill, "something is off");
-                        }
-//                        makeBill(getBillid(), (customerComboBox.getSelectedItem() == null || customerComboBox.getSelectedIndex() == 0)
-//                              ? ""
-//                                : customerComboBox.getSelectedItem().toString(), billTable);
-//                                : customerComboBox.getSelectedItem().toString(), billTable);
+                int returnCode;
+                if (customerComboBox.getSelectedItem() != null && customerComboBox.getSelectedIndex() != 0) {
+                    if ((returnCode = insertData()) == SUCCESS_DONE) {
+                        dispose();
+                        MyClass.purchaseBill = new PurchaseBill();
+                        MyClass.purchaseBill.init();
+                        MyClass.purchaseBill.setVisible(true);
+                    } else if (returnCode == ROLLBACKDONE) {
+                        JOptionPane.showMessageDialog(MyClass.purchaseBill, "rollback sucess");
                     } else {
-                        JOptionPane.showMessageDialog(MyClass.purchaseBill, "select a customer");
-
+                        JOptionPane.showMessageDialog(MyClass.purchaseBill, "something is off");
                     }
 
+                } else {
+                    JOptionPane.showMessageDialog(MyClass.purchaseBill, "select a customer");
 
-                } catch (Exception ex) {
-                    try {
-                        getCon().rollback();
-                        ex.printStackTrace();
-                        throw new RuntimeException(ex);
-                    } catch (SQLException exc) {
-                        throw new RuntimeException(exc);
-                    }
                 }
+
+
             }
         });
 
@@ -334,9 +299,9 @@ public class PurchaseBill extends JFrame {
                 if (designIDexists(getStringValue(model.getValueAt(row, designIDIndex))))
                     JOptionPane.showMessageDialog(MyClass.purchaseBill, "आइटम का नाम इन्वन्टोरी मे बदल जाएगा, कृपया नाम न बदलने की स्थिति मे दुबारा से designid डालें ");
                 String stringValueUperCase = getStringValue(model.getValueAt(row, itemNameIndex)).toUpperCase();
-                String valueToReplace=MyClass.codeToItemName.get(stringValueUperCase);
-                if(valueToReplace!=null){
-                    model.setValueAt(valueToReplace,row,itemNameIndex);
+                String valueToReplace = MyClass.codeToItemName.get(stringValueUperCase);
+                if (valueToReplace != null) {
+                    model.setValueAt(valueToReplace, row, itemNameIndex);
                 }
             }
 
@@ -368,26 +333,21 @@ public class PurchaseBill extends JFrame {
         UtilityMethods.generateAndAddNames(customerComboBox);
         UtilityMethods.generateAndAddDates(dateComboBox, false);
 
-        try {
-            String query;
-            query = "insert into "+BILLS_TABLE+"() values()";
-            con = DriverManager.getConnection(MyClass.login.getUrl(), MyClass.login.getLoginID(), MyClass.login.getPassword());
-            getCon().setAutoCommit(false);
-            Statement stmt = getCon().createStatement();
-            stmt.executeUpdate(query, Statement.RETURN_GENERATED_KEYS);
-            ResultSet billid = stmt.getGeneratedKeys();
-
-            if (billid.next()) setBillid(billid.getInt(1));
-
-            billidLabel.setText("bill id:" + getBillid());
-        } catch (Exception e) {
-            try {
-                getCon().rollback();
-                throw new RuntimeException();
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
+        try (Connection con = MyClass.createConnection()) {
+            try (Statement stmt = con.createStatement()) {
+                String query;
+                query = "insert into " + BILLS_TABLE + "() values()";
+                stmt.executeUpdate(query, Statement.RETURN_GENERATED_KEYS);
+                try (ResultSet billid = stmt.getGeneratedKeys();) {
+                    if (billid.next()) setBillid(billid.getInt(1));
+                }
+                billidLabel.setText("bill id:" + getBillid());
+            } catch (SQLException e) {
+                con.rollback();
             }
-
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(PurchaseBill.this, e.getMessage());
+            throw new RuntimeException(e);
         }
 
 
@@ -401,38 +361,20 @@ public class PurchaseBill extends JFrame {
     private void fetchAndAppend(String designID, int row) {
         String name, rawCost;
         String query = "select * from inventory where designid=?";
-        try {
-            PreparedStatement preparedStatement = getCon().prepareStatement(query);
-            preparedStatement.setString(1, designID);
-            ResultSet rs = preparedStatement.executeQuery();
-            if (rs.next()) {
-//                model.setValueAt("",row,designIDIndex);
-                model.setValueAt(rs.getString(INVENTORY_ITEM_NAME), row, itemNameIndex);
-                model.setValueAt(rs.getString(INVENTORY_BUY_PRICE), row, rawCostIndex);
-
-            } else {
-
-
+        try (Connection con = MyClass.createConnection()) {
+            try (PreparedStatement preparedStatement = con.prepareStatement(query)) {
+                preparedStatement.setString(1, designID);
+                ResultSet rs = preparedStatement.executeQuery();
+                if (rs.next()) {
+                    model.setValueAt(rs.getString(INVENTORY_ITEM_NAME), row, itemNameIndex);
+                    model.setValueAt(rs.getString(INVENTORY_BUY_PRICE), row, rawCostIndex);
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
         } catch (SQLException e) {
+            JOptionPane.showMessageDialog(PurchaseBill.this, e.getMessage());
             throw new RuntimeException(e);
-        }
-    }
-
-    public void makeBill(int billID, String customerName, JTable yourTable) {
-        String query = "INSERT INTO "+BILLDETAILS_TABLE+" ("+BILLDETAILS_BILL_ID+", "+BILLDETAILS_SNO+", "+BILLDETAILS_DESIGN_ID+", "+BILLDETAILS_ITEM_NAME+", "+BILLDETAILS_QUANTITY+", "+BILLDETAILS_RAW_COST+", "+BILLDETAILS_TOTAL_FINAL_COST+", " + ""+BILLDETAILS_ORDER_TYPE+", "+BILLDETAILS_LABOUR_COST+", "+BILLDETAILS_TOTAL_BASE_COSTING+", "+BILLDETAILS_GOLD_RATE+", "+BILLDETAILS_GOLD_PLATING_WEIGHT+", "+BILLDETAILS_TOTAL_GOLD_COST+", customer_name) " + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-        try (PreparedStatement stmt = getCon().prepareStatement(query)) {
-            DefaultTableModel model = (DefaultTableModel) yourTable.getModel();
-
-            for (int i = 0; i < model.getRowCount(); i++) {
-
-            }
-
-            JOptionPane.showMessageDialog(null, "Bill created successfully.");
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(null, "Error while creating bill: " + e.getMessage());
         }
     }
 
