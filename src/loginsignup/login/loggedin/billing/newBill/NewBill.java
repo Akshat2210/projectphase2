@@ -98,27 +98,6 @@ public class NewBill extends JFrame {
         this.customerName = customerName;
     }
 
-    private void linkBillToTransactions() {
-        int billID = getCurBillID();
-        String customerName = getCustomerName();
-
-        String query = "UPDATE transactions SET billid = ? WHERE customer_name = ? AND billid IS NULL";
-
-        try (Connection con = MyClass.createConnection(); PreparedStatement pstmt = con.prepareStatement(query)) {
-
-            pstmt.setInt(1, billID);
-            pstmt.setString(2, customerName);
-            pstmt.executeUpdate();
-
-        } catch (SQLException e) {
-            Thread.dumpStack();
-            JOptionPane.showMessageDialog(null, "Failed to update transactions!", "Error", JOptionPane.ERROR_MESSAGE);
-            throw new RuntimeException();
-        }
-
-
-    }
-
     private String getStringValue(DefaultTableModel model, int row, int columnIndex, String defaultValue) {
         Object value = model.getValueAt(row, columnIndex);
         return (value != null && !value.toString().trim().isEmpty()) ? value.toString() : defaultValue;
@@ -135,7 +114,7 @@ public class NewBill extends JFrame {
         PreparedStatement billDetailsStatement = null;
         PreparedStatement inventoryStatement = null;
         PreparedStatement customerTableStatement = null;
-
+        PreparedStatement linkTransactionsStatement = null;
         String customerName = customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString();
 
         if (customerComboBox.getSelectedIndex() == 0) {
@@ -254,6 +233,13 @@ public class NewBill extends JFrame {
             customerTableStatement.setString(2, customerName);
             customerTableStatement.executeUpdate();
             System.out.println(billID + " is the billid");
+
+            String linkQuery = "UPDATE "+DBStructure.TRANSACTIONS_TABLE+" SET "+DBStructure.TRANSACTIONS_BILLID+" = ? WHERE "+DBStructure.TRANSACTIONS_CUSTOMER_NAME+" = ? AND "+DBStructure.TRANSACTIONS_BILLID+" IS NULL";
+            linkTransactionsStatement = conn.prepareStatement(linkQuery);
+            linkTransactionsStatement.setInt(1, getCurBillID());
+            linkTransactionsStatement.setString(2, customerName);
+            linkTransactionsStatement.executeUpdate();
+
             conn.commit(); // Commit transaction
 
             //            JOptionPane.showMessageDialog(null, "Bill details saved successfully! bill id is " + getCurBillID());
@@ -280,7 +266,7 @@ public class NewBill extends JFrame {
                 if (billDetailsStatement != null) billDetailsStatement.close();
                 if (inventoryStatement != null) inventoryStatement.close();
                 if (customerTableStatement != null) customerTableStatement.close();
-
+                if(linkTransactionsStatement!=null) linkTransactionsStatement.close();
             } catch (SQLException closeEx) {
                 Thread.dumpStack();
             }
@@ -467,7 +453,7 @@ public class NewBill extends JFrame {
         });
         submitButton.addActionListener(e -> {
             if (insertData()) {
-                linkBillToTransactions();
+//                linkBillToTransactions();
                 printBill(getCurBillID());
                 dispose();
                 newBill = new NewBill();
@@ -1042,8 +1028,7 @@ public class NewBill extends JFrame {
         Connection temp = getTransacTemp();
 
         try {
-            String query = "update order_slips set billed_quantity =billed_quantity-? where item_id=?";
-
+            String query = "update "+DBStructure.ORDER_SLIPS_TABLE+" set "+DBStructure.ORDER_SLIPS_BILLED_QUANTITY+" ="+DBStructure.ORDER_SLIPS_BILLED_QUANTITY+"-? where "+DBStructure.ORDER_SLIPS_ITEM_ID+"=?";
             PreparedStatement stmt = temp.prepareStatement(query);
             stmt.setInt(1, quantity);
             stmt.setInt(2, itemid);

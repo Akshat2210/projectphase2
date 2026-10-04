@@ -153,11 +153,11 @@
       "id": "ISSUE-015",
       "title": "Keep bill saving and transaction linking in one database transaction",
       "priority": "critical",
-      "status": "open",
+      "status": "completed",
       "details": "NewBill commits the bill, bill details, inventory, and customer balance before linkBillToTransactions updates matching transactions through a separate connection. If transaction linking fails, the saved bill and the customer's outstanding balance can disagree. Use one transaction for every part of bill submission.",
       "files": ["src/loginsignup/login/loggedin/billing/newBill/NewBill.java"],
-      "notes": ["Reviewed for production readiness on 2026-10-04."],
-      "completed_date": null
+      "notes": ["Reviewed for production readiness on 2026-10-04.", "Completed on 2026-10-05: bill-to-transaction linking now runs on the bill-save connection before commit, so a linking failure rolls back the whole save."],
+      "completed_date": "2026-10-05"
     },
     {
       "id": "ISSUE-016",
