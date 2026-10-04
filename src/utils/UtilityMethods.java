@@ -37,8 +37,6 @@ public class UtilityMethods {
     public static final int HORIZONTAL_SPLIT = 1;
     public static final Random RANDOM = new Random();
     public static Thread printingThread;
-    public final static int ORDER_SLIP = 0;
-    public static final int CUSTOMER_BILL = 1;
 
 
     public static String parseString(Object object) {
@@ -50,7 +48,187 @@ public class UtilityMethods {
         string = string.trim().isEmpty() ? "0" : string;
         return Integer.parseInt(string);
     }
+    public static void saveBillAsPdf(
+            javax.swing.table.DefaultTableModel model,
+            int billID,
+            java.sql.Date date,
+            String customerName,
+            int type,
+            String location
+    ) throws java.io.IOException, com.lowagie.text.DocumentException {
 
+        java.io.File pdfFile = new java.io.File(location);
+        java.io.File parentFolder = pdfFile.getParentFile();
+
+        if (parentFolder != null && !parentFolder.exists() && !parentFolder.mkdirs()) {
+            throw new java.io.IOException("Could not create PDF folder");
+        }
+
+        com.lowagie.text.Document document = new com.lowagie.text.Document(
+                com.lowagie.text.PageSize.A4,
+                20,
+                20,
+                40,
+                40
+        );
+
+        com.lowagie.text.pdf.PdfWriter.getInstance(
+                document,
+                new java.io.FileOutputStream(pdfFile)
+        );
+
+        document.open();
+
+        com.lowagie.text.Font titleFont = new com.lowagie.text.Font(
+                com.lowagie.text.Font.HELVETICA,
+                18,
+                com.lowagie.text.Font.BOLD,
+                java.awt.Color.BLUE
+        );
+
+        com.lowagie.text.Font normalFont = new com.lowagie.text.Font(
+                com.lowagie.text.Font.HELVETICA,
+                12,
+                com.lowagie.text.Font.NORMAL,
+                java.awt.Color.BLACK
+        );
+
+        com.lowagie.text.Paragraph title =
+                new com.lowagie.text.Paragraph("Gurukripa Jewellers", titleFont);
+
+        title.setSpacingAfter(40);
+        document.add(title);
+
+        int billTruncatedId = billID % 100 == 0 ? 100 : billID % 100;
+
+        java.text.SimpleDateFormat sdf =
+                new java.text.SimpleDateFormat("dd-MM-yyyy");
+
+        com.lowagie.text.pdf.PdfPTable billInfo =
+                new com.lowagie.text.pdf.PdfPTable(new float[]{1.0f, 1.5f, 2.0f});
+
+        billInfo.setWidthPercentage(100);
+        billInfo.getDefaultCell().setBorder(com.lowagie.text.Rectangle.NO_BORDER);
+
+        billInfo.addCell(new com.lowagie.text.Phrase(
+                String.valueOf(billTruncatedId),
+                normalFont
+        ));
+
+        billInfo.addCell(new com.lowagie.text.Phrase(
+                sdf.format(date),
+                normalFont
+        ));
+
+        billInfo.addCell(new com.lowagie.text.Phrase(
+                customerName == null ? "" : customerName,
+                normalFont
+        ));
+
+        document.add(billInfo);
+
+        com.lowagie.text.pdf.PdfPTable divider =
+                new com.lowagie.text.pdf.PdfPTable(1);
+
+        divider.setWidthPercentage(100);
+
+        com.lowagie.text.pdf.PdfPCell dividerCell =
+                new com.lowagie.text.pdf.PdfPCell();
+
+        dividerCell.setBorder(com.lowagie.text.Rectangle.BOTTOM);
+        dividerCell.setBorderWidthBottom(2f);
+        dividerCell.setFixedHeight(12f);
+
+        divider.addCell(dividerCell);
+        document.add(divider);
+
+        int columnCount = model.getColumnCount();
+
+        if (columnCount == 0) {
+            document.close();
+            return;
+        }
+
+        float[] columnWidths = new float[columnCount];
+
+        com.lowagie.text.pdf.BaseFont baseFont =
+                com.lowagie.text.pdf.BaseFont.createFont(
+                        com.lowagie.text.pdf.BaseFont.HELVETICA,
+                        com.lowagie.text.pdf.BaseFont.WINANSI,
+                        com.lowagie.text.pdf.BaseFont.NOT_EMBEDDED
+                );
+
+        int firstDynamicColumn = type == CONSTANTS.CUSTOMER_BILL ? 1 : 0;
+
+        if (type == CONSTANTS.CUSTOMER_BILL) {
+            columnWidths[0] = 30f;
+        }
+
+        float totalWidth = 0f;
+
+        for (int column = firstDynamicColumn; column < columnCount; column++) {
+            float widestText = baseFont.getWidthPoint(
+                    model.getColumnName(column),
+                    12f
+            );
+
+            for (int row = 0; row < model.getRowCount(); row++) {
+                Object value = model.getValueAt(row, column);
+
+                if (value != null) {
+                    widestText = Math.max(
+                            widestText,
+                            baseFont.getWidthPoint(value.toString(), 12f)
+                    );
+                }
+            }
+
+            columnWidths[column] = widestText + 10f;
+        }
+
+        for (float width : columnWidths) {
+            totalWidth += width;
+        }
+
+        float availableWidth = document.right() - document.left();
+
+        if (totalWidth > availableWidth) {
+            float scale = availableWidth / totalWidth;
+
+            for (int column = 0; column < columnCount; column++) {
+                columnWidths[column] *= scale;
+            }
+        }
+
+        com.lowagie.text.pdf.PdfPTable billTable =
+                new com.lowagie.text.pdf.PdfPTable(columnWidths);
+
+        billTable.setWidthPercentage(100);
+        billTable.setSpacingBefore(10);
+
+        for (int row = 0; row < model.getRowCount(); row++) {
+            for (int column = 0; column < columnCount; column++) {
+                Object value = model.getValueAt(row, column);
+
+                com.lowagie.text.pdf.PdfPCell cell =
+                        new com.lowagie.text.pdf.PdfPCell(
+                                new com.lowagie.text.Phrase(
+                                        value == null ? "" : value.toString(),
+                                        normalFont
+                                )
+                        );
+
+                cell.setPadding(5f);
+                cell.setMinimumHeight(20f);
+                cell.setNoWrap(true);
+
+                billTable.addCell(cell);
+            }
+        }
+
+        document.add(billTable);
+        document.close();
+    }
     public static double parseDouble(Object object) {
         String string = Objects.toString(object, "");
         string = string.trim().isEmpty() ? "0" : string;
@@ -463,7 +641,7 @@ public class UtilityMethods {
 
                 // Fixed width for "SNo"
                 int init;
-                if (type == CUSTOMER_BILL) {
+                if (type == CONSTANTS.CUSTOMER_BILL) {
                     colWidths[0] = 30;
                     init = 1;
                 } else {

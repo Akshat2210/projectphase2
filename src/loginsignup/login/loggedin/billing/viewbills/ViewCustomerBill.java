@@ -1,6 +1,7 @@
 package loginsignup.login.loggedin.billing.viewbills;
 
 import mainpack.MyClass;
+import utils.CONSTANTS;
 import utils.UtilityMethods;
 
 import javax.swing.*;
@@ -46,7 +47,7 @@ public class ViewCustomerBill extends JFrame {
     public ViewCustomerBill() {
     }
 
-    private String getCustomerName() {
+    public String getCustomerName() {
         return customerName;
     }
 
@@ -80,7 +81,7 @@ public class ViewCustomerBill extends JFrame {
         printButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                printQueue.offer(() -> printWithDefaultSettings((DefaultTableModel) billTable.getModel(), getBillID(), getDate(), getCustomerName(), UtilityMethods.CUSTOMER_BILL));
+                printQueue.offer(() -> printWithDefaultSettings((DefaultTableModel) billTable.getModel(), getBillID(), getDate(), getCustomerName(), CONSTANTS.CUSTOMER_BILL));
 
             }
         });
@@ -315,4 +316,7 @@ public class ViewCustomerBill extends JFrame {
         setDate(Date.valueOf(datetime.toLocalDate()));
     }
 
+    public JTable getBillTable() {
+        return billTable;
+    }
 }

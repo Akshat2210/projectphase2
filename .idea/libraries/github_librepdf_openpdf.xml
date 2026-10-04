@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="github.librepdf.openpdf" type="repository">
+    <properties maven-id="com.github.librepdf:openpdf:2.0.5" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/openpdf-2.0.5.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

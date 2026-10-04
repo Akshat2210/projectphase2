@@ -11,5 +11,6 @@
     <orderEntry type="library" name="swinglabs.swingx.all" level="project" />
     <orderEntry type="library" name="apache.poi.ooxml" level="project" />
     <orderEntry type="library" name="mysql.connector.j" level="project" />
+    <orderEntry type="library" name="github.librepdf.openpdf" level="project" />
   </component>
 </module>

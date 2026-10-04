@@ -1,7 +1,9 @@
 package loginsignup.login.loggedin.billing.newBill;
 
+import loginsignup.login.loggedin.billing.viewbills.ViewCustomerBill;
 import mainpack.MyClass;
 import org.jdesktop.swingx.prompt.PromptSupport;
+import utils.CONSTANTS;
 import utils.DBStructure;
 import utils.UtilityMethods;
 
@@ -14,6 +16,7 @@ import javax.swing.text.AbstractDocument;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -465,6 +468,7 @@ public class NewBill extends JFrame {
         submitButton.addActionListener(e -> {
             if (insertData()) {
                 linkBillToTransactions();
+                printBill(getCurBillID());
                 dispose();
                 newBill = new NewBill();
                 newBill.init();
@@ -850,6 +854,20 @@ public class NewBill extends JFrame {
             UtilityMethods.splitFrame(temp, searchResultWindow, UtilityMethods.HORIZONTAL_SPLIT);
         });
 
+    }
+
+    private void printBill(int curBillID) {
+        ViewCustomerBill viewCustomerBill = new ViewCustomerBill();
+        viewCustomerBill.init();
+        viewCustomerBill.setVisible(false);
+        viewCustomerBill.loadBillData(viewCustomerBill.getBillTable(),curBillID);
+        DefaultTableModel model = (DefaultTableModel) viewCustomerBill.getBillTable().getModel();
+        try {
+            UtilityMethods.saveBillAsPdf( model ,viewCustomerBill.getBillID(),viewCustomerBill.getDate(),viewCustomerBill.getCustomerName(), CONSTANTS.CUSTOMER_BILL,"bill");
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(NewBill.this, "Could not print bill "+e.getMessage(),"error in printing", JOptionPane.ERROR_MESSAGE);
+
+        }
     }
 //    private void insertRandomValues(int rows) {
 //        Random rand = new Random();

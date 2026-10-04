@@ -2,6 +2,7 @@ package loginsignup.login.loggedin.ordermanagement.vieworders;
 
 import mainpack.MyClass;
 import org.jdesktop.swingx.prompt.PromptSupport;
+import utils.CONSTANTS;
 import utils.UtilityMethods;
 
 import javax.swing.*;
@@ -294,7 +295,7 @@ public class ViewOrders extends JFrame {
             public void actionPerformed(ActionEvent e) {
 
                 //                printPanel(panel);
-                printQueue.offer(() -> printWithDefaultSettings((DefaultTableModel) orderSlipTable.getModel(), getCurrentBillID(), new Date(1000000), customerName, ORDER_SLIP));
+                printQueue.offer(() -> printWithDefaultSettings((DefaultTableModel) orderSlipTable.getModel(), getCurrentBillID(), new Date(1000000), customerName, CONSTANTS.ORDER_SLIP));
 
                 writeTableToExcel(orderSlipTable, "myfile.xlxx");
             }

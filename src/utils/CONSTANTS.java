@@ -26,4 +26,6 @@ public class CONSTANTS {
     public static final String VIEW_FRONTEND_BILL_TITLE="BILL";
     public static final String BILLING_SCREEN_TITLE="BILLING";
     public static final String ADD_INVENTORY_TITLE="ADD INVENTORY";
+    public static final int CUSTOMER_BILL = 1;
+    public final static int ORDER_SLIP = 0;
 }
