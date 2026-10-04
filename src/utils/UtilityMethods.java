@@ -574,11 +574,26 @@ public class UtilityMethods {
     }
 
     public static void printStartUp() {
-        PrinterJob.getPrinterJob(); // triggers internal loading
-        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        ge.getAllFonts(); // forces font rasterizer to load
-    }
+        Thread printerWarmupThread = new Thread(() -> {
+            try {
+                javax.print.PrintServiceLookup.lookupDefaultPrintService();
 
+                javax.print.PrintServiceLookup.lookupPrintServices(
+                        null,
+                        null
+                );
+
+                PrinterJob printerJob = PrinterJob.getPrinterJob();
+                printerJob.defaultPage();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, "PrinterWarmupThread");
+
+        printerWarmupThread.setDaemon(true);
+        printerWarmupThread.start();
+    }
     public static void generateAndAddNames(JComboBox<String> comboBox) {
         if (comboBox == null) return;
         comboBox.removeAllItems();
