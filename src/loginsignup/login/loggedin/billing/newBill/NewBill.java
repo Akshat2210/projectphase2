@@ -863,7 +863,8 @@ public class NewBill extends JFrame {
         viewCustomerBill.loadBillData(viewCustomerBill.getBillTable(),curBillID);
         DefaultTableModel model = (DefaultTableModel) viewCustomerBill.getBillTable().getModel();
         try {
-            UtilityMethods.saveBillAsPdf( model ,viewCustomerBill.getBillID(),viewCustomerBill.getDate(),viewCustomerBill.getCustomerName(), CONSTANTS.CUSTOMER_BILL,"bill");
+            String fileName="billsOut/bill_"+viewCustomerBill.getCustomerName()+"_"+viewCustomerBill.getBillID()+".pdf";
+            UtilityMethods.saveBillAsPdf( model ,viewCustomerBill.getBillID(),viewCustomerBill.getDate(),viewCustomerBill.getCustomerName(), CONSTANTS.CUSTOMER_BILL,fileName);
         } catch (IOException e) {
             JOptionPane.showMessageDialog(NewBill.this, "Could not print bill "+e.getMessage(),"error in printing", JOptionPane.ERROR_MESSAGE);
 
