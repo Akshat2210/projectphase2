@@ -250,6 +250,7 @@ public class NewTransaction extends JFrame {
 
         inRadioButton.setSelected(true);
         addedTransactions = new AddedTransactions();
+        addedTransactions.init();
         addedTransactions.setVisible(true);
 
 
