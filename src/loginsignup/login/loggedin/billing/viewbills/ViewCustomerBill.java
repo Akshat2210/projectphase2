@@ -88,7 +88,7 @@ public class ViewCustomerBill extends JFrame {
 
         setListOfCustomer();// sets the list of customers in jcombobox
         setExtendedState(JFrame.MAXIMIZED_BOTH);
-        String[] model = new String[]{"S.No", "item", "Gold (g)", "Plus G", "TGC", "Total"};
+        String[] model = new String[]{"S.No", "item","Quantity", "Gold (g)", "Plus G", "TGC", "Total"};
         DefaultTableModel tableModel = new DefaultTableModel(model, 1) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -233,7 +233,8 @@ public class ViewCustomerBill extends JFrame {
                     TableColumnModel columnModel = table.getColumnModel();
 
                     row.set(columnModel.getColumnIndex("S.No"), rs.getString("SNo"));
-                    row.set(columnModel.getColumnIndex("item"), rs.getString("ItemName") + "      " + rs.getString("Quantity"));
+                    row.set(columnModel.getColumnIndex("item"), rs.getString("ItemName"));
+                    row.set(columnModel.getColumnIndex("Quantity"), rs.getString("Quantity"));
                     row.set(columnModel.getColumnIndex("Gold (g)"), rs.getString("GoldPlatingWeight"));
                     row.set(columnModel.getColumnIndex("Plus G"), rs.getString("TotalBaseCosting"));
                     row.set(columnModel.getColumnIndex("TGC"), rs.getString("TotalGoldCost"));
