@@ -21,8 +21,6 @@ public class NewTransaction extends JFrame {
         return backButton;
     }
 
-    Connection transacCon = null;
-
     public void setDate(Object date) {
         if (date == null) {
             this.date = null;
@@ -153,37 +151,29 @@ public class NewTransaction extends JFrame {
                     java.sql.Date sqlDate = new java.sql.Date(parsed.getTime());
 
 
-                    try {
-                        transacCon = DriverManager.getConnection(MyClass.login.getUrl(), MyClass.login.getLoginID(), MyClass.login.getPassword());
-
-                        transacCon.setAutoCommit(false);
-                        PreparedStatement statement = transacCon.prepareStatement(transactionQuery);
-                        statement.setString(1, customerName);
-                        statement.setDouble(2, amount);
-                        statement.setDate(3, sqlDate);
-                        statement.setString(4, remark);
-                        statement.executeUpdate();
-                        statement.close();
-                        statement = transacCon.prepareStatement(customerTableQuery);
-
-                        statement.setDouble(1, amount);
-                        statement.setString(2, customerName);
-                        statement.executeUpdate();
-
-                        transacCon.commit();
-                        addedTransactions.fetchData(getDate());
-                        transacCon.close();
-                    } catch (SQLException ex) {
-                        if (transacCon != null) {
-                            try {
-                                ex.printStackTrace();
-                                transacCon.rollback();
-                                transacCon.close();
-                            } catch (SQLException exc) {
-                                throw new RuntimeException(exc);
-                            }
-                            throw new RuntimeException(ex);
+                    try (Connection con = MyClass.createConnection()) {
+                        try (
+                                PreparedStatement transactionStatement = con.prepareStatement(transactionQuery);
+                                PreparedStatement customerStatement = con.prepareStatement(customerTableQuery);
+                        ) {
+                            con.setAutoCommit(false);
+                            transactionStatement.setString(1, customerName);
+                            transactionStatement.setDouble(2, amount);
+                            transactionStatement.setDate(3, sqlDate);
+                            transactionStatement.setString(4, remark);
+                            transactionStatement.executeUpdate();
+                            customerStatement.setDouble(1, amount);
+                            customerStatement.setString(2, customerName);
+                            customerStatement.executeUpdate();
+                            con.commit();
+                            addedTransactions.fetchData(getDate());
+                        }catch (SQLException ex){
+                            JOptionPane.showMessageDialog(NewTransaction.this, ex.getMessage());
+                            con.rollback();
                         }
+                    } catch (SQLException ex) {
+                        JOptionPane.showMessageDialog(NewTransaction.this, ex.getMessage());
+                        throw new RuntimeException(ex);
                     }
 
                 });
