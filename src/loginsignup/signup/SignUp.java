@@ -1,6 +1,7 @@
 package loginsignup.signup;
 
 import mainpack.MyClass;
+import utils.CONSTANTS;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -32,7 +33,10 @@ public class SignUp extends JFrame {
             String authority = authorityTextField.getText();
             String password = passwordTextField.getText();
             boolean exists = false;
-
+            if (username == null || password == null || username.length() == 0 || password.length() == 0) {
+                JOptionPane.showMessageDialog(this, "Username or password is empty!", "eror", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             String query = "SELECT user FROM mysql.user WHERE user = ?";
 
             try (
@@ -50,6 +54,10 @@ public class SignUp extends JFrame {
                     exists = rs.next();
                 }
             } catch (SQLException ex) {
+                if (ex.getErrorCode() == CONSTANTS.SQL_INVALID_CREDENTIALS_ERROR) {
+                    JOptionPane.showMessageDialog(this, "root password is incorrect!", "eror", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
                 throw new RuntimeException(ex);
             }
 

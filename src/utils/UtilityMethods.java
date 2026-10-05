@@ -42,6 +42,30 @@ public class UtilityMethods {
     public static String parseString(Object object) {
         return Objects.toString(object, "");
     }
+    public static String chooseFile() {
+        JFileChooser chooser = new JFileChooser();
+
+        int result = chooser.showOpenDialog(null);
+
+        if (result == JFileChooser.APPROVE_OPTION) {
+            return chooser.getSelectedFile().getAbsolutePath();
+        }
+
+        return null;
+    }
+
+    // Returns the selected save path, or null if the user cancels.
+    public static String chooseSaveLocation() {
+        JFileChooser chooser = new JFileChooser();
+
+        int result = chooser.showSaveDialog(null);
+
+        if (result == JFileChooser.APPROVE_OPTION) {
+            return chooser.getSelectedFile().getAbsolutePath();
+        }
+
+        return null;
+    }
 
     public static int parseInt(Object object) {
         String string = Objects.toString(object, "");

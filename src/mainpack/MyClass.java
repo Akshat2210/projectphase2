@@ -131,11 +131,9 @@ public class MyClass {
             System.out.println("❌ Database Connection Failed!");
             if (e.getErrorCode() == SQL_INVALID_CREDENTIALS_ERROR) {
                 JOptionPane.showMessageDialog(null, "invalid userid/password");
-                e.printStackTrace();
 //                throw new SQLException(e);
             } else if (e.getErrorCode() == SQL_INVALID_DATABASE_ERROR) {
                 JOptionPane.showMessageDialog(login, "database not found error " + e.getErrorCode());
-                e.printStackTrace();
 //                throw new SQLException(e);
             }
             throw e;
