@@ -1,0 +1,26 @@
+{
+  "project": "AccountingSoftwarePro",
+  "reviews": [
+    {
+      "feature": "Order-slip inventory selection",
+      "status": "verified",
+      "review_date": "2026-10-09",
+      "verification_method": "source-code review",
+      "flow_verified": [
+        "Inventory items are loaded from the inventory table into the selector.",
+        "Selecting an item transfers its design ID and requested quantity to the order-slip form.",
+        "The order-slip form resolves the item name and price from the design ID.",
+        "Submitting the order slip saves the slip and updates inventory in the same transaction."
+      ],
+      "confirmed_business_rules": [
+        "Users may continue when requested quantity exceeds available stock.",
+        "Negative quantities are allowed for flexible stock adjustments."
+      ],
+      "review_notes": [
+        "Inventory selection currently displays TotalQuantity only. If opening stock is maintained separately, its display policy should be decided explicitly.",
+        "Closing the inventory selector should close only that window, not the full application.",
+        "Cancelled or reset order-slip forms should roll back and close their draft transaction."
+      ]
+    }
+  ]
+}
