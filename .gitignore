@@ -28,7 +28,7 @@ bin/
 .DS_Store
 
 billsOut/*.pdf
-
+billsOut/printed.json
 
 
 tempBack.bat
