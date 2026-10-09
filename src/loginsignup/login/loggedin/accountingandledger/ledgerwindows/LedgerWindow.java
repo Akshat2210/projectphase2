@@ -1,6 +1,9 @@
 package loginsignup.login.loggedin.accountingandledger.ledgerwindows;
 
+import com.mysql.cj.callback.MysqlCallback;
+import jdk.jshell.execution.Util;
 import mainpack.MyClass;
+import utils.DBStructure;
 import utils.UtilityMethods;
 
 import javax.swing.*;
@@ -14,6 +17,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import static utils.DBStructure.*;
 
@@ -33,7 +38,7 @@ public class LedgerWindow extends JFrame {
 
     public void init(String customerName, int mode) {
         setContentPane(panel);
-        setTitle("Ledger "+ customerName);
+        setTitle("Ledger " + customerName);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         backButton.addActionListener(new ActionListener() {
@@ -46,7 +51,7 @@ public class LedgerWindow extends JFrame {
         });
         String[] columnNames = null;
         if (mode == ITEM_MODE)
-            columnNames = new String[]{"id", "date", "debit", "credit","balance"};
+            columnNames = new String[]{"id", "date", "debit", "credit", "balance"};
         else if (mode == CUSTOMER_MODE) {
             columnNames = new String[]{"id", "date", "debit", "credit", "balance"};
 
@@ -62,8 +67,16 @@ public class LedgerWindow extends JFrame {
         ledgerTable.setModel(defaultTableModel);
         if (mode == CUSTOMER_MODE) {
             DefaultTableModel model = GetData.fetchCustomerLedger(customerName);
-            if (model != null)
+
+            if (model != null) {
                 ledgerTable.setModel(model);
+            }
+        } else if (mode == ITEM_MODE) {
+            DefaultTableModel model = GetData.fetchItemLedger(customerName, this);
+
+            if (model != null) {
+                ledgerTable.setModel(model);
+            }
         }
 
 //        fetchLedgerToModel(ledgerTable);
@@ -125,11 +138,11 @@ class GetData {
                     String[] values = new String[columnNames.length];
                     String dateValue = rs.getString("date");
                     if (!dateValue.isEmpty()) {
-                    try {
-                        values[DATE_COLUMN_INDEX] = LocalDate.parse(dateValue, DateTimeFormatter.ofPattern("yyyy-MM-dd")).format(DateTimeFormatter.ofPattern("dd-MM-yy"));
-                    }catch (java.time.format.DateTimeParseException e){
-                        values[DATE_COLUMN_INDEX] = LocalDate.parse(dateValue, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")).format(DateTimeFormatter.ofPattern("dd-MM-yy"));
-                    }
+                        try {
+                            values[DATE_COLUMN_INDEX] = LocalDate.parse(dateValue, DateTimeFormatter.ofPattern("yyyy-MM-dd")).format(DateTimeFormatter.ofPattern("dd-MM-yy"));
+                        } catch (java.time.format.DateTimeParseException e) {
+                            values[DATE_COLUMN_INDEX] = LocalDate.parse(dateValue, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")).format(DateTimeFormatter.ofPattern("dd-MM-yy"));
+                        }
                     } else values[DATE_COLUMN_INDEX] = "";
                     BigDecimal amount = rs.getBigDecimal("amount");
                     System.out.println(amount);
@@ -195,8 +208,131 @@ class GetData {
         return tableModel;
     }
 
-    static DefaultTableModel fetchItemLedger(String desginID) {
-        getInventoryItemName(desginID);
-        return null;
+    static DefaultTableModel fetchItemLedger(String designID, LedgerWindow ledgerWindow) {
+        String[] columnNames = {
+                ID_COLUMN,
+                DATE_COLUMN,
+                DEBIT_COLUMN,
+                CREDIT_COLUMN,
+                BALANCE_COLUMN
+        };
+
+        DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        String openingStockQuery =
+                "SELECT " + INVENTORY_OPENING_STOCK +
+                        " FROM " + INVENTORY_TABLE +
+                        " WHERE " + INVENTORY_DESIGN_ID + " = ?";
+
+        String movementQuery =
+                "SELECT bd." + BILLDETAILS_BILL_ID + " AS billId, " +
+                        "b." + BILLS_DATE + " AS billDate, " +
+                        "bd." + BILLDETAILS_QUANTITY + " AS quantity " +
+                        "FROM " + BILLDETAILS_TABLE + " bd " +
+                        "JOIN " + BILLS_TABLE + " b ON b." + BILLS_BILL_ID +
+                        " = bd." + BILLDETAILS_BILL_ID + " " +
+                        "WHERE bd." + BILLDETAILS_DESIGN_ID + " = ? " +
+                        "AND b." + BILLS_DRAFT + " = ? " +
+                        "ORDER BY b." + BILLS_DATE + ", bd." + BILLDETAILS_BILL_ID;
+
+        try (Connection con = MyClass.createConnection()) {
+
+            int balance = 0;
+
+            // Opening stock row
+            try (PreparedStatement openingStatement = con.prepareStatement(openingStockQuery)) {
+                openingStatement.setString(1, designID);
+
+                try (ResultSet rs = openingStatement.executeQuery()) {
+                    if (rs.next()) {
+                        balance = rs.getInt(INVENTORY_OPENING_STOCK);
+                    }
+                }
+            }
+
+            String[] openingRow = new String[columnNames.length];
+            openingRow[ID_COLUMN_INDEX] = "Opening balance";
+            openingRow[DATE_COLUMN_INDEX] = "";
+            openingRow[DEBIT_COLUMN_INDEX] = balance >= 0 ? String.valueOf(balance) : "";
+            openingRow[CREDIT_COLUMN_INDEX] = balance < 0 ? String.valueOf(Math.abs(balance)) : "";
+            openingRow[BALANCE_COLUMN_INDEX] = String.valueOf(balance);
+            tableModel.addRow(openingRow);
+
+            // Bill and purchase movements
+            try (PreparedStatement movementStatement = con.prepareStatement(movementQuery)) {
+                movementStatement.setString(1, designID);
+                movementStatement.setBoolean(2, false);
+
+                try (ResultSet rs = movementStatement.executeQuery()) {
+                    while (rs.next()) {
+                        int quantity = rs.getInt("quantity");
+                        java.sql.Date billDate = rs.getDate("billDate");
+
+                        String[] row = new String[columnNames.length];
+                        row[ID_COLUMN_INDEX] = "Bill#" + rs.getInt("billId");
+                        row[DATE_COLUMN_INDEX] = billDate == null
+                                ? ""
+                                : UtilityMethods.parseDateString(billDate);
+
+                        if (quantity < 0) {
+                            // Purchase: negative stored quantity means stock increases.
+                            row[DEBIT_COLUMN_INDEX] = String.valueOf(Math.abs(quantity));
+                            row[CREDIT_COLUMN_INDEX] = "";
+                        } else {
+                            // Sale: positive stored quantity means stock decreases.
+                            row[DEBIT_COLUMN_INDEX] = "";
+                            row[CREDIT_COLUMN_INDEX] = String.valueOf(quantity);
+                        }
+
+                        balance = balance - quantity;
+                        row[BALANCE_COLUMN_INDEX] = String.valueOf(balance);
+
+                        tableModel.addRow(row);
+                    }
+                }
+            }
+
+            return tableModel;
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(
+                    ledgerWindow,
+                    "Could not fetch item ledger: " + e.getMessage()
+            );
+            return null;
+        }
+    }
+    private static String fetchDate(LedgerWindow ledgerWindow, int billId) {
+        String dateQuery = "SELECT " + BILLS_DATE +
+                " FROM " + BILLS_TABLE +
+                " WHERE " + BILLS_BILL_ID + " = ?";
+
+        try (Connection con = MyClass.createConnection();
+             PreparedStatement dateStatement = con.prepareStatement(dateQuery)) {
+
+            dateStatement.setInt(1, billId);
+
+            try (ResultSet rs = dateStatement.executeQuery()) {
+                if (rs.next()) {
+                    java.sql.Date billDate = rs.getDate(BILLS_DATE);
+
+                    if (billDate != null) {
+                        return UtilityMethods.parseDateString(billDate);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(
+                    ledgerWindow,
+                    "Could not fetch bill date: " + e.getMessage()
+            );
+        }
+
+        return "";
     }
 }

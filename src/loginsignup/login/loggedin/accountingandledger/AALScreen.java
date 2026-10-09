@@ -107,8 +107,9 @@ public class AALScreen extends JFrame {
 
     private void openItem(String selectedItem) {
         setVisible(false);
+        String designID = selectedItem.split("->", 2)[0].trim();
         MyClass.ledgerWindow = new LedgerWindow();
-        MyClass.ledgerWindow.init(customerList.getSelectedValue() == null ? "" : customerList.getSelectedValue().toString(), LedgerWindow.ITEM_MODE);
+        MyClass.ledgerWindow.init(customerList.getSelectedValue() == null ? designID : "", LedgerWindow.ITEM_MODE);
         MyClass.ledgerWindow.setVisible(true);
 
     }
