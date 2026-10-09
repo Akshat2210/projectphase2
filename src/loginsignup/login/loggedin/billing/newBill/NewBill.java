@@ -685,15 +685,38 @@ public class NewBill extends JFrame {
 
                 String designID = UtilityMethods.parseString(tableModel.getValueAt(row, designIdIndex));
                 if (notThroughOrderSlip && designID != null && !designID.toString().contentEquals("")) {
-                    String query = "select "+DBStructure.INVENTORY_TOTAL_QUANTITY+" from "+DBStructure.INVENTORY_TABLE+" where "+DBStructure.INVENTORY_DESIGN_ID+"=?;";
-                    try (Connection con = MyClass.createConnection(); PreparedStatement preparedStatement = con.prepareStatement(query)) {
-                        preparedStatement.setString(1,designID);
-                        try (ResultSet resultSet = preparedStatement.executeQuery(query);) {
-                            if (resultSet.next()) if (resultSet.getInt("totalquantity") < quantity)
-                                JOptionPane.showMessageDialog(newBill, "warning stock not remaining");
+                    String query =
+                            "SELECT " + DBStructure.INVENTORY_TOTAL_QUANTITY +
+                                    " FROM " + DBStructure.INVENTORY_TABLE +
+                                    " WHERE " + DBStructure.INVENTORY_DESIGN_ID + " = ?";
+
+                    try (Connection con = MyClass.createConnection();
+                         PreparedStatement preparedStatement = con.prepareStatement(query)) {
+
+                        preparedStatement.setString(1, designID);
+
+                        try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                            if (resultSet.next()) {
+                                int availableQuantity =
+                                        resultSet.getInt(DBStructure.INVENTORY_TOTAL_QUANTITY);
+
+                                if (availableQuantity < quantity) {
+                                    JOptionPane.showMessageDialog(
+                                            NewBill.this,
+                                            "Warning: Stock is not remaining."
+                                    );
+                                }
+                            }
                         }
+
                     } catch (SQLException ex) {
-                        throw new RuntimeException(ex);
+                        JOptionPane.showMessageDialog(
+                                NewBill.this,
+                                ex.getMessage(),
+                                "Error",
+                                JOptionPane.ERROR_MESSAGE
+                        );
+                        ex.printStackTrace();
                     }
 
 
