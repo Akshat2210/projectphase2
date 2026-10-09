@@ -27,13 +27,12 @@ bin/
 ### Mac OS ###
 .DS_Store
 
-billsOut/
-billsOut
+billsOut/*.pdf
+
 
 
 tempBack.bat
 src/resources/createUser.bat
-src/testpackage/MainTestClass.java
 
 *.logs
 workflow.json

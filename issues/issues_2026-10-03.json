@@ -198,6 +198,16 @@
       "files": ["src/loginsignup/login/loggedin/billing/newBill/NewBill.java"],
       "notes": ["Reviewed for production readiness on 2026-10-04."],
       "completed_date": null
+    },
+    {
+      "id": "ISSUE-020",
+      "title": "Restore only unbilled order-slip quantity when deleting a slip",
+      "priority": "high",
+      "status": "open",
+      "details": "The order-slip deletion flow restores the original quantity from the displayed billed/original value. When a slip is partially or fully billed, this restores stock that has already been sold. Restore original quantity minus billed quantity, or block deletion once billing has begun.",
+      "files": ["src/loginsignup/login/loggedin/ordermanagement/vieworders/ViewOrders.java"],
+      "notes": ["Reviewed on 2026-10-09."],
+      "completed_date": null
     }
   ]
 }
