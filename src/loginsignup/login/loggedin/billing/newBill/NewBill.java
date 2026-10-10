@@ -410,6 +410,7 @@ public class NewBill extends JFrame {
             dispose();
             if (searchResultWindow != null) searchResultWindow.dispose();
             try {
+                getTransacTemp().rollback();
                 getTransacTemp().close();
             } catch (SQLException ex) {
                 ex.printStackTrace();
