@@ -122,17 +122,24 @@ public class NewBill extends JFrame {
             return false;
         }
         String updateCustomerTableQuery = "update customers set balance=balance+? where customer_name=?";
-        String updateBillsTableQuery = "update bills set date=?,customer_name=? where billid=?";
+        String updateBillsTableQuery = "update "+DBStructure.BILLS_TABLE+" set "+DBStructure.BILLS_DATE+"=?,"+DBStructure.BILLS_CUSTOMER_NAME+"=?, "+DBStructure.BILLS_BILL_NUMBER+ "=? where "+DBStructure.BILLS_BILL_ID+"=?";
+        int billNumber=getBillNumber();
         try {
             PreparedStatement billsTableStatement = conn.prepareStatement(updateBillsTableQuery);
 
             billsTableStatement.setTimestamp(1, Timestamp.valueOf(getDateTime()));
             billsTableStatement.setString(2, getCustomerName());
-            billsTableStatement.setInt(3, getCurBillID());
-            billsTableStatement.executeUpdate();
+            billsTableStatement.setInt(3, billNumber);
+            System.out.println(billNumber+" is billnumber");
+            billsTableStatement.setInt(4, getCurBillID());  billsTableStatement.executeUpdate();
             billsTableStatement.close();
         } catch (SQLException exception) {
             JOptionPane.showMessageDialog(newBill, "error");
+            try {
+                conn.rollback();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
             Thread.dumpStack();
             throw new RuntimeException();
         }
@@ -140,8 +147,8 @@ public class NewBill extends JFrame {
         try {
 //            conn = DriverManager.getConnection(url, user, password);
 
-            updateBillsTableQuery = "INSERT INTO billdetails (BillID, SNo, ItemName, DesignID, OrderType, RawCost, LabourCost, DullChillaiCost, " + "MeenaColorMeenaCost, RhodiumCost, NagSettingCost, OtherBaseCosts, TotalBaseCosting, GoldRate, " + "GoldPlatingWeight, TotalGoldCost, TotalFinalCost, OrderSlipNumber,OtherBaseCostNotes,quantity) " + "VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?)";
-            billDetailsStatement = conn.prepareStatement(updateBillsTableQuery);
+            String insertBillDetailsQuery = "INSERT INTO billdetails (BillID, SNo, ItemName, DesignID, OrderType, RawCost, LabourCost, DullChillaiCost, " + "MeenaColorMeenaCost, RhodiumCost, NagSettingCost, OtherBaseCosts, TotalBaseCosting, GoldRate, " + "GoldPlatingWeight, TotalGoldCost, TotalFinalCost, OrderSlipNumber,OtherBaseCostNotes,quantity) " + "VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?)";
+            billDetailsStatement = conn.prepareStatement(insertBillDetailsQuery);
             String inventoryQuery = "update inventory set TotalQuantity=TotalQuantity-? where DesignID=?";
             inventoryStatement = conn.prepareStatement(inventoryQuery);
             double grandTotal = 0;
@@ -175,9 +182,11 @@ public class NewBill extends JFrame {
                     rs.close();
                     pstmt.close();
                 }
+
                 int quantity = Integer.parseInt(getStringValue(model, i, QUANTITY_INDEX, "0"));
                 if (quantity == 0) {
                     JOptionPane.showMessageDialog(newBill, "please do not leave quantity field empty");
+                    conn.rollback();
                     return false;
                 }
                 double raw = Double.parseDouble(getStringValue(model, i, RAW_INDEX, "0"));
@@ -241,8 +250,7 @@ public class NewBill extends JFrame {
             linkTransactionsStatement.executeUpdate();
 
             conn.commit(); // Commit transaction
-
-            //            JOptionPane.showMessageDialog(null, "Bill details saved successfully! bill id is " + getCurBillID());
+            JOptionPane.showMessageDialog(NewBill.this, "✨ Bill No. " + billNumber + " has been saved successfully!\nYour bill is ready to print.");            //            JOptionPane.showMessageDialog(null, "Bill details saved successfully! bill id is " + getCurBillID());
             billTable.repaint();
             return true;
         } catch (Exception ex) {
@@ -270,6 +278,26 @@ public class NewBill extends JFrame {
             } catch (SQLException closeEx) {
                 Thread.dumpStack();
             }
+        }
+    }
+
+    private int getBillNumber() {
+        String billNumberQuery =
+                "SELECT COALESCE(MAX(" + DBStructure.BILLS_BILL_NUMBER + "), 0) + 1 " +
+                        "AS nextBillNumber FROM " + DBStructure.BILLS_TABLE;
+
+        try (PreparedStatement billNumberStatement =
+                     getTransacTemp().prepareStatement(billNumberQuery);
+             ResultSet resultSet = billNumberStatement.executeQuery()) {
+
+            if (resultSet.next()) {
+                return resultSet.getInt("nextBillNumber");
+            }
+
+            throw new SQLException("Could not generate the next bill number.");
+
+        } catch (SQLException ex) {
+            throw new RuntimeException("Error generating bill number.", ex);
         }
     }
 
@@ -453,7 +481,7 @@ public class NewBill extends JFrame {
             UtilityMethods.splitFrame(temp, searchResultWindow, UtilityMethods.HORIZONTAL_SPLIT);
         });
         submitButton.addActionListener(e -> {
-            if (insertData()) {
+            if (askConfirmation() && insertData()) {
 //                linkBillToTransactions();
                 printBill(getCurBillID());
                 dispose();
@@ -864,6 +892,96 @@ public class NewBill extends JFrame {
             UtilityMethods.splitFrame(temp, searchResultWindow, UtilityMethods.HORIZONTAL_SPLIT);
         });
 
+    }
+
+    private boolean askConfirmation() {
+        final boolean[] confirmed = {false};
+
+        JDialog previewDialog = new JDialog(this, "Preview Bill", true);
+        previewDialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        previewDialog.setLayout(new BorderLayout(10, 10));
+
+        JPanel detailsPanel = new JPanel(new GridLayout(0, 2, 10, 6));
+        detailsPanel.setBorder(BorderFactory.createEmptyBorder(12, 12, 0, 12));
+
+        Object selectedCustomer = customerComboBox.getSelectedItem();
+        Object selectedDate = dateComboBox.getSelectedItem();
+        Object selectedSlipType = slipTypeComboBox.getSelectedItem();
+
+        detailsPanel.add(new JLabel("Customer:"));
+        detailsPanel.add(new JLabel(selectedCustomer == null ? "" : selectedCustomer.toString()));
+
+        detailsPanel.add(new JLabel("Date:"));
+        detailsPanel.add(new JLabel(selectedDate == null ? "" : selectedDate.toString()));
+
+        detailsPanel.add(new JLabel("Slip Type:"));
+        detailsPanel.add(new JLabel(selectedSlipType == null ? "" : selectedSlipType.toString()));
+
+        detailsPanel.add(new JLabel("Gold Rate:"));
+        detailsPanel.add(new JLabel(goldRateTextField.getText()));
+
+        detailsPanel.add(new JLabel("Grand Total:"));
+        detailsPanel.add(new JLabel(grandTotalLabel.getText()));
+
+        detailsPanel.add(new JLabel("Bill Number:"));
+        detailsPanel.add(new JLabel("Will be assigned after saving"));
+
+        DefaultTableModel sourceModel = (DefaultTableModel) billTable.getModel();
+
+        Vector<String> columnNames = new Vector<>();
+        for (int column = 0; column < sourceModel.getColumnCount(); column++) {
+            columnNames.add(sourceModel.getColumnName(column));
+        }
+
+        DefaultTableModel previewModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        for (int row = 0; row < sourceModel.getRowCount(); row++) {
+            Object[] rowData = new Object[sourceModel.getColumnCount()];
+
+            for (int column = 0; column < sourceModel.getColumnCount(); column++) {
+                rowData[column] = sourceModel.getValueAt(row, column);
+            }
+
+            previewModel.addRow(rowData);
+        }
+
+        JTable previewTable = new JTable(previewModel);
+        previewTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+
+        JScrollPane previewScrollPane = new JScrollPane(previewTable);
+        previewScrollPane.setBorder(
+                BorderFactory.createTitledBorder("Bill Items")
+        );
+
+        JButton editButton = new JButton("Back to Edit");
+        JButton confirmButton = new JButton("Confirm & Save");
+
+        editButton.addActionListener(e -> previewDialog.dispose());
+
+        confirmButton.addActionListener(e -> {
+            confirmed[0] = true;
+            previewDialog.dispose();
+        });
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 12, 12, 12));
+        buttonPanel.add(editButton);
+        buttonPanel.add(confirmButton);
+
+        previewDialog.add(detailsPanel, BorderLayout.NORTH);
+        previewDialog.add(previewScrollPane, BorderLayout.CENTER);
+        previewDialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        previewDialog.setSize(1100, 650);
+        previewDialog.setLocationRelativeTo(this);
+        previewDialog.setVisible(true);
+
+        return confirmed[0];
     }
 
     private void printBill(int curBillID) {

@@ -123,7 +123,7 @@ public class UtilityMethods {
         title.setSpacingAfter(40);
         document.add(title);
 
-        int billTruncatedId = billID % 100 == 0 ? 100 : billID % 100;
+        int billNumber = UtilityMethods.fetchBillNumber(billID);
 
         java.text.SimpleDateFormat sdf =
                 new java.text.SimpleDateFormat("dd-MM-yyyy");
@@ -135,7 +135,7 @@ public class UtilityMethods {
         billInfo.getDefaultCell().setBorder(com.lowagie.text.Rectangle.NO_BORDER);
 
         billInfo.addCell(new com.lowagie.text.Phrase(
-                String.valueOf(billTruncatedId),
+                String.valueOf(billNumber),
                 normalFont
         ));
 
@@ -253,6 +253,41 @@ public class UtilityMethods {
         document.add(billTable);
         document.close();
     }
+
+    private static int fetchBillNumber(int billID) {
+        String billNumberQuery =
+                "SELECT " + DBStructure.BILLS_BILL_NUMBER +
+                        " FROM " + DBStructure.BILLS_TABLE +
+                        " WHERE " + DBStructure.BILLS_BILL_ID + " = ?";
+
+        try (Connection connection = MyClass.createConnection();
+             PreparedStatement billNumberStatement =
+                     connection.prepareStatement(billNumberQuery)) {
+
+            billNumberStatement.setInt(1, billID);
+
+            try (ResultSet resultSet = billNumberStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    int billNumber =
+                            resultSet.getInt(DBStructure.BILLS_BILL_NUMBER);
+
+                    if (!resultSet.wasNull()) {
+                        return billNumber;
+                    }
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Could not fetch bill number for BillID: " + billID, e
+            );
+        }
+
+        throw new IllegalStateException(
+                "No BillNumber found for BillID: " + billID
+        );
+    }
+
     public static double parseDouble(Object object) {
         String string = Objects.toString(object, "");
         string = string.trim().isEmpty() ? "0" : string;
@@ -654,7 +689,7 @@ public class UtilityMethods {
 
     public static void printWithDefaultSettings(DefaultTableModel model, int billID, Date date, String customerName, int type) {
         PrinterJob job = PrinterJob.getPrinterJob();
-
+        int billNumber=fetchBillNumber(billID);
         Printable printable = new Printable() {
             @Override
             public int print(Graphics g, PageFormat pageFormat, int pageIndex) throws PrinterException {
@@ -718,8 +753,8 @@ public class UtilityMethods {
                 g.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 12));
                 g.setColor(java.awt.Color.BLACK);
                 SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
-                int billtruncatedid = billID % 100 == 0 ? 100 : billID % 100;
-                g.drawString("" + billtruncatedid, x + 10, y);
+
+                g.drawString("" + billNumber, x + 10, y);
                 g.drawString(customerName, x + 300, y);
                 g.drawString(sdf.format(date), x + 150, y);
                 y += 20;
@@ -729,15 +764,7 @@ public class UtilityMethods {
                 g.drawLine(x, y, x + (int) printableWidth, y);
                 y += 10;
 
-                int colX = x;
-                // Column headers
-//                g.setFont(headerFont);
-//                for (int col = 0; col < colCount; col++) {
-//                    g.drawRect(colX, y, colWidths[col], rowHeight);
-//                    g.drawString(model.getColumnName(col), colX + padding, y + 15);
-//                    colX += colWidths[col];
-//                }
-//                y += rowHeight;
+                int colX;
 
                 // Table rows
                 g.setFont(normalFont);

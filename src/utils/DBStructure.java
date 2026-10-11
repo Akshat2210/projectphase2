@@ -48,7 +48,7 @@ public class DBStructure {
     public static final String BILLS_DATE = "date";
     public static final String BILLS_CUSTOMER_NAME = "customer_name";
     public static final String BILLS_DRAFT = "drafts";
-
+    public static final String BILLS_BILL_NUMBER = "BillNumber";
     // ====================== customers ======================
     public static final String CUSTOMERS_TABLE = "customers";
     public static final String CUSTOMERS_CUSTOMER_ID = "customer_id";

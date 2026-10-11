@@ -2,6 +2,7 @@ package loginsignup.login.loggedin.billing.viewbills;
 
 import mainpack.MyClass;
 import utils.CONSTANTS;
+import utils.DBStructure;
 import utils.UtilityMethods;
 
 import javax.swing.*;
@@ -212,18 +213,21 @@ public class ViewCustomerBill extends JFrame {
 
     public void loadBillData(JTable table, int billID) {
 
-        String query1 = "SELECT SNo,Quantity, ItemName, TotalBaseCosting, GoldPlatingWeight, TotalGoldCost, TotalFinalCost  " + "FROM billdetails WHERE BillID = ?";
-        String query2 = "select billid,amount , date from transactions where billid=?";
-        String query3 = "select *from bills where billid=?;";
-
-        try (Connection con = MyClass.createConnection(); PreparedStatement pstmt1 = con.prepareStatement(query1); PreparedStatement pstmt2 = con.prepareStatement(query3); PreparedStatement pstmt3 = con.prepareStatement(query2)) {
-            pstmt1.setInt(1, billID);
+        String billDetailsQuery = "SELECT SNo,Quantity, ItemName, TotalBaseCosting, GoldPlatingWeight, TotalGoldCost, TotalFinalCost  " + "FROM billdetails WHERE BillID = ?";
+        String transactionsQuery = "select billid,amount , date from transactions where billid=?";
+        String billQuery = "select *from bills where billid=?;";
+        int billNumber=-1;
+        try (Connection con = MyClass.createConnection(); PreparedStatement billDetailsStatement = con.prepareStatement(billDetailsQuery);
+             PreparedStatement billsStatement = con.prepareStatement(billQuery);
+             PreparedStatement transactionStatement = con.prepareStatement(transactionsQuery))
+        {
+            billDetailsStatement.setInt(1, billID);
             DefaultTableModel model = (DefaultTableModel) table.getModel();
             model.setRowCount(0);
             double grandtotal = 0;
             double[] balance;
             balance = UtilityMethods.balance(billID);
-            try (ResultSet rs = pstmt1.executeQuery()) {
+            try (ResultSet rs = billDetailsStatement.executeQuery()) {
                 while (rs.next()) {
 
                     Vector<Object> row = new Vector<>();
@@ -252,7 +256,6 @@ public class ViewCustomerBill extends JFrame {
                 model.setValueAt(UtilityMethods.round(grandtotal, 2), model.getRowCount() - 1, model.getColumnCount() - 1);
 
                 totalLabel.setText(grandtotal + "");
-                idLabel.setText("billID: " + billID);
                 table.setModel(model);
             }//updating the table model with bill details
             {
@@ -266,19 +269,22 @@ public class ViewCustomerBill extends JFrame {
             }//showing the balances
 
             {
-                pstmt2.setInt(1, billID);
-                try (ResultSet rs = pstmt2.executeQuery()) {
+                billsStatement.setInt(1, billID);
+                try (ResultSet rs = billsStatement.executeQuery()) {
                     if (rs.next()) {
                         setDateTime(rs.getTimestamp("date"));
                         setCustomerName(rs.getString("customer_name"));
+                        billNumber=rs.getInt(DBStructure.BILLS_BILL_NUMBER);
                     }
                 }
+                idLabel.setText("billID: " + billID+"/  Bill number: " + billNumber);
+
             }// showing the date,customername
             double totalRecieved = 0;
             {
 
-                pstmt3.setInt(1, billID);
-                try (ResultSet rs = pstmt3.executeQuery();) {
+                transactionStatement.setInt(1, billID);
+                try (ResultSet rs = transactionStatement.executeQuery();) {
                     while (rs.next()) {
                         model.setRowCount(model.getRowCount() + 1);
                         java.util.Date date = new SimpleDateFormat("yyyy-MM-dd").parse(rs.getString("date"));
