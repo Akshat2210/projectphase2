@@ -863,6 +863,26 @@ public class UtilityMethods {
         }
 
     }
+
+    public static int getBillNumber(Connection con) {
+        String billNumberQuery =
+                "SELECT COALESCE(MAX(" + DBStructure.BILLS_BILL_NUMBER + "), 0) + 1 " +
+                        "AS nextBillNumber FROM " + DBStructure.BILLS_TABLE;
+
+        try (PreparedStatement billNumberStatement =
+                     con.prepareStatement(billNumberQuery);
+             ResultSet resultSet = billNumberStatement.executeQuery()) {
+
+            if (resultSet.next()) {
+                return resultSet.getInt("nextBillNumber");
+            }
+
+            throw new SQLException("Could not generate the next bill number.");
+
+        } catch (SQLException ex) {
+            throw new RuntimeException("Error generating bill number.", ex);
+        }
+    }
 }
 
 class DecimalDocumentFilter extends DocumentFilter {

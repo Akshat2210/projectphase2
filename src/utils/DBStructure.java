@@ -43,6 +43,7 @@ public class DBStructure {
     public static final String BILLDETAILS_QUANTITY = "quantity";
 
     // ====================== bills ======================
+    public static final String BILLS_BILL_TYPE = "billType";
     public static final String BILLS_TABLE = "bills";
     public static final String BILLS_BILL_ID = "BillID";
     public static final String BILLS_DATE = "date";

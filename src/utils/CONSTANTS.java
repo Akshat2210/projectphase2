@@ -28,4 +28,11 @@ public class CONSTANTS {
     public static final String ADD_INVENTORY_TITLE="ADD INVENTORY";
     public static final int CUSTOMER_BILL = 1;
     public final static int ORDER_SLIP = 0;
+
+
+
+
+    //-------------------------enums-----------------------------//
+    public static final String SALE_ENUM = "sale";
+    public static final String PURCHASE_ENUM = "purchase";
 }

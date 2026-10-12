@@ -123,15 +123,16 @@ public class NewBill extends JFrame {
         }
         String updateCustomerTableQuery = "update customers set balance=balance+? where customer_name=?";
         String updateBillsTableQuery = "update "+DBStructure.BILLS_TABLE+" set "+DBStructure.BILLS_DATE+"=?,"+DBStructure.BILLS_CUSTOMER_NAME+"=?, "+DBStructure.BILLS_BILL_NUMBER+ "=? where "+DBStructure.BILLS_BILL_ID+"=?";
-        int billNumber=getBillNumber();
+        int billNumber= UtilityMethods.getBillNumber(getTransacTemp());
         try {
             PreparedStatement billsTableStatement = conn.prepareStatement(updateBillsTableQuery);
 
             billsTableStatement.setTimestamp(1, Timestamp.valueOf(getDateTime()));
             billsTableStatement.setString(2, getCustomerName());
             billsTableStatement.setInt(3, billNumber);
-            System.out.println(billNumber+" is billnumber");
-            billsTableStatement.setInt(4, getCurBillID());  billsTableStatement.executeUpdate();
+            System.out.println(billNumber + " is billnumber");
+            billsTableStatement.setInt(4, getCurBillID());
+            billsTableStatement.executeUpdate();
             billsTableStatement.close();
         } catch (SQLException exception) {
             JOptionPane.showMessageDialog(newBill, "error");
@@ -184,11 +185,6 @@ public class NewBill extends JFrame {
                 }
 
                 int quantity = Integer.parseInt(getStringValue(model, i, QUANTITY_INDEX, "0"));
-                if (quantity == 0) {
-                    JOptionPane.showMessageDialog(newBill, "please do not leave quantity field empty");
-                    conn.rollback();
-                    return false;
-                }
                 double raw = Double.parseDouble(getStringValue(model, i, RAW_INDEX, "0"));
                 double labour = Double.parseDouble(getStringValue(model, i, LABOUR_INDEX, "0"));
                 double dullChillai = Double.parseDouble(getStringValue(model, i, DULL_CHILLAI_INDEX, "0"));
@@ -278,26 +274,6 @@ public class NewBill extends JFrame {
             } catch (SQLException closeEx) {
                 Thread.dumpStack();
             }
-        }
-    }
-
-    private int getBillNumber() {
-        String billNumberQuery =
-                "SELECT COALESCE(MAX(" + DBStructure.BILLS_BILL_NUMBER + "), 0) + 1 " +
-                        "AS nextBillNumber FROM " + DBStructure.BILLS_TABLE;
-
-        try (PreparedStatement billNumberStatement =
-                     getTransacTemp().prepareStatement(billNumberQuery);
-             ResultSet resultSet = billNumberStatement.executeQuery()) {
-
-            if (resultSet.next()) {
-                return resultSet.getInt("nextBillNumber");
-            }
-
-            throw new SQLException("Could not generate the next bill number.");
-
-        } catch (SQLException ex) {
-            throw new RuntimeException("Error generating bill number.", ex);
         }
     }
 
@@ -481,6 +457,9 @@ public class NewBill extends JFrame {
             UtilityMethods.splitFrame(temp, searchResultWindow, UtilityMethods.HORIZONTAL_SPLIT);
         });
         submitButton.addActionListener(e -> {
+            if(!allQuantityValid()){
+                return;
+            }
             if (askConfirmation() && insertData()) {
 //                linkBillToTransactions();
                 printBill(getCurBillID());
@@ -538,11 +517,12 @@ public class NewBill extends JFrame {
         }
         Connection conn = getTransacTemp();
 
-        String sql1 = "INSERT INTO bills () VALUES ()";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql1, Statement.RETURN_GENERATED_KEYS)) {
+        String billsQuery = "INSERT INTO bills ("+DBStructure.BILLS_BILL_TYPE+ ") VALUES (?)";
+        try (PreparedStatement billsStatement = conn.prepareStatement(billsQuery, Statement.RETURN_GENERATED_KEYS)) {
             conn.setAutoCommit(false); // Start transaction
-            pstmt.executeUpdate();
-            ResultSet rs = pstmt.getGeneratedKeys();
+            billsStatement.setString(1,CONSTANTS.SALE_ENUM);
+            billsStatement.executeUpdate();
+            ResultSet rs = billsStatement.getGeneratedKeys();
             if (rs.next()) setCurBillID((rs.getInt(1)));
             idLabel.setText("bill id: " + getCurBillID());
 
@@ -894,6 +874,45 @@ public class NewBill extends JFrame {
 
     }
 
+    private boolean allQuantityValid() {
+        DefaultTableModel tableModel = (DefaultTableModel) billTable.getModel();
+        int dataRowCount = tableModel.getRowCount() - 1; // Last row is the blank entry row
+        if (dataRowCount <= 0) {
+            JOptionPane.showMessageDialog(
+                    NewBill.this,
+                    "Please add at least one item."
+            );
+            return false;
+        }
+
+        for (int row = 0; row < dataRowCount; row++) {
+            Object quantityValue = tableModel.getValueAt(row, QUANTITY_INDEX);
+            String quantityText = quantityValue == null
+                    ? ""
+                    : quantityValue.toString().trim();
+
+            int quantity;
+            try {
+                quantity = Integer.parseInt(quantityText);
+            } catch (NumberFormatException exception) {
+                JOptionPane.showMessageDialog(
+                        NewBill.this,
+                        "Please enter a whole quantity greater than zero in row " + (row + 1) + "."
+                );
+                return false;
+            }
+
+            if (quantity <= 0) {
+                JOptionPane.showMessageDialog(
+                        NewBill.this,
+                        "Please enter a quantity greater than zero in row " + (row + 1) + "."
+                );
+                return false;
+            }
+        }
+
+        return true;
+    }
     private boolean askConfirmation() {
         final boolean[] confirmed = {false};
 
