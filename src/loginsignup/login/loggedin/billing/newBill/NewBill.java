@@ -44,6 +44,7 @@ public class NewBill extends JFrame {
     public static final int GOLD_COST_INDEX = 15;
     public static final int TOTAL_COST_INDEX = 16;        // "total"
     private static int modular = 1;
+    public static final int INVENTORY_MODE=-35;
     int itemID;
     private LocalDateTime dateTime;
     private double goldrate;
@@ -670,7 +671,7 @@ public class NewBill extends JFrame {
                             tableModel.setValueAt("", row, RAW_INDEX);
                         }
 
-                        DefaultTableModel newModel = redoModel();
+                        DefaultTableModel newModel = constructModel();
 
                         billTable.setModel(newModel);
                         tableModel = newModel;
@@ -821,53 +822,29 @@ public class NewBill extends JFrame {
             setExtendedState(JFrame.MAXIMIZED_BOTH);
 
         } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
             return;
         }
         UtilityMethods.generateAndAddNames(customerComboBox);
         UtilityMethods.generateAndAddDates(dateComboBox, false);
         customerComboBox.addActionListener(e -> {
-            setCustomerName(customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString());
-            String query = "SELECT MIN(" + DBStructure.ORDER_SLIPS_MAIN_SLIP_ID + ") FROM " + DBStructure.ORDER_SLIPS_MAIN_TABLE + " WHERE " + DBStructure.ORDER_SLIPS_MAIN_CUSTOMER_NAME + " = ?";
-            int slipID = -1;
-            try (Connection con = MyClass.createConnection(); PreparedStatement preparedStatement = con.prepareStatement(query)) {
-
-                if (customerComboBox.getSelectedIndex() != 0) {
-                    preparedStatement.setString(1, getCustomerName());
-                    System.out.println("debug mode customer name is " + getCustomerName());
-
-                } else {
-                    preparedStatement.setString(1, UtilityMethods.parseString(customerComboBox.getItemAt(1)));
-                    System.out.println("debug mode customer name is " + UtilityMethods.parseString(customerComboBox.getItemAt(1)));
-
-                }
-                try (ResultSet rs = preparedStatement.executeQuery()) {
-                    if (rs.next() && !rs.wasNull()) {
-                        rs.getInt(1);
-                        if (!rs.wasNull()) {
-                            slipID = rs.getInt(1);
-                        }
-                        System.out.println("yes " + slipID);
-                    }
-                }
-                if (slipID == -1) {
-                    System.out.println("slip not found");
+            if(customerComboBox.getSelectedIndex()==0){
+                if(searchResultWindow!=null){
+                    searchResultWindow.dispose();
                     setExtendedState(JFrame.MAXIMIZED_BOTH);
-                    if (searchResultWindow != null && !searchResultWindow.isVisible())
-                        searchResultWindow.dispose();
-                    return;
+                    searchResultWindow=null;
                 }
-
-            } catch (SQLException ex) {
-                JOptionPane.showMessageDialog(newBill, ex.getMessage());
-                throw new RuntimeException(ex);
+                return;
             }
-            System.out.println("slip id in debug mode is " + slipID);
-            if (searchResultWindow.isVisible()) searchResultWindow.dispose();
-            searchResultWindow = new SearchResultWindow(slipID);
-            searchResultWindow.setTableModel(searchResultWindow.generateSlipListModel(getCustomerName()));
+            setCustomerName(customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString());
+            if(searchResultWindow==null || !searchResultWindow.isVisible()){
+                searchResultWindow = new SearchResultWindow(INVENTORY_MODE);
+                searchResultWindow.setVisible(true);
+            }
+            searchResultWindow.setComboBoxModel(searchResultWindow.generateSlipListModel(getCustomerName()));
+            searchResultWindow.setInventorySelected();
             searchResultWindow.setFocusableWindowState(false);
-            searchResultWindow.setVisible(true);
             searchResultWindow.setFocusableWindowState(true);
             UtilityMethods.splitFrame(temp, searchResultWindow, UtilityMethods.HORIZONTAL_SPLIT);
         });
@@ -1196,7 +1173,7 @@ public class NewBill extends JFrame {
 
 
             stmt.executeUpdate();
-            if (searchResultWindow.isVisible()) searchResultWindow.fetchData(searchResultWindow.getTableModel());
+            if (searchResultWindow.isVisible()) searchResultWindow.fetchOrderSlip(searchResultWindow.getTableModel());
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -1217,7 +1194,7 @@ public class NewBill extends JFrame {
 
     Vector<Integer[]> listOfNonEditableCells;
 
-    DefaultTableModel redoModel() {
+    DefaultTableModel constructModel() {
         Vector<Vector<String>> v = new Vector<>();
         for (int i = 0; i < tableModel.getRowCount(); i++) {
             Vector<String> data = new Vector<>();

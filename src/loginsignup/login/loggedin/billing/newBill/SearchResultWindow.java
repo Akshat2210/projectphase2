@@ -13,7 +13,9 @@ import java.util.HashMap;
 import java.util.Vector;
 
 public class SearchResultWindow extends JFrame {
+    private static final int DESIGN_ID_INDEX = 0;
     private JPanel panel1;
+    private String mode="inventory";
 
     public void setSearchFlag(boolean searchFlag) {
         this.searchFlag = searchFlag;
@@ -27,26 +29,27 @@ public class SearchResultWindow extends JFrame {
 
     private JButton backButton;
     private JButton button2;
-    private JTable orderSlipTable;
+    private JTable dataTable;
     //    private JLabel slipID;
     private JLabel cutomerName;
     private JLabel panaTypeLabel;
-    private JComboBox<String> slipIDComboBox;
-    int ID;
+    private JComboBox<String> selectionComboBox;
+    int orderSlipID;
 
     public DefaultTableModel getTableModel() {
-        return (DefaultTableModel) orderSlipTable.getModel();
+        return (DefaultTableModel) dataTable.getModel();
     }
 
     public String getCutomerName() {
         String name;
         try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
-            try (ResultSet rs = stmt.executeQuery("select "+ DBStructure.ORDER_SLIPS_CUSTOMER_NAME + " from "+DBStructure.ORDER_SLIPS_TABLE+" where "+DBStructure.ORDER_SLIPS_SLIP_ID+"=" + ID + ";");) {
+            try (ResultSet rs = stmt.executeQuery("select " + DBStructure.ORDER_SLIPS_CUSTOMER_NAME + " from " + DBStructure.ORDER_SLIPS_TABLE + " where " + DBStructure.ORDER_SLIPS_SLIP_ID + "=" + orderSlipID + ";");) {
                 if (rs.next()) {
                     name = rs.getString(1);
                     return name;
                 } else {
-                    throw new SQLException();
+                    JOptionPane.showMessageDialog(null, "There is no such order slip id in table");
+                    return null;
                 }
             }
         } catch (SQLException e) {
@@ -59,18 +62,24 @@ public class SearchResultWindow extends JFrame {
 
     public SearchResultWindow() {
 
-
     }
 
     public void init() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setTitle("CREATE BILL");
         setContentPane(panel1);
-        slipIDComboBox.addActionListener(new ActionListener() {
+        selectionComboBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                SearchResultWindow.this.ID = UtilityMethods.parseInt(slipIDComboBox.getSelectedItem());
-                fetchData((DefaultTableModel) orderSlipTable.getModel());
+                String selection = UtilityMethods.parseString((selectionComboBox.getSelectedItem()));
+                if (selection.equals("Inventory")) {
+                    mode="inventory";
+                    fetchInventory((DefaultTableModel) dataTable.getModel());
+                } else {
+                    mode="orderslip";
+                    SearchResultWindow.this.orderSlipID = UtilityMethods.parseInt(selectionComboBox.getSelectedItem());
+                    fetchOrderSlip((DefaultTableModel) dataTable.getModel());
+                }
             }
         });
         backButton.addActionListener(e -> {
@@ -80,44 +89,131 @@ public class SearchResultWindow extends JFrame {
 
             dispose();
         });
-        orderSlipTable.addKeyListener(new KeyAdapter() {
+        dataTable.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-
-                    pushDetails(doSqlUpadates(ID));
-
+                    activateSelection();
                 }
             }
         });
 
     }
 
-    private Vector<Integer> doSqlUpadates(int BID) //this will also writen values to append to the bill
+    private void fetchInventory(DefaultTableModel model) {
+        model.setRowCount(0);
+
+        String query = "SELECT "
+                + DBStructure.INVENTORY_DESIGN_ID + ", "
+                + DBStructure.INVENTORY_ITEM_NAME + ", "
+                + DBStructure.INVENTORY_TOTAL_QUANTITY + ", "
+                + DBStructure.INVENTORY_SELL_PRICE + ", "
+                + DBStructure.INVENTORY_BUY_PRICE
+                + " FROM " + DBStructure.INVENTORY_TABLE
+                + " ORDER BY " + DBStructure.INVENTORY_DESIGN_ID;
+
+        // Design ID -> quantity already selected directly from inventory in this bill.
+        HashMap<String, Integer> alreadyAddedToBill = new HashMap<>();
+
+        JTable billTable = MyClass.newBill.getBillTable();
+        DefaultTableModel billModel = (DefaultTableModel) billTable.getModel();
+
+        for (int row = 0; row < billModel.getRowCount(); row++) {
+            Object orderSlipValue = billModel.getValueAt(
+                    row,
+                    NewBill.ORDER_SLIP_QUANTITY_INDEX
+            );
+
+            // Do not subtract order-slip items from inventory availability.
+            if (orderSlipValue != null && !orderSlipValue.toString().trim().isEmpty()) {
+                continue;
+            }
+
+            Object designIdValue = billModel.getValueAt(row, NewBill.DESIGN_ID_INDEX);
+            Object quantityValue = billModel.getValueAt(row, NewBill.QUANTITY_INDEX);
+
+            if (designIdValue == null || designIdValue.toString().trim().isEmpty()
+                    || quantityValue == null || quantityValue.toString().trim().isEmpty()) {
+                continue;
+            }
+
+            try {
+                String designId = designIdValue.toString().trim();
+                int quantity = Integer.parseInt(quantityValue.toString().trim());
+
+                alreadyAddedToBill.merge(designId, quantity, Integer::sum);
+            } catch (NumberFormatException ignored) {
+                // Skip incomplete or invalid rows.
+            }
+        }
+
+        try (
+                Connection con = MyClass.createConnection();
+                PreparedStatement statement = con.prepareStatement(query);
+                ResultSet resultSet = statement.executeQuery()
+        ) {
+            while (resultSet.next()) {
+                String designId = resultSet.getString(DBStructure.INVENTORY_DESIGN_ID);
+
+                int databaseQuantity = resultSet.getInt(
+                        DBStructure.INVENTORY_TOTAL_QUANTITY
+                );
+
+                int alreadyUsedInBill = alreadyAddedToBill.getOrDefault(designId, 0);
+
+                int remainingQuantity = databaseQuantity - alreadyUsedInBill;
+                int row = model.getRowCount();
+                model.setRowCount(row + 1);
+
+                model.setValueAt("", row, 0);
+                model.setValueAt(designId, row, 1);
+                model.setValueAt(
+                        resultSet.getString(DBStructure.INVENTORY_ITEM_NAME),
+                        row,
+                        2
+                );
+                model.setValueAt(remainingQuantity, row, 3);
+                model.setValueAt("", row, 4); // Plating is not applicable to inventory.
+                model.setValueAt(
+                        resultSet.getBigDecimal(DBStructure.INVENTORY_BUY_PRICE),
+                        row,
+                        5
+                );
+                model.setValueAt("", row, 6);
+            }
+        } catch (SQLException exception) {
+            JOptionPane.showMessageDialog(
+                    SearchResultWindow.this,
+                    "Could not load inventory: " + exception.getMessage(),
+                    "Inventory Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+    private Vector<Integer> sqlOrderSlipUpdate(int BID) //this will also writen values to append to the bill
     {
         Vector<Integer> detailsToPush = new Vector<>();
 
-        DefaultTableModel model = (DefaultTableModel) orderSlipTable.getModel();
-        int selectedRow = orderSlipTable.getSelectedRow();
+        DefaultTableModel model = (DefaultTableModel) dataTable.getModel();
+        int selectedRow = dataTable.getSelectedRow();
         String itemName = model.getValueAt(selectedRow, model.findColumn("Item Name")).toString();
         int maxQuantity = Integer.parseInt(model.getValueAt(selectedRow, model.findColumn("Quantity")).toString());
 
-        int selectedQuantity = showPrompt(maxQuantity, itemName);
+        int selectedQuantity = showOrderSlipPrompt(maxQuantity, itemName);
 
         if (selectedQuantity < 0) return null;
         String query = "UPDATE order_slips " + "SET billed_quantity = billed_quantity + ? " + "WHERE slip_id = ? AND item_id = ?";
         try {
             Connection con = MyClass.newBill.getTransacTemp();
             PreparedStatement statement = con.prepareStatement(query);
-            int itemid = snoToItemIdMap.get(Integer.parseInt(orderSlipTable.getValueAt(orderSlipTable.getSelectedRow(), ((DefaultTableModel) orderSlipTable.getModel()).findColumn("sno")).toString()));
+            int itemid = snoToItemIdMap.get(Integer.parseInt(dataTable.getValueAt(dataTable.getSelectedRow(), ((DefaultTableModel) dataTable.getModel()).findColumn("sno")).toString()));
             statement.setInt(1, selectedQuantity);
             statement.setInt(2, BID);
             statement.setInt(3, itemid);
             statement.executeUpdate();
             detailsToPush.add(itemid);
             detailsToPush.add(selectedQuantity);
-            JOptionPane.showMessageDialog(MyClass.searchResultWindow, "succesfully updated data");
-            fetchData((DefaultTableModel) orderSlipTable.getModel());
+            fetchOrderSlip((DefaultTableModel) dataTable.getModel());
 
         } catch (SQLException | NullPointerException e) {
             throw new RuntimeException();
@@ -125,7 +221,7 @@ public class SearchResultWindow extends JFrame {
         return detailsToPush;
     }
 
-    int showPrompt(int maxQuantity, String itemName) {
+    int showOrderSlipPrompt(int maxQuantity, String itemName) {
         String quantity = JOptionPane.showInputDialog(null, "How many " + itemName + "s would you like to include?", "Quantity Selection", JOptionPane.QUESTION_MESSAGE);
 
         try {
@@ -142,10 +238,59 @@ public class SearchResultWindow extends JFrame {
             return -1;
         }
     }
+    int showInventoryPrompt(int availableQuantity, String itemName) {
+        String quantityText = JOptionPane.showInputDialog(
+                this,
+                "How many " + itemName + "(s) would you like to include?\n"
+                        + "Available quantity: " + availableQuantity,
+                "Quantity Selection",
+                JOptionPane.QUESTION_MESSAGE
+        );
 
+        if (quantityText == null) {
+            return -1; // User cancelled.
+        }
+
+        try {
+            int selectedQuantity = Integer.parseInt(quantityText.trim());
+
+            if (selectedQuantity <= 0) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Please enter a quantity greater than 0.",
+                        "Invalid quantity",
+                        JOptionPane.ERROR_MESSAGE
+                );
+                return -1;
+            }
+
+            if (selectedQuantity > availableQuantity) {
+                int remainingStock = availableQuantity - selectedQuantity;
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Warning: This sale will make stock negative.\n"
+                                + "Stock after adding this item: " + remainingStock,
+                        "Negative Stock Warning",
+                        JOptionPane.WARNING_MESSAGE
+                );
+            }
+
+            return selectedQuantity;
+
+        } catch (NumberFormatException exception) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please enter a valid whole number.",
+                    "Invalid quantity",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return -1;
+        }
+    }
     public String getPanaType() {
         try (Connection con = MyClass.createConnection(); Statement statement = con.createStatement()) {
-            try (ResultSet rs = statement.executeQuery("select slip_type from order_slips where slip_id=" + ID + ";");) {
+            try (ResultSet rs = statement.executeQuery("select slip_type from order_slips where slip_id=" + orderSlipID + ";");) {
                 if (rs.next()) {
                     return rs.getString(1);
                 } else {
@@ -161,16 +306,16 @@ public class SearchResultWindow extends JFrame {
 
     }
 
-    public SearchResultWindow(int bID) {
+    public SearchResultWindow(int modeID) {// -INVENTORY_MODE FOR  getting started with inventory
         init();
-        System.out.println("more initial value of ID is "+ID);
-        this.ID = bID;
         String customerName = "";
-
-        slipIDComboBox.setModel(generateSlipListModel(customerName));
+        selectionComboBox.setModel(generateSlipListModel(customerName));
+        if(modeID!=NewBill.INVENTORY_MODE){
+            this.orderSlipID = modeID;
 //        slipIDComboBox.setText("order slip id: " + ID);
-        cutomerName.setText(getCutomerName());
-        panaTypeLabel.setText(getPanaType());
+            cutomerName.setText(getCutomerName());
+            panaTypeLabel.setText(getPanaType());
+        }
 
         String[] columnNames = {"sno", "design id", "Item Name", "Quantity", "Plating", "Raw Material Cost", "Other Details"};//jtable content
         DefaultTableModel model = new DefaultTableModel(columnNames, 1) {
@@ -179,34 +324,89 @@ public class SearchResultWindow extends JFrame {
                 return false;
             }
         };
-        orderSlipTable.setModel(model);
-        orderSlipTable.addMouseListener(new MouseAdapter() {
+        dataTable.setModel(model);
+        dataTable.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2 && orderSlipTable.getSelectedRow() != -1) {
-                    MyClass.newBill.notThroughOrderSlip = false;
-                    try {
-                        pushDetails(doSqlUpadates(ID));
-                    } finally {
-                        MyClass.newBill.notThroughOrderSlip = true;
-                    }
-
+                if (e.getClickCount() == 2 && dataTable.getSelectedRow() != -1) {
+                    activateSelection();
                 }
             }
         });
-        fetchData(model);
+        fetchInventory(model);
 
         pack();
 
     }
 
+    private void activateSelection() {
+
+       if(mode.contentEquals("orderslip")) {
+           MyClass.newBill.notThroughOrderSlip = false;
+           try {
+               orderSlipItem(sqlOrderSlipUpdate(orderSlipID));
+           } finally {
+               MyClass.newBill.notThroughOrderSlip = true;
+           }
+       }else if(mode.contentEquals("inventory")) {
+           pushInventoryData();
+       }
+    }
+
+    private void pushInventoryData() {
+        int selectedRow = dataTable.getSelectedRow();
+
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please select an inventory item first.",
+                    "No item selected",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        DefaultTableModel inventoryModel = (DefaultTableModel) dataTable.getModel();
+        String designId = String.valueOf(inventoryModel.getValueAt(selectedRow, 1));
+        String itemName = String.valueOf(inventoryModel.getValueAt(selectedRow, 2));
+
+        int availableQuantity = Integer.parseInt(
+                String.valueOf(inventoryModel.getValueAt(selectedRow, 3))
+        );
+
+        Object rawCost = inventoryModel.getValueAt(selectedRow, 5);
+        int selectedQuantity = showInventoryPrompt(availableQuantity, itemName);
+        if (selectedQuantity <= 0) {
+            return; // User cancelled or entered an invalid quantity.
+        }
+
+        JTable billTable = MyClass.newBill.getBillTable();
+        DefaultTableModel billModel = (DefaultTableModel) billTable.getModel();
+
+        // NewBill keeps its final row blank for entering the next item.
+        int billRow = billModel.getRowCount() - 1;
+
+        setSearchFlag(true);
+        try {
+            billModel.setValueAt(designId, billRow, NewBill.DESIGN_ID_INDEX);
+            billModel.setValueAt(itemName, billRow, NewBill.ITEM_NAME_INDEX);
+            billModel.setValueAt(rawCost, billRow, NewBill.RAW_INDEX);
+            billModel.setValueAt(selectedQuantity, billRow, NewBill.QUANTITY_INDEX);
+
+            billModel.fireTableDataChanged();
+        } finally {
+            setSearchFlag(false);
+            fetchInventory(inventoryModel);
+        }
+    }
+
     public DefaultComboBoxModel<String> generateSlipListModel(String customerName) {
         DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
         String query = "select " + DBStructure.ORDER_SLIPS_MAIN_SLIP_ID + " from " + DBStructure.ORDER_SLIPS_MAIN_TABLE + " where " + DBStructure.ORDER_SLIPS_MAIN_CUSTOMER_NAME + "=?";
+        comboBoxModel.addElement("Inventory");
         try (Connection con = MyClass.createConnection(); PreparedStatement pstmt = con.prepareStatement(query)) {
             pstmt.setString(1, customerName);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    Thread.dumpStack();
                     System.out.println("data added " + rs.getString(DBStructure.ORDER_SLIPS_MAIN_SLIP_ID));
                     comboBoxModel.addElement(rs.getString(DBStructure.ORDER_SLIPS_MAIN_SLIP_ID));
                 }
@@ -217,7 +417,7 @@ public class SearchResultWindow extends JFrame {
         return comboBoxModel;
     }
 
-    private void pushDetails(Vector<Integer> detailsToPush) {//detailstopush-> item id at index 0 and quantity at index 1
+    private void orderSlipItem(Vector<Integer> detailsToPush) {//detailstopush-> item id at index 0 and quantity at index 1
         if (detailsToPush == null) return;
         if (detailsToPush.size() < 2) {
             JOptionPane.showMessageDialog(null, "Invalid details to push!");
@@ -276,7 +476,7 @@ public class SearchResultWindow extends JFrame {
 
     HashMap<Integer, Integer> snoToItemIdMap;
 
-    public void fetchData(DefaultTableModel model) {
+    public void fetchOrderSlip(DefaultTableModel model) {
         model.setRowCount(0);
         String query = "SELECT "
                 + DBStructure.ORDER_SLIPS_CUSTOMER_NAME + ", "
@@ -295,7 +495,7 @@ public class SearchResultWindow extends JFrame {
                 + " ORDER BY " + DBStructure.ORDER_SLIPS_ITEM_ID;
         try {
             PreparedStatement pstmt = MyClass.newBill.getTransacTemp().prepareStatement(query);
-            pstmt.setInt(1, ID);
+            pstmt.setInt(1, orderSlipID);
             ResultSet rs = pstmt.executeQuery();
             snoToItemIdMap = new HashMap<>();
 
@@ -315,7 +515,11 @@ public class SearchResultWindow extends JFrame {
 
     }
 
-    public void setTableModel(DefaultComboBoxModel<String> comboBoxModel) {
-        slipIDComboBox.setModel(comboBoxModel);
+    public void setComboBoxModel(DefaultComboBoxModel<String> comboBoxModel) {
+        selectionComboBox.setModel(comboBoxModel);
+    }
+
+    public void setInventorySelected() {
+        selectionComboBox.setSelectedIndex(0);
     }
 }
