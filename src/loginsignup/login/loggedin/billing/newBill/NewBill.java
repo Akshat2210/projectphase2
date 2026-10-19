@@ -75,7 +75,6 @@ public class NewBill extends JFrame {
     private HashMap<Integer, Integer> snoToItemIdMap;
     private JButton resetButton;
     private JButton undoButton;
-    private JTextField slipNumberField;
     private JTextField goldRateTextField;
     private JScrollPane scrollPane;
     private JComboBox<String> dateComboBox;
@@ -424,40 +423,7 @@ public class NewBill extends JFrame {
 
         });
         NewBill temp = this;
-        slipNumberField.addActionListener(e -> {
-            String query;
-            if (customerComboBox.isEnabled()) {
-                query = "SELECT slip_id FROM order_slips WHERE slip_id=" + slipNumberField.getText();
-            } else
-                query = "SELECT slip_id FROM order_slips WHERE slip_id=" + slipNumberField.getText() + " AND customer_name='" + getCustomerName() + "';";
-
-            try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
-
-
-                try (ResultSet rs = stmt.executeQuery(query);) {
-                    if (!rs.next()) {
-                        JOptionPane.showMessageDialog(newBill, "orderslip not found");
-                        slipNumberField.setText("");
-                        return;
-                    }
-                }
-            } catch (SQLException ex) {
-                JOptionPane.showMessageDialog(newBill, "sql exception occured");
-                Thread.dumpStack();
-                throw new RuntimeException();
-
-            }
-
-            if (searchResultWindow.isVisible()) {
-                searchResultWindow.dispose();
-            }
-            searchResultWindow = new SearchResultWindow(Integer.parseInt(slipNumberField.getText()));
-            searchResultWindow.setVisible(true);
-            submitButton.setEnabled(false);
-            backButton.setEnabled(false);
-            UtilityMethods.splitFrame(temp, searchResultWindow, UtilityMethods.HORIZONTAL_SPLIT);
-        });
-        submitButton.addActionListener(e -> {
+       submitButton.addActionListener(e -> {
             if(!allQuantityValid()){
                 return;
             }
@@ -533,8 +499,7 @@ public class NewBill extends JFrame {
             throw new RuntimeException();
         }
 
-        PromptSupport.setPrompt("Slip Number", slipNumberField);
-        PromptSupport.setForeground(Color.GRAY, slipNumberField);
+
         PromptSupport.setPrompt("gold rate", goldRateTextField);
         PromptSupport.setForeground(Color.GRAY, goldRateTextField);
         listOfNonEditableCells = new Vector<>();
