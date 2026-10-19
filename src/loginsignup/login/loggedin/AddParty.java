@@ -1,6 +1,7 @@
 package loginsignup.login.loggedin;
 
 import mainpack.MyClass;
+import utils.DBStructure;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -48,7 +49,7 @@ public class AddParty extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 String name = customerNameField.getText().isEmpty() ? "error" : customerNameField.getText();
                 if (name.contentEquals("error")) return;
-                String query = "insert into customers(customer_name,openingaccount,balance) values(?,?,0)";
+                String query = "insert into " + DBStructure.CUSTOMERS_TABLE + "(" + DBStructure.CUSTOMERS_CUSTOMER_NAME + "," + DBStructure.CUSTOMERS_OPENING_ACCOUNT + "," + DBStructure.CUSTOMERS_BALANCE + ") values(?,?,0)";
                 double openingaccount=0;
                 try {
                     openingaccount = Double.parseDouble(openingBalanceTextField.getText()==null || openingBalanceTextField.getText().trim().isEmpty()?"0": openingBalanceTextField.getText());

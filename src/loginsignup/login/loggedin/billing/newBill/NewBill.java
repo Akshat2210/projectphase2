@@ -122,7 +122,7 @@ public class NewBill extends JFrame {
             JOptionPane.showMessageDialog(newBill, "select customer please");
             return false;
         }
-        String updateCustomerTableQuery = "update customers set balance=balance+? where customer_name=?";
+        String updateCustomerTableQuery = "update " + DBStructure.CUSTOMERS_TABLE + " set " + DBStructure.CUSTOMERS_BALANCE + "=" + DBStructure.CUSTOMERS_BALANCE + "+? where " + DBStructure.CUSTOMERS_CUSTOMER_NAME + "=?";
         String updateBillsTableQuery = "update "+DBStructure.BILLS_TABLE+" set "+DBStructure.BILLS_DATE+"=?,"+DBStructure.BILLS_CUSTOMER_NAME+"=?, "+DBStructure.BILLS_BILL_NUMBER+ "=? where "+DBStructure.BILLS_BILL_ID+"=?";
         int billNumber= UtilityMethods.getBillNumber(getTransacTemp());
         try {
@@ -151,7 +151,7 @@ public class NewBill extends JFrame {
 
             String insertBillDetailsQuery = "INSERT INTO billdetails (BillID, SNo, ItemName, DesignID, OrderType, RawCost, LabourCost, DullChillaiCost, " + "MeenaColorMeenaCost, RhodiumCost, NagSettingCost, OtherBaseCosts, TotalBaseCosting, GoldRate, " + "GoldPlatingWeight, TotalGoldCost, TotalFinalCost, OrderSlipNumber,OtherBaseCostNotes,quantity) " + "VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?)";
             billDetailsStatement = conn.prepareStatement(insertBillDetailsQuery);
-            String inventoryQuery = "update inventory set TotalQuantity=TotalQuantity-? where DesignID=?";
+            String inventoryQuery = "update " + DBStructure.INVENTORY_TABLE + " set " + DBStructure.INVENTORY_TOTAL_QUANTITY + "=" + DBStructure.INVENTORY_TOTAL_QUANTITY + "-? where " + DBStructure.INVENTORY_DESIGN_ID + "=?";
             inventoryStatement = conn.prepareStatement(inventoryQuery);
             double grandTotal = 0;
             for (int i = 0; i < rowCount - 1; i++) {
@@ -172,7 +172,7 @@ public class NewBill extends JFrame {
                     int itemId = snoToItemIdMap.get(serialNo);
 
                     // Fetch OrderType from orderslip table using itemId
-                    String query = "SELECT slip_type FROM order_slips WHERE item_id = ?";
+                    String query = "SELECT " + DBStructure.ORDER_SLIPS_SLIP_TYPE + " FROM " + DBStructure.ORDER_SLIPS_TABLE + " WHERE " + DBStructure.ORDER_SLIPS_ITEM_ID + " = ?";
                     PreparedStatement pstmt = conn.prepareStatement(query);
                     pstmt.setInt(1, itemId);
                     ResultSet rs = pstmt.executeQuery();
@@ -518,7 +518,7 @@ public class NewBill extends JFrame {
         }
         Connection conn = getTransacTemp();
 
-        String billsQuery = "INSERT INTO bills ("+DBStructure.BILLS_BILL_TYPE+ ") VALUES (?)";
+        String billsQuery = "INSERT INTO " + DBStructure.BILLS_TABLE + " ("+DBStructure.BILLS_BILL_TYPE+ ") VALUES (?)";
         try (PreparedStatement billsStatement = conn.prepareStatement(billsQuery, Statement.RETURN_GENERATED_KEYS)) {
             conn.setAutoCommit(false); // Start transaction
             billsStatement.setString(1,CONSTANTS.SALE_ENUM);
@@ -649,7 +649,7 @@ public class NewBill extends JFrame {
                 String designID = tableModel.getValueAt(row, designIdIndex) == null ? "" : tableModel.getValueAt(row, designIdIndex).toString().trim();
 
                 if (!designID.isEmpty()) {
-                    String query = "SELECT itemname,price FROM inventory WHERE DesignID = ?";
+                    String query = "SELECT " + DBStructure.INVENTORY_ITEM_NAME + ", " + DBStructure.INVENTORY_BUY_PRICE + " FROM " + DBStructure.INVENTORY_TABLE + " WHERE " + DBStructure.INVENTORY_DESIGN_ID + " = ?";
 
                     try (Connection con = MyClass.createConnection(); PreparedStatement stmt = con.prepareStatement(query)) {
 
@@ -813,7 +813,7 @@ public class NewBill extends JFrame {
 
 
         try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
-            try (ResultSet rs = stmt.executeQuery("select type_name from ordertype;")) {
+            try (ResultSet rs = stmt.executeQuery("select " + DBStructure.ORDERTYPE_TYPE_NAME + " from " + DBStructure.ORDERTYPE_TABLE)) {
                 while (rs.next()) {
                     slipTypeComboBox.addItem(rs.getString(1));
                 }

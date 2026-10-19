@@ -63,7 +63,7 @@ public class PurchaseBill extends JFrame {
     }
 
     private boolean designIDexists(String designID) {
-        String query = "SELECT 1 FROM inventory WHERE DesignID = ? LIMIT 1";
+        String query = "SELECT 1 FROM " + INVENTORY_TABLE + " WHERE " + INVENTORY_DESIGN_ID + " = ? LIMIT 1";
         try (PreparedStatement stmt = con.prepareStatement(query)) {
             stmt.setString(1, designID);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -83,7 +83,7 @@ public class PurchaseBill extends JFrame {
         String billsTableQuery = "UPDATE " + BILLS_TABLE + " SET " + BILLS_DATE + " = ?, " + BILLS_CUSTOMER_NAME + " = ?, " + BILLS_BILL_NUMBER + " = ? " + "WHERE " + BILLS_BILL_ID + " = ?";
         String updateInventoryQuery = "UPDATE " + INVENTORY_TABLE + " SET " + INVENTORY_TOTAL_QUANTITY + " = " + INVENTORY_TOTAL_QUANTITY + " + ? WHERE " + INVENTORY_DESIGN_ID + " = ?";
         String insertInventoryQuery = "INSERT INTO " + INVENTORY_TABLE + "(" + INVENTORY_DESIGN_ID + ", " + INVENTORY_TOTAL_QUANTITY + ", " + INVENTORY_ITEM_NAME + ", " + INVENTORY_BUY_PRICE + ") VALUES (?, ?, ?, ?)";
-        String updateOtherQuery = "update inventory set " + INVENTORY_BUY_PRICE + " = ? , itemname=? where DesignID = ?";
+        String updateOtherQuery = "update " + INVENTORY_TABLE + " set " + INVENTORY_BUY_PRICE + " = ? , " + INVENTORY_ITEM_NAME + "=? where " + INVENTORY_DESIGN_ID + " = ?";
         String customerTableQuery = "update " + CUSTOMERS_TABLE + " set " + CUSTOMERS_BALANCE + " = " + CUSTOMERS_BALANCE + " - ? where " + CUSTOMERS_CUSTOMER_NAME + " = ?";
 
         try (PreparedStatement billsTableStatement = con.prepareStatement(billsTableQuery); PreparedStatement customersTableStatement = con.prepareStatement(customerTableQuery); PreparedStatement updateStmt = con.prepareStatement(updateInventoryQuery); PreparedStatement insertStmt = con.prepareStatement(insertInventoryQuery); PreparedStatement billStmt = con.prepareStatement(billDetailsTableQuery); PreparedStatement updateRawPriceStatement = con.prepareStatement(updateOtherQuery);) {
@@ -419,7 +419,7 @@ public class PurchaseBill extends JFrame {
     }
 
     private void fetchAndAppend(String designID, int row) {
-        String query = "select * from inventory where designid=?";
+        String query = "select * from " + INVENTORY_TABLE + " where " + INVENTORY_DESIGN_ID + "=?";
         try (PreparedStatement preparedStatement = con.prepareStatement(query)) {
             preparedStatement.setString(1, designID);
             ResultSet rs = preparedStatement.executeQuery();

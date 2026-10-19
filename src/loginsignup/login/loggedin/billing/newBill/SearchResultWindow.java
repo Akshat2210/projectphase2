@@ -202,7 +202,7 @@ public class SearchResultWindow extends JFrame {
         int selectedQuantity = showOrderSlipPrompt(maxQuantity, itemName);
 
         if (selectedQuantity < 0) return null;
-        String query = "UPDATE order_slips " + "SET billed_quantity = billed_quantity + ? " + "WHERE slip_id = ? AND item_id = ?";
+        String query = "UPDATE " + DBStructure.ORDER_SLIPS_TABLE + " SET " + DBStructure.ORDER_SLIPS_BILLED_QUANTITY + " = " + DBStructure.ORDER_SLIPS_BILLED_QUANTITY + " + ? WHERE " + DBStructure.ORDER_SLIPS_SLIP_ID + " = ? AND " + DBStructure.ORDER_SLIPS_ITEM_ID + " = ?";
         try {
             Connection con = MyClass.newBill.getTransacTemp();
             PreparedStatement statement = con.prepareStatement(query);
@@ -290,7 +290,7 @@ public class SearchResultWindow extends JFrame {
     }
     public String getPanaType() {
         try (Connection con = MyClass.createConnection(); Statement statement = con.createStatement()) {
-            try (ResultSet rs = statement.executeQuery("select slip_type from order_slips where slip_id=" + orderSlipID + ";");) {
+            try (ResultSet rs = statement.executeQuery("select " + DBStructure.ORDER_SLIPS_SLIP_TYPE + " from " + DBStructure.ORDER_SLIPS_TABLE + " where " + DBStructure.ORDER_SLIPS_SLIP_ID + "=" + orderSlipID);) {
                 if (rs.next()) {
                     return rs.getString(1);
                 } else {

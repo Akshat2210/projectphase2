@@ -208,6 +208,26 @@
       "files": ["src/loginsignup/login/loggedin/ordermanagement/vieworders/ViewOrders.java"],
       "notes": ["Reviewed on 2026-10-09."],
       "completed_date": null
+    },
+    {
+      "id": "ISSUE-021",
+      "title": "Make order-slip keyboard and mouse selection behave consistently",
+      "priority": "low",
+      "status": "completed",
+      "details": "In SearchResultWindow, double-click temporarily marks NewBill.notThroughOrderSlip as false before transferring an order-slip item, while Enter does not. The difference can cause an unnecessary inventory-stock warning when using Enter. Route both actions through one shared selection method.",
+      "files": ["src/loginsignup/login/loggedin/billing/newBill/SearchResultWindow.java", "src/loginsignup/login/loggedin/billing/newBill/NewBill.java"],
+      "notes": ["Reviewed on 2026-10-12.", "Completed on 2026-10-12: Enter and double-click both use activateSelection(), which applies the same temporary order-slip mode."],
+      "completed_date": "2026-10-12"
+    },
+    {
+      "id": "ISSUE-022",
+      "title": "Unify manual Design ID stock feedback with inventory-search availability",
+      "priority": "low",
+      "status": "open",
+      "details": "When a Design ID is typed directly into NewBill, the item and raw cost are filled from inventory, but the manual-entry feedback does not use the same combined remaining-stock calculation shown in SearchResultWindow. Keep the existing policy of ignoring order-slip rows, but calculate and show database stock minus quantities for the same Design ID already entered directly in the current bill.",
+      "files": ["src/loginsignup/login/loggedin/billing/newBill/NewBill.java", "src/loginsignup/login/loggedin/billing/newBill/SearchResultWindow.java"],
+      "notes": ["Added on 2026-10-14. Negative stock is allowed; this is a feedback and consistency improvement, not a stock-blocking rule."],
+      "completed_date": null
     }
   ]
 }
