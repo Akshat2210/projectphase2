@@ -118,6 +118,10 @@ public class SignUp extends JFrame {
                 throw new RuntimeException(ex);
             } catch (InterruptedException ex) {
                 throw new RuntimeException(ex);
+            } finally {
+                if (file.exists() && !file.delete()) {
+                    System.err.println("Could not delete temporary user-creation script: " + file.getPath());
+                }
             }
 
 

@@ -32,7 +32,6 @@ billsOut/printed.json
 
 
 tempBack.bat
-src/resources/createUser.bat
 
 *.logs
 workflow.json
