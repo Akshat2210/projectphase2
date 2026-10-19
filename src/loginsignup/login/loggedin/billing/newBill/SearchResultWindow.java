@@ -175,7 +175,7 @@ public class SearchResultWindow extends JFrame {
                 model.setValueAt(remainingQuantity, row, 3);
                 model.setValueAt("", row, 4); // Plating is not applicable to inventory.
                 model.setValueAt(
-                        resultSet.getBigDecimal(DBStructure.INVENTORY_BUY_PRICE),
+                        resultSet.getBigDecimal(DBStructure.INVENTORY_SELL_PRICE),
                         row,
                         5
                 );

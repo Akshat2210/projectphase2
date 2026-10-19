@@ -614,7 +614,7 @@ public class NewBill extends JFrame {
                 String designID = tableModel.getValueAt(row, designIdIndex) == null ? "" : tableModel.getValueAt(row, designIdIndex).toString().trim();
 
                 if (!designID.isEmpty()) {
-                    String query = "SELECT " + DBStructure.INVENTORY_ITEM_NAME + ", " + DBStructure.INVENTORY_BUY_PRICE + " FROM " + DBStructure.INVENTORY_TABLE + " WHERE " + DBStructure.INVENTORY_DESIGN_ID + " = ?";
+                    String query = "SELECT " + DBStructure.INVENTORY_ITEM_NAME + ", " + DBStructure.INVENTORY_SELL_PRICE + " FROM " + DBStructure.INVENTORY_TABLE + " WHERE " + DBStructure.INVENTORY_DESIGN_ID + " = ?";
 
                     try (Connection con = MyClass.createConnection(); PreparedStatement stmt = con.prepareStatement(query)) {
 
@@ -625,7 +625,7 @@ public class NewBill extends JFrame {
 
                             listOfNonEditableCells.add(new Integer[]{row, ITEM_NAME_INDEX});
                             String itemName = rs.getString("itemname");
-                            String price = rs.getString("price");
+                            String price = rs.getString(DBStructure.INVENTORY_SELL_PRICE);
                             tableModel.setValueAt(itemName, row, ITEM_NAME_INDEX);
                             tableModel.setValueAt(price, row, RAW_INDEX);
                         } else {

@@ -43,6 +43,7 @@ public class PurchaseBill extends JFrame {
     int snoIndex;
     int totalIndex;
     int rawCostIndex;
+    int sellPriceIndex;
     int designIDIndex;
     int itemNameIndex;
 
@@ -82,8 +83,8 @@ public class PurchaseBill extends JFrame {
         String billDetailsTableQuery = "INSERT INTO " + BILLDETAILS_TABLE + " (" + BILLDETAILS_BILL_ID + ", " + BILLDETAILS_SNO + ", " + BILLDETAILS_DESIGN_ID + ", " + BILLDETAILS_ITEM_NAME + ", " + BILLDETAILS_QUANTITY + ", " + BILLDETAILS_RAW_COST + ", " + BILLDETAILS_TOTAL_FINAL_COST + ", " + "" + BILLDETAILS_ORDER_TYPE + ", " + BILLDETAILS_LABOUR_COST + ", " + BILLDETAILS_TOTAL_BASE_COSTING + ", " + BILLDETAILS_GOLD_RATE + ", " + BILLDETAILS_GOLD_PLATING_WEIGHT + ", " + BILLDETAILS_TOTAL_GOLD_COST + ") " + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         String billsTableQuery = "UPDATE " + BILLS_TABLE + " SET " + BILLS_DATE + " = ?, " + BILLS_CUSTOMER_NAME + " = ?, " + BILLS_BILL_NUMBER + " = ? " + "WHERE " + BILLS_BILL_ID + " = ?";
         String updateInventoryQuery = "UPDATE " + INVENTORY_TABLE + " SET " + INVENTORY_TOTAL_QUANTITY + " = " + INVENTORY_TOTAL_QUANTITY + " + ? WHERE " + INVENTORY_DESIGN_ID + " = ?";
-        String insertInventoryQuery = "INSERT INTO " + INVENTORY_TABLE + "(" + INVENTORY_DESIGN_ID + ", " + INVENTORY_TOTAL_QUANTITY + ", " + INVENTORY_ITEM_NAME + ", " + INVENTORY_BUY_PRICE + ") VALUES (?, ?, ?, ?)";
-        String updateOtherQuery = "update " + INVENTORY_TABLE + " set " + INVENTORY_BUY_PRICE + " = ? , " + INVENTORY_ITEM_NAME + "=? where " + INVENTORY_DESIGN_ID + " = ?";
+        String insertInventoryQuery = "INSERT INTO " + INVENTORY_TABLE + "(" + INVENTORY_DESIGN_ID + ", " + INVENTORY_TOTAL_QUANTITY + ", " + INVENTORY_ITEM_NAME + ", " + INVENTORY_BUY_PRICE + ", " + INVENTORY_SELL_PRICE + ") VALUES (?, ?, ?, ?, ?)";
+        String updateOtherQuery = "update " + INVENTORY_TABLE + " set " + INVENTORY_BUY_PRICE + " = ?, " + INVENTORY_SELL_PRICE + " = ?, " + INVENTORY_ITEM_NAME + " = ? where " + INVENTORY_DESIGN_ID + " = ?";
         String customerTableQuery = "update " + CUSTOMERS_TABLE + " set " + CUSTOMERS_BALANCE + " = " + CUSTOMERS_BALANCE + " - ? where " + CUSTOMERS_CUSTOMER_NAME + " = ?";
 
         try (PreparedStatement billsTableStatement = con.prepareStatement(billsTableQuery); PreparedStatement customersTableStatement = con.prepareStatement(customerTableQuery); PreparedStatement updateStmt = con.prepareStatement(updateInventoryQuery); PreparedStatement insertStmt = con.prepareStatement(insertInventoryQuery); PreparedStatement billStmt = con.prepareStatement(billDetailsTableQuery); PreparedStatement updateRawPriceStatement = con.prepareStatement(updateOtherQuery);) {
@@ -129,14 +130,16 @@ public class PurchaseBill extends JFrame {
                 quantity = getIntegerValue(model.getValueAt(i, quantityIndex));
                 itemName = model.getValueAt(i, itemNameIndex) == null ? "" : model.getValueAt(i, itemNameIndex).toString();
                 int price = model.getValueAt(i, rawCostIndex) == null ? 0 : getIntegerValue(model.getValueAt(i, rawCostIndex));
+                int sellPrice = model.getValueAt(i, sellPriceIndex) == null ? 0 : getIntegerValue(model.getValueAt(i, sellPriceIndex));
                 System.out.println(designIDexists(designID));
                 if (designIDexists(designID)) {
                     if (designID.contentEquals("")) continue;
                     updateStmt.setInt(1, quantity);
                     updateStmt.setString(2, designID);
                     updateRawPriceStatement.setDouble(1, price);
-                    updateRawPriceStatement.setString(2, itemName);
-                    updateRawPriceStatement.setString(3, designID);
+                    updateRawPriceStatement.setDouble(2, sellPrice);
+                    updateRawPriceStatement.setString(3, itemName);
+                    updateRawPriceStatement.setString(4, designID);
                     updateRawPriceStatement.addBatch();
                     updateStmt.addBatch();
 
@@ -146,6 +149,7 @@ public class PurchaseBill extends JFrame {
                     insertStmt.setInt(2, quantity);
                     insertStmt.setString(3, itemName);
                     insertStmt.setInt(4, price);
+                    insertStmt.setInt(5, sellPrice);
                     insertStmt.addBatch();
                 }
             }
@@ -210,11 +214,13 @@ public class PurchaseBill extends JFrame {
         headers.add("item name");
         headers.add("Quantity");
         headers.add("Raw cost");
+        headers.add("Sell Price");
 
         headers.add("total");
         designIDIndex = headers.indexOf("designID");
         quantityIndex = headers.indexOf("Quantity");
         rawCostIndex = headers.indexOf("Raw cost");
+        sellPriceIndex = headers.indexOf("Sell Price");
         totalIndex = headers.indexOf("total");
         snoIndex = headers.indexOf("Sno");
         itemNameIndex = headers.indexOf("item name");
@@ -328,6 +334,7 @@ public class PurchaseBill extends JFrame {
                 if (!getStringValue(model.getValueAt(row, designIDIndex)).isEmpty() && designIDexists(getStringValue(model.getValueAt(row, designIDIndex)))) {
                     JOptionPane.showMessageDialog(MyClass.purchaseBill, "raw getBuyPrice will be update in inventory, re enter design id to avoid this");
                 }
+                setDefaultSellPrice(row);
                 updateTotal(row);
             }
             if (col == designIDIndex) {
@@ -426,6 +433,7 @@ public class PurchaseBill extends JFrame {
             if (rs.next()) {
                 model.setValueAt(rs.getString(INVENTORY_ITEM_NAME), row, itemNameIndex);
                 model.setValueAt(rs.getString(INVENTORY_BUY_PRICE), row, rawCostIndex);
+                setDefaultSellPrice(row);
             }
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(PurchaseBill.this, e.getMessage());
@@ -476,6 +484,16 @@ public class PurchaseBill extends JFrame {
         model.setValueAt(total == 0 ? "" : total, row, totalIndex);
         model.fireTableRowsUpdated(row, row);
         billTable.repaint();
+    }
+
+    private void setDefaultSellPrice(int row) {
+        Object currentSellPrice = model.getValueAt(row, sellPriceIndex);
+
+
+        double purchasePrice = getDoubleValue(model.getValueAt(row, rawCostIndex));
+        if (purchasePrice > 0) {
+            model.setValueAt(Math.round(purchasePrice * 1.15), row, sellPriceIndex);
+        }
     }
 
     private int getIntegerValue(Object value) {
