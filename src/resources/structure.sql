@@ -210,6 +210,23 @@ CREATE TABLE `transactions` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `journalentry`
+--
+
+DROP TABLE IF EXISTS `journalentry`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `journalentry` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `transaction_type` enum('purchase','sale','payments') NOT NULL,
+  `date` date NOT NULL,
+  `credit` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `debit` decimal(15,2) NOT NULL DEFAULT '0.00',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `users`
 --
 
