@@ -840,15 +840,14 @@ public class NewBill extends JFrame {
             setCustomerName(customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString());
             if(searchResultWindow==null || !searchResultWindow.isVisible()){
                 searchResultWindow = new SearchResultWindow(INVENTORY_MODE);
+                searchResultWindow.setAutoRequestFocus(false);
                 searchResultWindow.setVisible(true);
             }
             searchResultWindow.setComboBoxModel(searchResultWindow.generateSlipListModel(getCustomerName()));
             searchResultWindow.setInventorySelected();
-            searchResultWindow.setFocusableWindowState(false);
-            searchResultWindow.setFocusableWindowState(true);
             UtilityMethods.splitFrame(temp, searchResultWindow, UtilityMethods.HORIZONTAL_SPLIT);
         });
-
+    
     }
 
     private boolean allQuantityValid() {
