@@ -106,6 +106,14 @@ public class DBStructure {
     public static final String TRANSACTIONS_CUSTOMER_NAME = "customer_name";
     public static final String TRANSACTIONS_REMARK = "remark";
 
+    // ====================== journalentry ======================
+    public static final String JOURNAL_ENTRY_TABLE = "journalentry";
+    public static final String JOURNAL_ENTRY_ID = "id";
+    public static final String JOURNAL_ENTRY_TRANSACTION_TYPE = "transaction_type";
+    public static final String JOURNAL_ENTRY_DATE = "date";
+    public static final String JOURNAL_ENTRY_CREDIT = "credit";
+    public static final String JOURNAL_ENTRY_DEBIT = "debit";
+
     //users table for signup and login structure:
     public static final String USER_ACCOUNT_TABLE = "users";
     public static final String user_name = "user";
