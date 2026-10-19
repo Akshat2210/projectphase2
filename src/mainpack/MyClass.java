@@ -19,8 +19,8 @@ import loginsignup.login.loggedin.ordermanagement.generateorder.InventorySelect;
 import loginsignup.login.loggedin.ordermanagement.generateorder.OrderGenerateForm;
 import loginsignup.login.loggedin.ordermanagement.vieworders.ViewOrders;
 import loginsignup.login.loggedin.rootAdmin.RootScreen;
-import loginsignup.login.loggedin.transactionsandaccounts.Transactions;
-import loginsignup.login.loggedin.transactionsandaccounts.newtransaction.NewTransaction;
+import loginsignup.login.loggedin.transactionsandaccounts.TransactionsScreen;
+import loginsignup.login.loggedin.transactionsandaccounts.CashEntry.cashTransaction;
 import loginsignup.login.loggedin.transactionsandaccounts.viewTransactions.ViewTransactions;
 import loginsignup.signup.SignUp;
 import utils.UtilityMethods;
@@ -107,7 +107,7 @@ public class MyClass {
     public static PurchaseBill purchaseBill;
     public static AALScreen aalScreen;
     public static ViewOrders viewOrders;
-    public static NewTransaction newTransaction;
+    public static cashTransaction newTransaction;
     public static SearchResultWindow searchResultWindow;
     public static ViewTransactions viewTransactions;
     public static AddParty addParty;
@@ -143,7 +143,7 @@ public class MyClass {
 
     public static RootScreen rootScreen;
     public static NewBill newBill;
-    public static Transactions transactions;
+    public static TransactionsScreen transactions;
     public static LOGIN login;
     public static SignUp signUp;
 

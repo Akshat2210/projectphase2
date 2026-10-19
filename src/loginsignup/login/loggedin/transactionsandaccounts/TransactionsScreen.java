@@ -1,6 +1,6 @@
 package loginsignup.login.loggedin.transactionsandaccounts;
 
-import loginsignup.login.loggedin.transactionsandaccounts.newtransaction.NewTransaction;
+import loginsignup.login.loggedin.transactionsandaccounts.CashEntry.cashTransaction;
 import loginsignup.login.loggedin.transactionsandaccounts.viewTransactions.ViewTransactions;
 import mainpack.MyClass;
 
@@ -8,22 +8,14 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-public class Transactions extends JFrame {
+public class TransactionsScreen extends JFrame {
     private JButton backButton;
     private JButton newTransactionButton;
     private JButton viewTransactionsButton;
     private JButton button4;
     private JPanel panel;
 
-    public JButton getNewTransactionButton() {
-        return newTransactionButton;
-    }
-
-    public JButton getViewTransactionsButton() {
-        return viewTransactionsButton;
-    }
-
-    public Transactions() {
+    public TransactionsScreen() {
 }
 
     public void init() {
@@ -42,7 +34,7 @@ public class Transactions extends JFrame {
         newTransactionButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                MyClass.newTransaction=new NewTransaction();
+                MyClass.newTransaction=new cashTransaction();
 
                 MyClass.newTransaction.init();
                 MyClass.newTransaction.setVisible(true);

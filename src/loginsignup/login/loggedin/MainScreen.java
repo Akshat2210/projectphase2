@@ -6,8 +6,8 @@ import loginsignup.login.loggedin.billing.BillingScreen;
 import loginsignup.login.loggedin.billing.newBill.NewBill;
 import loginsignup.login.loggedin.inventorymanagement.InventoryScreen;
 import loginsignup.login.loggedin.ordermanagement.OrderScreen;
-import loginsignup.login.loggedin.transactionsandaccounts.Transactions;
-import loginsignup.login.loggedin.transactionsandaccounts.newtransaction.NewTransaction;
+import loginsignup.login.loggedin.transactionsandaccounts.TransactionsScreen;
+import loginsignup.login.loggedin.transactionsandaccounts.CashEntry.cashTransaction;
 import mainpack.MyClass;
 import utils.Variables;
 
@@ -87,7 +87,7 @@ public class MainScreen extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                MyClass.transactions = new Transactions();
+                MyClass.transactions = new TransactionsScreen();
                 MyClass.transactions.init();
                 MyClass.transactions.setVisible(true);
                 MyClass.mainScreen.transactionManagementButton.setEnabled(false);
@@ -164,7 +164,7 @@ public class MainScreen extends JFrame {
                 }
             }
             if (choice) {
-                MyClass.newTransaction = new NewTransaction();
+                MyClass.newTransaction = new cashTransaction();
                 MyClass.newTransaction.init();
                 int date = numberOfDays - counter;
                 MyClass.newTransaction.generateTransactions(numberOfTransactions, date);

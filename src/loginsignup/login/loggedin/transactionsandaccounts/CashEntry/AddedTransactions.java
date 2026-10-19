@@ -1,4 +1,4 @@
-package loginsignup.login.loggedin.transactionsandaccounts.newtransaction;
+package loginsignup.login.loggedin.transactionsandaccounts.CashEntry;
 
 import mainpack.MyClass;
 

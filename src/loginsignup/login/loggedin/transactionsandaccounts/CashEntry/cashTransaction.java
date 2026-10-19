@@ -1,4 +1,4 @@
-package loginsignup.login.loggedin.transactionsandaccounts.newtransaction;
+package loginsignup.login.loggedin.transactionsandaccounts.CashEntry;
 
 import mainpack.MyClass;
 import utils.UtilityMethods;
@@ -14,7 +14,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Random;
 
-public class NewTransaction extends JFrame {
+public class cashTransaction extends JFrame {
     private LocalDate date;
 
     public JButton getBackButton() {
@@ -36,7 +36,7 @@ public class NewTransaction extends JFrame {
         return date;
     }
 
-    public NewTransaction() {
+    public cashTransaction() {
 
     }
 
@@ -168,11 +168,11 @@ public class NewTransaction extends JFrame {
                             con.commit();
                             addedTransactions.fetchData(getDate());
                         }catch (SQLException ex){
-                            JOptionPane.showMessageDialog(NewTransaction.this, ex.getMessage());
+                            JOptionPane.showMessageDialog(cashTransaction.this, ex.getMessage());
                             con.rollback();
                         }
                     } catch (SQLException ex) {
-                        JOptionPane.showMessageDialog(NewTransaction.this, ex.getMessage());
+                        JOptionPane.showMessageDialog(cashTransaction.this, ex.getMessage());
                         throw new RuntimeException(ex);
                     }
 
