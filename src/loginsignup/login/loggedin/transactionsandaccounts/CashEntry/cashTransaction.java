@@ -140,6 +140,9 @@ public class cashTransaction extends JFrame {
                     }
                     String transactionQuery = "INSERT INTO transactions (customer_name, amount, date,remark) VALUES (?, ?, ?,?)";
                     String customerTableQuery = "update customers set balance=balance-? where customer_name=?";
+                    String journalEntryQuery = "INSERT INTO journalentry " +
+                            "(transaction_type, date, accountname, billid, transaction_id, credit, debit) " +
+                            "VALUES (?, ?, ?, ?, ?, ?, ?)";
                     SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yy");
                     Date parsed = null;
                     try {
@@ -153,8 +156,9 @@ public class cashTransaction extends JFrame {
 
                     try (Connection con = MyClass.createConnection()) {
                         try (
-                                PreparedStatement transactionStatement = con.prepareStatement(transactionQuery);
+                                PreparedStatement transactionStatement = con.prepareStatement(transactionQuery, Statement.RETURN_GENERATED_KEYS);
                                 PreparedStatement customerStatement = con.prepareStatement(customerTableQuery);
+                                PreparedStatement journalEntryStatement = con.prepareStatement(journalEntryQuery);
                         ) {
                             con.setAutoCommit(false);
                             transactionStatement.setString(1, customerName);
@@ -162,9 +166,42 @@ public class cashTransaction extends JFrame {
                             transactionStatement.setDate(3, sqlDate);
                             transactionStatement.setString(4, remark);
                             transactionStatement.executeUpdate();
+
+                            int transactionId;
+                            try (ResultSet generatedKeys = transactionStatement.getGeneratedKeys()) {
+                                if (!generatedKeys.next()) {
+                                    throw new SQLException("Could not create the transaction record.");
+                                }
+                                transactionId = generatedKeys.getInt(1);
+                            }
+
                             customerStatement.setDouble(1, amount);
                             customerStatement.setString(2, customerName);
                             customerStatement.executeUpdate();
+
+                            double journalAmount = Math.abs(amount);
+
+                            // The party account is credited for cash received and debited for cash paid.
+                            journalEntryStatement.setString(1, "payments");
+                            journalEntryStatement.setDate(2, sqlDate);
+                            journalEntryStatement.setString(3, customerName);
+                            journalEntryStatement.setNull(4, Types.INTEGER);
+                            journalEntryStatement.setInt(5, transactionId);
+                            journalEntryStatement.setDouble(6, inRadioButton.isSelected() ? journalAmount : 0);
+                            journalEntryStatement.setDouble(7, outRadioButton.isSelected() ? journalAmount : 0);
+                            journalEntryStatement.addBatch();
+
+                            // Cash is debited for money received and credited for money paid out.
+                            journalEntryStatement.setString(1, "payments");
+                            journalEntryStatement.setDate(2, sqlDate);
+                            journalEntryStatement.setString(3, "Cash");
+                            journalEntryStatement.setNull(4, Types.INTEGER);
+                            journalEntryStatement.setInt(5, transactionId);
+                            journalEntryStatement.setDouble(6, inRadioButton.isSelected() ? 0 : journalAmount);
+                            journalEntryStatement.setDouble(7, outRadioButton.isSelected() ? 0 : journalAmount);
+                            journalEntryStatement.addBatch();
+
+                            journalEntryStatement.executeBatch();
                             con.commit();
                             addedTransactions.fetchData(getDate());
                         }catch (SQLException ex){
