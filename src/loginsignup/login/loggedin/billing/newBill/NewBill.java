@@ -115,6 +115,7 @@ public class NewBill extends JFrame {
         PreparedStatement inventoryStatement = null;
         PreparedStatement customerTableStatement = null;
         PreparedStatement linkTransactionsStatement = null;
+        PreparedStatement journalEntryStatement = null;
         String customerName = customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString();
 
         if (customerComboBox.getSelectedIndex() == 0) {
@@ -123,6 +124,14 @@ public class NewBill extends JFrame {
         }
         String updateCustomerTableQuery = "update " + DBStructure.CUSTOMERS_TABLE + " set " + DBStructure.CUSTOMERS_BALANCE + "=" + DBStructure.CUSTOMERS_BALANCE + "+? where " + DBStructure.CUSTOMERS_CUSTOMER_NAME + "=?";
         String updateBillsTableQuery = "update "+DBStructure.BILLS_TABLE+" set "+DBStructure.BILLS_DATE+"=?,"+DBStructure.BILLS_CUSTOMER_NAME+"=?, "+DBStructure.BILLS_BILL_NUMBER+ "=? where "+DBStructure.BILLS_BILL_ID+"=?";
+        String insertJournalEntryQuery = "INSERT INTO " + DBStructure.JOURNAL_ENTRY_TABLE + " (" +
+                DBStructure.JOURNAL_ENTRY_TRANSACTION_TYPE + ", " +
+                DBStructure.JOURNAL_ENTRY_DATE + ", " +
+                DBStructure.JOURNAL_ENTRY_ACCOUNT_NAME + ", " +
+                DBStructure.JOURNAL_ENTRY_BILL_ID + ", " +
+                DBStructure.JOURNAL_ENTRY_TRANSACTION_ID + ", " +
+                DBStructure.JOURNAL_ENTRY_CREDIT + ", " +
+                DBStructure.JOURNAL_ENTRY_DEBIT + ") VALUES (?, ?, ?, ?, ?, ?, ?)";
         int billNumber= UtilityMethods.getBillNumber(getTransacTemp());
         try {
             PreparedStatement billsTableStatement = conn.prepareStatement(updateBillsTableQuery);
@@ -152,6 +161,7 @@ public class NewBill extends JFrame {
             billDetailsStatement = conn.prepareStatement(insertBillDetailsQuery);
             String inventoryQuery = "update " + DBStructure.INVENTORY_TABLE + " set " + DBStructure.INVENTORY_TOTAL_QUANTITY + "=" + DBStructure.INVENTORY_TOTAL_QUANTITY + "-? where " + DBStructure.INVENTORY_DESIGN_ID + "=?";
             inventoryStatement = conn.prepareStatement(inventoryQuery);
+            journalEntryStatement = conn.prepareStatement(insertJournalEntryQuery);
             double grandTotal = 0;
             for (int i = 0; i < rowCount - 1; i++) {
                 int serialNo = Integer.parseInt(getStringValue(model, i, SNO_INDEX, "0"));
@@ -226,12 +236,30 @@ public class NewBill extends JFrame {
                 billDetailsStatement.setInt(20, quantity);
                 billDetailsStatement.addBatch();
                 grandTotal = grandTotal + totalFinalCost;
-
             }
 
+            // Debit the customer's receivable and credit sales for this bill.
+            journalEntryStatement.setString(1, CONSTANTS.SALE_ENUM);
+            journalEntryStatement.setDate(2, java.sql.Date.valueOf(getDateTime().toLocalDate()));
+            journalEntryStatement.setString(3, customerName);
+            journalEntryStatement.setInt(4, getCurBillID());
+            journalEntryStatement.setNull(5, Types.INTEGER);
+            journalEntryStatement.setDouble(6, 0);
+            journalEntryStatement.setDouble(7, grandTotal);
+            journalEntryStatement.addBatch();
+
+            journalEntryStatement.setString(1, CONSTANTS.SALE_ENUM);
+            journalEntryStatement.setDate(2, java.sql.Date.valueOf(getDateTime().toLocalDate()));
+            journalEntryStatement.setString(3, "Sales");
+            journalEntryStatement.setInt(4, getCurBillID());
+            journalEntryStatement.setNull(5, Types.INTEGER);
+            journalEntryStatement.setDouble(6, grandTotal);
+            journalEntryStatement.setDouble(7, 0);
+            journalEntryStatement.addBatch();
 
             billDetailsStatement.executeBatch();
             inventoryStatement.executeBatch();
+            journalEntryStatement.executeBatch();
             customerTableStatement = conn.prepareStatement(updateCustomerTableQuery);
 
             customerTableStatement.setDouble(1, grandTotal);
@@ -271,6 +299,7 @@ public class NewBill extends JFrame {
                 if (inventoryStatement != null) inventoryStatement.close();
                 if (customerTableStatement != null) customerTableStatement.close();
                 if(linkTransactionsStatement!=null) linkTransactionsStatement.close();
+                if (journalEntryStatement != null) journalEntryStatement.close();
             } catch (SQLException closeEx) {
                 Thread.dumpStack();
             }

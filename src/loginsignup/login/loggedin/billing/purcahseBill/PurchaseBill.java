@@ -86,8 +86,17 @@ public class PurchaseBill extends JFrame {
         String insertInventoryQuery = "INSERT INTO " + INVENTORY_TABLE + "(" + INVENTORY_DESIGN_ID + ", " + INVENTORY_TOTAL_QUANTITY + ", " + INVENTORY_ITEM_NAME + ", " + INVENTORY_BUY_PRICE + ", " + INVENTORY_SELL_PRICE + ") VALUES (?, ?, ?, ?, ?)";
         String updateOtherQuery = "update " + INVENTORY_TABLE + " set " + INVENTORY_BUY_PRICE + " = ?, " + INVENTORY_SELL_PRICE + " = ?, " + INVENTORY_ITEM_NAME + " = ? where " + INVENTORY_DESIGN_ID + " = ?";
         String customerTableQuery = "update " + CUSTOMERS_TABLE + " set " + CUSTOMERS_BALANCE + " = " + CUSTOMERS_BALANCE + " - ? where " + CUSTOMERS_CUSTOMER_NAME + " = ?";
-
-        try (PreparedStatement billsTableStatement = con.prepareStatement(billsTableQuery); PreparedStatement customersTableStatement = con.prepareStatement(customerTableQuery); PreparedStatement updateStmt = con.prepareStatement(updateInventoryQuery); PreparedStatement insertStmt = con.prepareStatement(insertInventoryQuery); PreparedStatement billStmt = con.prepareStatement(billDetailsTableQuery); PreparedStatement updateRawPriceStatement = con.prepareStatement(updateOtherQuery);) {
+        String insertJournalEntryQuery = "INSERT INTO " + JOURNAL_ENTRY_TABLE + " (" +
+                JOURNAL_ENTRY_TRANSACTION_TYPE + ", " +
+                JOURNAL_ENTRY_DATE + ", " +
+                JOURNAL_ENTRY_ACCOUNT_NAME + ", " +
+                JOURNAL_ENTRY_BILL_ID + ", " +
+                JOURNAL_ENTRY_TRANSACTION_ID + ", " +
+                JOURNAL_ENTRY_CREDIT + ", " +
+                JOURNAL_ENTRY_DEBIT + ") VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement billsTableStatement = con.prepareStatement(billsTableQuery); PreparedStatement customersTableStatement = con.prepareStatement(customerTableQuery); PreparedStatement updateStmt = con.prepareStatement(updateInventoryQuery); PreparedStatement insertStmt = con.prepareStatement(insertInventoryQuery); PreparedStatement billStmt = con.prepareStatement(billDetailsTableQuery); PreparedStatement updateRawPriceStatement = con.prepareStatement(updateOtherQuery);
+             PreparedStatement journalEntryStatement = con.prepareStatement(insertJournalEntryQuery);
+        ) {
             con.setAutoCommit(false);
             int billNumber = UtilityMethods.getBillNumber(con);
 
@@ -153,6 +162,26 @@ public class PurchaseBill extends JFrame {
                     insertStmt.addBatch();
                 }
             }
+
+            // Debit inventory and credit the supplier/customer for the full purchase bill.
+            journalEntryStatement.setString(1, CONSTANTS.PURCHASE_ENUM);
+            journalEntryStatement.setDate(2, java.sql.Date.valueOf(UtilityMethods.getDate(dateComboBox.getSelectedItem()).toLocalDate()));
+            journalEntryStatement.setString(3, "Inventory");
+            journalEntryStatement.setInt(4, getBillid());
+            journalEntryStatement.setNull(5, Types.INTEGER);
+            journalEntryStatement.setBigDecimal(6, BigDecimal.ZERO);
+            journalEntryStatement.setBigDecimal(7, grandTotal);
+            journalEntryStatement.addBatch();
+
+            journalEntryStatement.setString(1, CONSTANTS.PURCHASE_ENUM);
+            journalEntryStatement.setDate(2, java.sql.Date.valueOf(UtilityMethods.getDate(dateComboBox.getSelectedItem()).toLocalDate()));
+            journalEntryStatement.setString(3, customerName);
+            journalEntryStatement.setInt(4, getBillid());
+            journalEntryStatement.setNull(5, Types.INTEGER);
+            journalEntryStatement.setBigDecimal(6, grandTotal);
+            journalEntryStatement.setBigDecimal(7, BigDecimal.ZERO);
+            journalEntryStatement.addBatch();
+
             customersTableStatement.setBigDecimal(1, grandTotal);
             customersTableStatement.setString(2, customerName);
             customersTableStatement.executeUpdate();
@@ -161,6 +190,7 @@ public class PurchaseBill extends JFrame {
             updateStmt.executeBatch();
             updateRawPriceStatement.executeBatch();
             insertStmt.executeBatch();
+            journalEntryStatement.executeBatch();
             con.commit();
             JOptionPane.showMessageDialog(PurchaseBill.this, "bill created successfully");
             return true;
