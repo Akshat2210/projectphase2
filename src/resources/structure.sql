@@ -220,9 +220,16 @@ CREATE TABLE `journalentry` (
   `id` int NOT NULL AUTO_INCREMENT,
   `transaction_type` enum('purchase','sale','payments') NOT NULL,
   `date` date NOT NULL,
+  `accountname` varchar(255) NOT NULL,
+  `billid` int DEFAULT NULL,
+  `transaction_id` int DEFAULT NULL,
   `credit` decimal(15,2) NOT NULL DEFAULT '0.00',
   `debit` decimal(15,2) NOT NULL DEFAULT '0.00',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `fk_journalentry_bill` (`billid`),
+  KEY `fk_journalentry_transaction` (`transaction_id`),
+  CONSTRAINT `fk_journalentry_bill` FOREIGN KEY (`billid`) REFERENCES `bills` (`BillID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_journalentry_transaction` FOREIGN KEY (`transaction_id`) REFERENCES `transactions` (`transaction_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

@@ -111,6 +111,9 @@ public class DBStructure {
     public static final String JOURNAL_ENTRY_ID = "id";
     public static final String JOURNAL_ENTRY_TRANSACTION_TYPE = "transaction_type";
     public static final String JOURNAL_ENTRY_DATE = "date";
+    public static final String JOURNAL_ENTRY_ACCOUNT_NAME = "accountname";
+    public static final String JOURNAL_ENTRY_BILL_ID = "billid";
+    public static final String JOURNAL_ENTRY_TRANSACTION_ID = "transaction_id";
     public static final String JOURNAL_ENTRY_CREDIT = "credit";
     public static final String JOURNAL_ENTRY_DEBIT = "debit";
 
