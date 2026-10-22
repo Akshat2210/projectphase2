@@ -26,7 +26,7 @@ public class LedgerWindow extends JFrame {
 
     public static final int CUSTOMER_MODE = 65 * 1;
     public static final int ITEM_MODE = 65 * 2;
-    private static final int PURCHASE_MODE = 65 * 3;
+    public static final int GENERAL_ACCOUNT_MODE = 65 * 3;
     private JButton backButton;
     private JTable ledgerTable;
     private JPanel panel;
@@ -55,8 +55,8 @@ public class LedgerWindow extends JFrame {
         else if (mode == CUSTOMER_MODE) {
             columnNames = new String[]{"id", "date", "debit", "credit", "balance"};
 
-        } else if (mode == PURCHASE_MODE) {
-            columnNames = new String[]{"id", "date", "Party Name", "debit", "credit"};
+        } else if (mode == GENERAL_ACCOUNT_MODE) {
+            columnNames = new String[]{"id", "date", "debit", "credit", "balance"};
         }
         DefaultTableModel defaultTableModel = new DefaultTableModel(columnNames, 0) {
             @Override
@@ -77,17 +77,18 @@ public class LedgerWindow extends JFrame {
             if (model != null) {
                 ledgerTable.setModel(model);
             }
+        } else if (mode == GENERAL_ACCOUNT_MODE) {
+            DefaultTableModel model = GetData.fetchGeneralAccountLedger(customerName, this);
+
+            if (model != null) {
+                ledgerTable.setModel(model);
+            }
         }
 
 //        fetchLedgerToModel(ledgerTable);
 
 
     }
-
-
-    //    private void fetchCustomerLedger(String customerName) {
-//        nameLabel.setText(customerName);
-//        System.out.println("starting to fetch customer ledger");
 }
 
 class GetData {
@@ -127,6 +128,7 @@ class GetData {
                         "where " + TRANSACTIONS_CUSTOMER_NAME + " IS NOT NULL and " + TRANSACTIONS_CUSTOMER_NAME + " = ? " +
                         ") as combined " +
                         "order by coalesce (date,'')";
+
         try (Connection con = UtilityMethods.createConnection(); PreparedStatement pstmt = con.prepareStatement(query)) {
             pstmt.setString(1, customerName);
             pstmt.setString(2, customerName);
@@ -206,6 +208,64 @@ class GetData {
             return null;
         }
         return tableModel;
+    }
+
+    static DefaultTableModel fetchGeneralAccountLedger(String accountName, LedgerWindow ledgerWindow) {
+        String[] columnNames = new String[]{ID_COLUMN, DATE_COLUMN, DEBIT_COLUMN, CREDIT_COLUMN, BALANCE_COLUMN};
+        DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        String query = "SELECT " + JOURNAL_ENTRY_ID + ", " + JOURNAL_ENTRY_TRANSACTION_TYPE + ", " +
+                JOURNAL_ENTRY_BILL_ID + ", " + JOURNAL_ENTRY_TRANSACTION_ID + ", " + JOURNAL_ENTRY_DATE + ", " +
+                "COALESCE(" + JOURNAL_ENTRY_DEBIT + ", 0) AS debit, " +
+                "COALESCE(" + JOURNAL_ENTRY_CREDIT + ", 0) AS credit " +
+                "FROM " + JOURNAL_ENTRY_TABLE + " WHERE " + JOURNAL_ENTRY_ACCOUNT_NAME + " = ? " +
+                "ORDER BY " + JOURNAL_ENTRY_DATE + ", " + JOURNAL_ENTRY_ID;
+
+        try (Connection con = MyClass.createConnection();
+             PreparedStatement statement = con.prepareStatement(query)) {
+            statement.setString(1, accountName);
+
+            try (ResultSet rs = statement.executeQuery()) {
+                BigDecimal balance = BigDecimal.ZERO;
+                while (rs.next()) {
+                    BigDecimal debit = rs.getBigDecimal("debit");
+                    BigDecimal credit = rs.getBigDecimal("credit");
+                    java.sql.Date date = rs.getDate(JOURNAL_ENTRY_DATE);
+                    Object billId = rs.getObject(JOURNAL_ENTRY_BILL_ID);
+                    Object transactionId = rs.getObject(JOURNAL_ENTRY_TRANSACTION_ID);
+                    Object sourceId = billId == null ? transactionId : billId;
+                    String entryLabel = "JE#" + rs.getInt(JOURNAL_ENTRY_ID) + "_" +
+                            rs.getString(JOURNAL_ENTRY_TRANSACTION_TYPE) + "_" +
+                            (sourceId == null ? "N/A" : sourceId);
+
+                    balance = balance.add(debit).subtract(credit);
+                    tableModel.addRow(new String[]{
+                            entryLabel,
+                            date == null ? "" : UtilityMethods.parseDateString(date),
+                            debit.signum() == 0 ? "" : debit.toPlainString(),
+                            credit.signum() == 0 ? "" : credit.toPlainString(),
+                            balance.toPlainString()
+                    });
+                }
+
+                tableModel.addRow(new String[]{
+                        "Closing balance",
+                        LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yy")),
+                        "",
+                        "",
+                        balance.toPlainString()
+                });
+            }
+            return tableModel;
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(ledgerWindow, "Could not fetch account ledger: " + e.getMessage());
+            return null;
+        }
     }
 
     static DefaultTableModel fetchItemLedger(String designID, LedgerWindow ledgerWindow) {

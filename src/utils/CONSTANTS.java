@@ -1,5 +1,9 @@
 package utils;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 public class CONSTANTS {
     //codes
     public static final int SUCCESS_CODE =0;
@@ -35,4 +39,13 @@ public class CONSTANTS {
     //-------------------------enums-----------------------------//
     public static final String SALE_ENUM = "sale";
     public static final String PURCHASE_ENUM = "purchase";
+    public static final String OPENING_BALANCE_ENUM = "opening_balance";
+
+    /**
+     * Built-in ledger accounts. Party/customer accounts are stored separately in
+     * the customers table and are added to account selectors when required.
+     */
+    public static final List<String> BUILT_IN_LEDGER_ACCOUNTS = Collections.unmodifiableList(Arrays.asList(
+            "Bank", "Cash", "Expense", "Income", "Purchase", "Sale"
+    ));
 }

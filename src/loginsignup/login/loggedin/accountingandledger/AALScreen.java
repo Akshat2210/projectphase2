@@ -2,6 +2,7 @@ package loginsignup.login.loggedin.accountingandledger;
 
 import loginsignup.login.loggedin.accountingandledger.ledgerwindows.LedgerWindow;
 import mainpack.MyClass;
+import utils.CONSTANTS;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -12,6 +13,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class AALScreen extends JFrame {
     private JButton backButton;
@@ -52,6 +55,7 @@ public class AALScreen extends JFrame {
                 if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
                     int index = customerList.locationToIndex(e.getPoint());
                     if (index >= 0) {
+
                         String selectedCustomer = customerList.getModel().getElementAt(index);
                         openCustomer(selectedCustomer);
                         System.out.println("selected customer is "+selectedCustomer);
@@ -101,7 +105,7 @@ public class AALScreen extends JFrame {
     private void openCustomer(String selectedCustomer) {
         setVisible(false);
         MyClass.ledgerWindow = new LedgerWindow();
-        MyClass.ledgerWindow.init(selectedCustomer, LedgerWindow.CUSTOMER_MODE);
+        MyClass.ledgerWindow.init(selectedCustomer, LedgerWindow.GENERAL_ACCOUNT_MODE);
         MyClass.ledgerWindow.setVisible(true);
     }
 
@@ -132,15 +136,22 @@ public class AALScreen extends JFrame {
     }
 
     private void getListOfCustomers() {
-        String query = "select customer_name from customers";
+        String query = "select customer_name from customers " +
+                "where customer_name is not null and trim(customer_name) <> '' " +
+                "order by customer_name";
         DefaultListModel<String> model = new DefaultListModel<>();
+        Set<String> accounts = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        accounts.addAll(CONSTANTS.BUILT_IN_LEDGER_ACCOUNTS);
 
         try(Connection con = MyClass.createConnection(); Statement statement=con.createStatement()) {
             try(ResultSet rs = statement.executeQuery(query))
             {
                 while (rs.next()) {
-                    model.addElement(rs.getString(1));
+                    accounts.add(rs.getString(1).trim());
                 }
+            }
+            for (String account : accounts) {
+                model.addElement(account);
             }
             customerList.setModel(model);
         } catch (SQLException e) {
