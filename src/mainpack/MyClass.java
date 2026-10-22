@@ -21,6 +21,7 @@ import loginsignup.login.loggedin.ordermanagement.vieworders.ViewOrders;
 import loginsignup.login.loggedin.rootAdmin.RootScreen;
 import loginsignup.login.loggedin.transactionsandaccounts.TransactionsScreen;
 import loginsignup.login.loggedin.transactionsandaccounts.CashEntry.cashTransaction;
+import loginsignup.login.loggedin.transactionsandaccounts.journalEntry.journalEntry;
 import loginsignup.login.loggedin.transactionsandaccounts.viewTransactions.ViewTransactions;
 import loginsignup.signup.SignUp;
 import utils.UtilityMethods;
@@ -108,6 +109,7 @@ public class MyClass {
     public static AALScreen aalScreen;
     public static ViewOrders viewOrders;
     public static cashTransaction newTransaction;
+    public static journalEntry journalEntry;
     public static SearchResultWindow searchResultWindow;
     public static ViewTransactions viewTransactions;
     public static AddParty addParty;

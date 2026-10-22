@@ -1,6 +1,7 @@
 package loginsignup.login.loggedin.transactionsandaccounts;
 
 import loginsignup.login.loggedin.transactionsandaccounts.CashEntry.cashTransaction;
+import loginsignup.login.loggedin.transactionsandaccounts.journalEntry.journalEntry;
 import loginsignup.login.loggedin.transactionsandaccounts.viewTransactions.ViewTransactions;
 import mainpack.MyClass;
 
@@ -12,7 +13,7 @@ public class TransactionsScreen extends JFrame {
     private JButton backButton;
     private JButton newTransactionButton;
     private JButton viewTransactionsButton;
-    private JButton button4;
+    private JButton journalEntryButton;
     private JPanel panel;
 
     public TransactionsScreen() {
@@ -49,6 +50,15 @@ public class TransactionsScreen extends JFrame {
                 MyClass.viewTransactions=new ViewTransactions();
                 MyClass.viewTransactions.init();
                 MyClass.viewTransactions.setVisible(true);
+            }
+        });
+        journalEntryButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                MyClass.journalEntry = new journalEntry();
+                MyClass.journalEntry.init();
+                MyClass.journalEntry.setVisible(true);
+                setVisible(false);
             }
         });
 
