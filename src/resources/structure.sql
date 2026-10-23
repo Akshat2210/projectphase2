@@ -218,9 +218,10 @@ DROP TABLE IF EXISTS `journalentry`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `journalentry` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `transaction_type` enum('purchase','sale','payments','opening_balance') NOT NULL,
+  `transaction_type` enum('purchase','sale','payments','opening_balance','direct') NOT NULL,
   `date` date NOT NULL,
   `accountname` varchar(255) NOT NULL,
+  `remark` varchar(500) DEFAULT NULL,
   `billid` int DEFAULT NULL,
   `transaction_id` int DEFAULT NULL,
   `credit` decimal(15,2) NOT NULL DEFAULT '0.00',

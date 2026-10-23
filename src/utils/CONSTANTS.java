@@ -40,6 +40,7 @@ public class CONSTANTS {
     public static final String SALE_ENUM = "sale";
     public static final String PURCHASE_ENUM = "purchase";
     public static final String OPENING_BALANCE_ENUM = "opening_balance";
+    public static final String DIRECT_JOURNAL_ENUM = "direct";
 
     /**
      * Built-in ledger accounts. Party/customer accounts are stored separately in
