@@ -31,6 +31,18 @@ public class AddParty extends JFrame {
 
     }
 
+    public void setCustomerName(String customerName) {
+        customerNameField.setText(customerName);
+    }
+
+    public void setOpeningBalance(String openingBalance) {
+        openingBalanceTextField.setText(openingBalance);
+    }
+
+    public void clickAddButton() {
+        addButton.doClick();
+    }
+
     public void init() {
 //        ((AbstractDocument) openingBalanceTextField.getDocument()).setDocumentFilter(UtilityMethods.getDocFilter());
         setContentPane(panel1);

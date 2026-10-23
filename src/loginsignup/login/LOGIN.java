@@ -1,7 +1,9 @@
 package loginsignup.login;
 
 import loginsignup.login.loggedin.MainScreen;
+import loginsignup.login.loggedin.rootAdmin.RootScreen;
 import mainpack.MyClass;
+import rootSettings.RootSettiingsScreen;
 import utils.UtilityMethods;
 import utils.Variables;
 
@@ -20,6 +22,10 @@ public class LOGIN extends JFrame {
 
     public void setPasswordText(String password) {
         passwordField.setText(password);
+    }
+
+    public void setDatabaseText(String database) {
+        databaseField.setText(database);
     }
 
     private JTextField passwordField;
@@ -133,11 +139,16 @@ public class LOGIN extends JFrame {
                 } catch (SQLException ex) {
                     throw new RuntimeException(ex);
                 }
-
-                MyClass.mainScreen = new MainScreen();
-                MyClass.mainScreen.init();
-                MyClass.mainScreen.setVisible(true);
-                setVisible(false);
+                if(!database.isEmpty()) {
+                    MyClass.mainScreen = new MainScreen();
+                    MyClass.mainScreen.init();
+                    MyClass.mainScreen.setVisible(true);
+                    setVisible(false);
+                } else {
+                    MyClass.rootSettiingsScreen = new RootSettiingsScreen();
+                    MyClass.rootSettiingsScreen.init();
+                    MyClass.rootSettiingsScreen.setVisible(true);}
+                    setVisible(false);
             }
         });
 

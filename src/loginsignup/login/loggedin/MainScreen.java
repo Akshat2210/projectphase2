@@ -243,6 +243,10 @@ public class MainScreen extends JFrame {
         orderManagementButton.doClick();
     }
 
+    public void clickAddPartyButton() {
+        addPartyButton.doClick();
+    }
+
     public void clickLogoutButton() {
         logoutButton.doClick();
 

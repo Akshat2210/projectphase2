@@ -7,35 +7,61 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
 public class MainTestClass {
+    private static final String[] CUSTOMER_NAME_DOMAIN = {
+            "Aarav Sharma", "Vivaan Verma", "Aditya Gupta", "Arjun Mehta", "Rohan Kapoor",
+            "Kunal Jain", "Rahul Singh", "Aman Patel", "Siddharth Shah", "Nikhil Agarwal",
+            "Ananya Sharma", "Aditi Verma", "Priya Gupta", "Kavya Mehta", "Riya Kapoor",
+            "Sneha Jain", "Pooja Singh", "Neha Patel", "Isha Shah", "Meera Agarwal",
+            "Akash Bansal", "Varun Malhotra", "Manish Soni", "Deepak Yadav", "Rakesh Tiwari",
+            "Sanjay Mishra", "Vikas Chauhan", "Harsh Vardhan", "Mohit Arora", "Gaurav Saxena",
+            "Nisha Bansal", "Swati Malhotra", "Ritu Soni", "Komal Yadav", "Pallavi Tiwari",
+            "Sakshi Mishra", "Preeti Chauhan", "Shreya Arora", "Tanvi Saxena", "Bhavna Joshi",
+            "Devendra Kumar", "Prakash Chandra", "Mukesh Bhatt", "Dinesh Rathore", "Rajesh Solanki",
+            "Suresh Goyal", "Ashok Bhatia", "Vinod Khanna", "Naresh Sethi", "Pankaj Desai",
+            "Lakshmi Kumar", "Suman Chandra", "Rekha Bhatt", "Kiran Rathore", "Sunita Solanki",
+            "Geeta Goyal", "Asha Bhatia", "Usha Khanna", "Maya Sethi", "Renu Desai",
+            "Krishna Nair", "Ravi Iyer", "Sandeep Menon", "Vijay Pillai", "Arvind Reddy",
+            "Srinivas Rao", "Karthik Iyer", "Pranav Nair", "Ramesh Menon", "Bharat Pillai",
+            "Divya Nair", "Anjali Iyer", "Nandini Menon", "Keerthi Pillai", "Asha Reddy",
+            "Sowmya Rao", "Vaishnavi Iyer", "Pavithra Nair", "Harini Menon", "Bhavana Pillai",
+            "Imran Khan", "Farhan Ali", "Salman Sheikh", "Yusuf Ansari", "Arif Qureshi",
+            "Sameer Hussain", "Zaid Siddiqui", "Faisal Khan", "Rehan Ali", "Asif Sheikh",
+            "Sana Khan", "Ayesha Ali", "Fatima Sheikh", "Nazia Ansari", "Hina Qureshi",
+            "Saira Hussain", "Alina Siddiqui", "Mariyam Khan", "Rukhsar Ali", "Noor Sheikh"
+    };
+
     public static void main(String[] args) {
-        String query1 = "SELECT customer_name, slip_id, item_id, sno, design_id, item_name, quantity, plating_grams, raw_material_price, other_details, billed_quantity " + "FROM order_slips WHERE slip_id = ? Order by item_id";
-        String query = "SELECT "
-                + DBStructure.ORDER_SLIPS_CUSTOMER_NAME + ", "
-                + DBStructure.ORDER_SLIPS_SLIP_ID + ", "
-                + DBStructure.ORDER_SLIPS_ITEM_ID + ", "
-                + DBStructure.ORDER_SLIPS_SNO + ", "
-                + DBStructure.ORDER_SLIPS_DESIGN_ID + ", "
-                + DBStructure.ORDER_SLIPS_ITEM_NAME + ", "
-                + DBStructure.ORDER_SLIPS_QUANTITY + ", "
-                + DBStructure.ORDER_SLIPS_PLATING_GRAMS + ", "
-                + DBStructure.ORDER_SLIPS_RAW_MATERIAL_PRICE + ", "
-                + DBStructure.ORDER_SLIPS_OTHER_DETAILS + ", "
-                + DBStructure.ORDER_SLIPS_BILLED_QUANTITY
-                + " FROM " + DBStructure.ORDER_SLIPS_TABLE
-                + " WHERE " + DBStructure.ORDER_SLIPS_SLIP_ID + " = ?"
-                + " ORDER BY " + DBStructure.ORDER_SLIPS_ITEM_ID;
-        billGenerate(1);
+        createCustomers("raj", "", "akshat");
     }
 
     private static void randomTest() {
           billGenerate(20);
     }
 
+    static void createCustomers(String user, String database, String password) {
+        MyClass.main(null);
+        MyClass.login_signup.clickLoginButton();
+        MyClass.login.setUserText(user);
+        MyClass.login.setPasswordText(password);
+        MyClass.login.setDatabaseText(database);
+        MyClass.login.clickLoginButton();
 
+        MyClass.mainScreen.clickAddPartyButton();
+        List<String> randomNames = new ArrayList<>(Arrays.asList(CUSTOMER_NAME_DOMAIN));
+        Collections.shuffle(randomNames);
+        for (int index = 1; index <= 10; index++) {
+            MyClass.addParty.setCustomerName(randomNames.get(index - 1));
+            MyClass.addParty.setOpeningBalance("0");
+            MyClass.addParty.clickAddButton();
+        }
+    }
     static void orderSlip(int noOfSlips) {
         MyClass.main(null);
         MyClass.login_signup.clickLoginButton();

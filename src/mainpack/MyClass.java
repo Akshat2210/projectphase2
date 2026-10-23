@@ -24,6 +24,8 @@ import loginsignup.login.loggedin.transactionsandaccounts.CashEntry.cashTransact
 import loginsignup.login.loggedin.transactionsandaccounts.journalEntry.journalEntry;
 import loginsignup.login.loggedin.transactionsandaccounts.viewTransactions.ViewTransactions;
 import loginsignup.signup.SignUp;
+import rootSettings.RootSettiingsScreen;
+import rootSettings.users.Users;
 import utils.UtilityMethods;
 
 import javax.swing.*;
@@ -115,6 +117,8 @@ public class MyClass {
     public static AddParty addParty;
     public static ViewBackendBill viewBackendBill;
     public static LedgerWindow ledgerWindow;
+    public static RootSettiingsScreen rootSettiingsScreen;
+    public static Users users;
 
     public static Connection createConnection() throws SQLException {
         Connection conn;
