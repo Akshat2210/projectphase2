@@ -338,9 +338,21 @@ public class UtilityMethods {
         String transactionQuery = "SELECT sum(amount) FROM transactions " +
                 "WHERE customer_name = (SELECT customer_name FROM bills WHERE billid = ?) " +
                 "AND (date <=(SELECT date FROM bills WHERE billid = ?) and (billid<?))";
+        String directJournalQuery = "SELECT COALESCE(SUM(" + DBStructure.JOURNAL_ENTRY_DEBIT +
+                " - " + DBStructure.JOURNAL_ENTRY_CREDIT + "), 0) FROM " +
+                DBStructure.JOURNAL_ENTRY_TABLE + " WHERE " +
+                DBStructure.JOURNAL_ENTRY_ACCOUNT_NAME + " = (SELECT " +
+                DBStructure.BILLS_CUSTOMER_NAME + " FROM " + DBStructure.BILLS_TABLE + " WHERE " +
+                DBStructure.BILLS_BILL_ID + " = ?) AND " +
+                DBStructure.JOURNAL_ENTRY_TRANSACTION_TYPE + " = ? AND " +
+                DBStructure.JOURNAL_ENTRY_BILL_ID + " < ? AND " +
+                DBStructure.JOURNAL_ENTRY_DATE + " <= (SELECT " + DBStructure.BILLS_DATE + " FROM " +
+                DBStructure.BILLS_TABLE + " WHERE " + DBStructure.BILLS_BILL_ID + " = ?)";
         double grandTotalBill = 0;//contains total till previous bills
         try (Connection con = MyClass.createConnection();
-             PreparedStatement billStatement = con.prepareStatement(billQuery); PreparedStatement transacStatement = con.prepareStatement(transactionQuery)) {
+             PreparedStatement billStatement = con.prepareStatement(billQuery); PreparedStatement transacStatement = con.prepareStatement(transactionQuery);
+             PreparedStatement directJournalStatement = con.prepareStatement(directJournalQuery)
+             ) {
 
             ArrayList<Integer> billIDList = new ArrayList<>();
             billStatement.setInt(1, billID);
@@ -370,18 +382,15 @@ public class UtilityMethods {
                     "FROM billdetails " +
                     "WHERE billid in ( " + placeholders + ")" +
                     "GROUP BY billid;";
-            System.out.println("placeholders are" + placeholders);
 
             if (!placeholders.isEmpty()) {
                 try (PreparedStatement stmt = con.prepareStatement(billQuery);
                      ResultSet rs = stmt.executeQuery())
-//            statement.setInt(1, billID);
                 {
                     lastbillTotal = 0;
                     while (rs.next()) {
                         if (rs.getInt(3) == billID) lastbillTotal += rs.getDouble(1);
                         grandTotalBill += rs.getDouble(1);
-//                    System.out.println(rs.getDouble(1) + "   from sql" + rs.getDouble(2));
                     }
                 }
                 System.out.println(grandTotalBill + " value of grand total bill");
@@ -398,6 +407,17 @@ public class UtilityMethods {
                     System.out.println("transaction sum is " + rs.getInt(1));
                 }
             }
+            double directJournalNet = 0;
+            directJournalStatement.setInt(1, billID);
+            directJournalStatement.setString(2, CONSTANTS.DIRECT_JOURNAL_ENUM);
+            directJournalStatement.setInt(3, billID);
+            directJournalStatement.setInt(4, billID);
+            try (ResultSet rs = directJournalStatement.executeQuery()) {
+                if (rs.next()) {
+                    directJournalNet = rs.getDouble(1);
+                }
+            }
+
             System.out.println("\n\n\ntotal is " + grandTotalBill);
             double[] result = new double[2];
             try (PreparedStatement openingBalanceStatement = con.prepareStatement(openingBalanceQuery)) {
@@ -406,8 +426,8 @@ public class UtilityMethods {
                 try (ResultSet rs = openingBalanceStatement.executeQuery();) {
                     if (rs.next()) openingBalance = rs.getDouble(1);
                 }
-                result[0] = openingBalance + grandTotalBill - lastbillTotal - transactionSum;
-                result[1] = openingBalance + grandTotalBill - transactionSum;
+                result[0] = openingBalance + grandTotalBill - lastbillTotal - transactionSum + directJournalNet;
+                result[1] = openingBalance + grandTotalBill - transactionSum + directJournalNet;
 
             }
             return result;

@@ -215,11 +215,19 @@ public class ViewCustomerBill extends JFrame {
 
         String billDetailsQuery = "SELECT SNo,Quantity, ItemName, TotalBaseCosting, GoldPlatingWeight, TotalGoldCost, TotalFinalCost  " + "FROM billdetails WHERE BillID = ?";
         String transactionsQuery = "select billid,amount , date from transactions where billid=?";
+        String directJournalQuery = "SELECT " + DBStructure.JOURNAL_ENTRY_DATE + ", " +
+                DBStructure.JOURNAL_ENTRY_REMARK + ", (" + DBStructure.JOURNAL_ENTRY_DEBIT + " - " +
+                DBStructure.JOURNAL_ENTRY_CREDIT + ") AS balance_adjustment FROM " +
+                DBStructure.JOURNAL_ENTRY_TABLE + " WHERE " + DBStructure.JOURNAL_ENTRY_BILL_ID + " = ? AND " +
+                DBStructure.JOURNAL_ENTRY_TRANSACTION_TYPE + " = ? AND " +
+                DBStructure.JOURNAL_ENTRY_ACCOUNT_NAME + " = ? ORDER BY " +
+                DBStructure.JOURNAL_ENTRY_DATE + ", " + DBStructure.JOURNAL_ENTRY_ID;
         String billQuery = "select *from bills where billid=?;";
         int billNumber=-1;
         try (Connection con = MyClass.createConnection(); PreparedStatement billDetailsStatement = con.prepareStatement(billDetailsQuery);
              PreparedStatement billsStatement = con.prepareStatement(billQuery);
-             PreparedStatement transactionStatement = con.prepareStatement(transactionsQuery))
+             PreparedStatement transactionStatement = con.prepareStatement(transactionsQuery);
+             PreparedStatement directJournalStatement = con.prepareStatement(directJournalQuery))
         {
             billDetailsStatement.setInt(1, billID);
             DefaultTableModel model = (DefaultTableModel) table.getModel();
@@ -300,10 +308,38 @@ public class ViewCustomerBill extends JFrame {
                 model.setValueAt(UtilityMethods.round(totalRecieved, 2), model.getRowCount() - 1, model.getColumnCount() - 1);
             }// showing the transactions linked
 
+            double directJournalAdjustment = 0;
+            {
+                directJournalStatement.setInt(1, billID);
+                directJournalStatement.setString(2, CONSTANTS.DIRECT_JOURNAL_ENUM);
+                directJournalStatement.setString(3, getCustomerName());
+                try (ResultSet rs = directJournalStatement.executeQuery()) {
+                    while (rs.next()) {
+                        double adjustment = rs.getDouble("balance_adjustment");
+                        String remark = rs.getString(DBStructure.JOURNAL_ENTRY_REMARK);
+                        java.util.Date journalDate = new SimpleDateFormat("yyyy-MM-dd").parse(
+                                rs.getString(DBStructure.JOURNAL_ENTRY_DATE));
+                        String dateFormatted = new SimpleDateFormat("dd-MM-yy").format(journalDate);
+
+                        model.setRowCount(model.getRowCount() + 1);
+                        String label = "Direct journal/" + dateFormatted;
+                        if (remark != null && !remark.trim().isEmpty()) {
+                            label += ": " + remark;
+                        }
+                        model.setValueAt(label, model.getRowCount() - 1, model.getColumnCount() - 2);
+                        model.setValueAt(UtilityMethods.round(adjustment, 2), model.getRowCount() - 1, model.getColumnCount() - 1);
+                        directJournalAdjustment += adjustment;
+                    }
+                }
+                model.setRowCount(model.getRowCount() + 1);
+                model.setValueAt("Direct journal total", model.getRowCount() - 1, model.getColumnCount() - 2);
+                model.setValueAt(UtilityMethods.round(directJournalAdjustment, 2), model.getRowCount() - 1, model.getColumnCount() - 1);
+            }// showing direct journal entries linked to this bill
+
             {
                 model.setRowCount(model.getRowCount() + 1);
                 model.setValueAt("baki", model.getRowCount() - 1, model.getColumnCount() - 2);
-                model.setValueAt(UtilityMethods.round((balance[1] - totalRecieved), 2), model.getRowCount() - 1, model.getColumnCount() - 1);
+                model.setValueAt(UtilityMethods.round((balance[1] - totalRecieved + directJournalAdjustment), 2), model.getRowCount() - 1, model.getColumnCount() - 1);
             }//showing the balances
             setBillID(billID);
 

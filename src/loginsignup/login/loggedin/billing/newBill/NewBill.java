@@ -116,6 +116,7 @@ public class NewBill extends JFrame {
         PreparedStatement customerTableStatement = null;
         PreparedStatement linkTransactionsStatement = null;
         PreparedStatement journalEntryStatement = null;
+        PreparedStatement linkDirectJournalEntriesStatement = null;
         String customerName = customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString();
 
         if (customerComboBox.getSelectedIndex() == 0) {
@@ -160,8 +161,16 @@ public class NewBill extends JFrame {
             String insertBillDetailsQuery = "INSERT INTO billdetails (BillID, SNo, ItemName, DesignID, OrderType, RawCost, LabourCost, DullChillaiCost, " + "MeenaColorMeenaCost, RhodiumCost, NagSettingCost, OtherBaseCosts, TotalBaseCosting, GoldRate, " + "GoldPlatingWeight, TotalGoldCost, TotalFinalCost, OrderSlipNumber,OtherBaseCostNotes,quantity) " + "VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?)";
             billDetailsStatement = conn.prepareStatement(insertBillDetailsQuery);
             String inventoryQuery = "update " + DBStructure.INVENTORY_TABLE + " set " + DBStructure.INVENTORY_TOTAL_QUANTITY + "=" + DBStructure.INVENTORY_TOTAL_QUANTITY + "-? where " + DBStructure.INVENTORY_DESIGN_ID + "=?";
+            String linkDirectJournalEntriesQuery = "UPDATE " + DBStructure.JOURNAL_ENTRY_TABLE +
+                    " SET " + DBStructure.JOURNAL_ENTRY_BILL_ID + " = ? WHERE " +
+                    DBStructure.JOURNAL_ENTRY_ACCOUNT_NAME + " = ? AND " +
+                    DBStructure.JOURNAL_ENTRY_TRANSACTION_TYPE + " = ? AND " +
+                    DBStructure.JOURNAL_ENTRY_BILL_ID + " IS NULL AND " +
+                    DBStructure.JOURNAL_ENTRY_TRANSACTION_ID + " IS NULL AND " +
+                    DBStructure.JOURNAL_ENTRY_DATE + " <= ?";
             inventoryStatement = conn.prepareStatement(inventoryQuery);
             journalEntryStatement = conn.prepareStatement(insertJournalEntryQuery);
+            linkDirectJournalEntriesStatement = conn.prepareStatement(linkDirectJournalEntriesQuery);
             double grandTotal = 0;
             for (int i = 0; i < rowCount - 1; i++) {
                 int serialNo = Integer.parseInt(getStringValue(model, i, SNO_INDEX, "0"));
@@ -256,10 +265,17 @@ public class NewBill extends JFrame {
             journalEntryStatement.setDouble(6, grandTotal);
             journalEntryStatement.setDouble(7, 0);
             journalEntryStatement.addBatch();
-
             billDetailsStatement.executeBatch();
             inventoryStatement.executeBatch();
             journalEntryStatement.executeBatch();
+
+            // Attach only this customer's earlier, unlinked direct journal lines to this bill.
+            linkDirectJournalEntriesStatement.setInt(1, getCurBillID());
+            linkDirectJournalEntriesStatement.setString(2, customerName);
+            linkDirectJournalEntriesStatement.setString(3, CONSTANTS.DIRECT_JOURNAL_ENUM);
+            linkDirectJournalEntriesStatement.setDate(4, java.sql.Date.valueOf(getDateTime().toLocalDate()));
+            linkDirectJournalEntriesStatement.executeUpdate();
+
             customerTableStatement = conn.prepareStatement(updateCustomerTableQuery);
 
             customerTableStatement.setDouble(1, grandTotal);
@@ -300,6 +316,7 @@ public class NewBill extends JFrame {
                 if (customerTableStatement != null) customerTableStatement.close();
                 if(linkTransactionsStatement!=null) linkTransactionsStatement.close();
                 if (journalEntryStatement != null) journalEntryStatement.close();
+                if (linkDirectJournalEntriesStatement != null) linkDirectJournalEntriesStatement.close();
             } catch (SQLException closeEx) {
                 Thread.dumpStack();
             }
