@@ -6,6 +6,8 @@ import utils.UtilityMethods;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -15,6 +17,19 @@ import java.util.Date;
 import java.util.Random;
 
 public class cashTransaction extends JFrame {
+    // Automatic journals duplicate bills/payments; opening journals duplicate openingaccount.
+    // Only direct adjustments are additional to the existing source-record calculation.
+    private static final String CLEAR_ACCOUNT_BALANCE_QUERY =
+            "SELECT COALESCE(c.openingaccount, 0) + " +
+            "COALESCE((SELECT SUM(bd.totalfinalcost) FROM billdetails bd " +
+            "JOIN bills b ON b.billid = bd.billid WHERE b.customer_name = c.customer_name " +
+            "AND COALESCE(b.drafts, 0) = 0), 0) - " +
+            "COALESCE((SELECT SUM(t.amount) FROM transactions t " +
+            "WHERE t.customer_name = c.customer_name), 0) + " +
+            "COALESCE((SELECT SUM(COALESCE(j.debit, 0) - COALESCE(j.credit, 0)) " +
+            "FROM journalentry j WHERE j.accountname = c.customer_name " +
+            "AND j.transaction_type = 'direct'), 0) AS outstanding " +
+            "FROM customers c WHERE c.customer_name = ?";
     private LocalDate date;
 
     public JButton getBackButton() {
@@ -234,38 +249,43 @@ public class cashTransaction extends JFrame {
         clearAccountButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-//                String query = "SELECT COALESCE(SUM(bd.totalfinalcost), 0) - COALESCE(SUM(t.amount), 0) AS outstanding FROM billdetails bd LEFT JOIN transactions t ON t.customer_name = bd.customer_name WHERE bd.customer_name = ?";
-
                 String customerName = partyNameComboBox.getSelectedItem() != null ? partyNameComboBox.getSelectedItem().toString() : "";
-                String query = "SELECT (coalesce(sum(totalfinalcost),0) - (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE customer_name = ?) + (SELECT IFNULL(openingaccount, 0) FROM customers WHERE customer_name = ?)) AS outstanding FROM billdetails bd JOIN bills b ON b.billid = bd.billid WHERE b.customer_name = ?";
-                try (Connection con = MyClass.createConnection(); PreparedStatement statement = con.prepareStatement(query)) {
+                if (partyNameComboBox.getSelectedIndex() <= 0 || customerName.trim().isEmpty()) {
+                    JOptionPane.showMessageDialog(cashTransaction.this, "Select a valid party first.");
+                    return;
+                }
+                try (Connection con = MyClass.createConnection();
+                     PreparedStatement statement = con.prepareStatement(CLEAR_ACCOUNT_BALANCE_QUERY)) {
                     statement.setString(1, customerName);
-                    statement.setString(2, customerName);
-                    statement.setString(3, customerName);
-                    ResultSet rs = statement.executeQuery();
-                    double balance = 0;
-                    if (rs.next()) {
-                        balance += rs.getDouble(1);
-
+                    BigDecimal balance;
+                    try (ResultSet rs = statement.executeQuery()) {
+                        if (!rs.next()) {
+                            amountTextField.setText("");
+                            JOptionPane.showMessageDialog(cashTransaction.this, "Selected party was not found.");
+                            return;
+                        }
+                        balance = rs.getBigDecimal("outstanding").setScale(2, RoundingMode.HALF_UP);
                     }
 
-                    balance = (double) (Math.round(balance * 100)) / 100;
-
-                    if (balance == 0) {
+                    if (balance.signum() == 0) {
+                        amountTextField.setText("");
                         JOptionPane.showMessageDialog(MyClass.newTransaction, "no advances or dues found");
 
                         return;
                     }
-                    if (balance < 0) {
-                        balance *= (-1);
+                    if (balance.signum() < 0) {
                         outRadioButton.setSelected(true);
                     } else {
                         inRadioButton.setSelected(true);
                     }
-                    amountTextField.setText(balance + "");
+                    amountTextField.setText(balance.abs().toPlainString());
 
 
                 } catch (SQLException ex) {
+                    amountTextField.setText("");
+                    JOptionPane.showMessageDialog(cashTransaction.this,
+                            "Could not calculate outstanding balance: " + ex.getMessage(),
+                            "Error", JOptionPane.ERROR_MESSAGE);
                     ex.printStackTrace();
                 }
 
