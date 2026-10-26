@@ -8,14 +8,15 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
 import java.sql.*;
+import java.util.Arrays;
 
 public class SignUp extends JFrame {
     private JTextField userTextField;
     private JTextField authorityTextField;
-    private JTextField passwordTextField;
+    private JPasswordField passwordTextField;
     private JButton SUBMITButton;
     private JPanel panel;
-    private JTextField rootPasswordTextField;
+    private JPasswordField rootPasswordTextField;
     private JButton backButton;
 
 
@@ -31,7 +32,11 @@ public class SignUp extends JFrame {
         SUBMITButton.addActionListener(e -> {
             String username = userTextField.getText();
             String authority = authorityTextField.getText();
-            String password = passwordTextField.getText();
+            char[] passwordCharacters = passwordTextField.getPassword();
+            char[] rootPasswordCharacters = rootPasswordTextField.getPassword();
+            try {
+            String password = new String(passwordCharacters);
+            String rootPassword = new String(rootPasswordCharacters);
             boolean exists = false;
             if (username == null || password == null || username.length() == 0 || password.length() == 0) {
                 JOptionPane.showMessageDialog(this, "Username or password is empty!", "eror", JOptionPane.ERROR_MESSAGE);
@@ -43,7 +48,7 @@ public class SignUp extends JFrame {
                     Connection con = DriverManager.getConnection(
                             "jdbc:mysql://localhost:3306/mysql",
                             "root",
-                            rootPasswordTextField.getText()
+                            rootPassword
                     );
                     PreparedStatement ps = con.prepareStatement(query)
             ) {
@@ -70,22 +75,22 @@ public class SignUp extends JFrame {
                     "@echo off\r\n" +
                             "\r\n" +
                             "echo Creating database...\r\n" +
-                            "mysql -u root -p" + rootPasswordTextField.getText() +
+                            "mysql -u root -p" + rootPassword +
                             " -e \"CREATE DATABASE " + username + ";\"\r\n" +
                             "if errorlevel 1 goto error\r\n" +
                             "\r\n" +
                             "echo Creating user...\r\n" +
-                            "mysql -u root -p" + rootPasswordTextField.getText() +
+                            "mysql -u root -p" + rootPassword +
                             " -e \"CREATE USER '" + username + "'@'%%' IDENTIFIED BY '" + password + "';\"\r\n" +
                             "if errorlevel 1 goto error\r\n" +
                             "\r\n" +
                             "echo Granting privileges...\r\n" +
-                            "mysql -u root -p" + rootPasswordTextField.getText() +
+                            "mysql -u root -p" + rootPassword +
                             " -e \"GRANT ALL PRIVILEGES ON " + username + ".* TO '" + username + "'@'%%';\"\r\n" +
                             "if errorlevel 1 goto error\r\n" +
                             "\r\n" +
                             "echo Importing structure...\r\n" +
-                            "mysql --binary-mode=1 -u root -p" + rootPasswordTextField.getText() +
+                            "mysql --binary-mode=1 -u root -p" + rootPassword +
                             " " + username + " < structure.sql\r\n" +
                             "if errorlevel 1 goto error\r\n" +
                             "\r\n" +
@@ -103,10 +108,15 @@ public class SignUp extends JFrame {
                 throw new RuntimeException(ex);
             }
             try {
-                Process p = new ProcessBuilder("cmd.exe", "/c ", "createUser.bat")
+                Process p = new ProcessBuilder("cmd.exe", "/c", "createUser.bat")
                         .directory(new File("src/resources"))
                         .start();
-                System.out.println(p.waitFor() + " is the code");
+                int exitCode = p.waitFor();
+                if (exitCode == 0) {
+                    JOptionPane.showMessageDialog(this, "User created successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(this, "User creation could not be completed.", "error", JOptionPane.ERROR_MESSAGE);
+                }
                 try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
                 ) {
                     String line;
@@ -122,6 +132,12 @@ public class SignUp extends JFrame {
                 if (file.exists() && !file.delete()) {
                     System.err.println("Could not delete temporary user-creation script: " + file.getPath());
                 }
+            }
+            } finally {
+                Arrays.fill(passwordCharacters, '\0');
+                Arrays.fill(rootPasswordCharacters, '\0');
+                passwordTextField.setText("");
+                rootPasswordTextField.setText("");
             }
 
 

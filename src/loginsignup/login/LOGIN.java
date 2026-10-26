@@ -12,6 +12,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Arrays;
 
 public class LOGIN extends JFrame {
     private JTextField userTextField;
@@ -28,9 +29,9 @@ public class LOGIN extends JFrame {
         databaseField.setText(database);
     }
 
-    private JTextField passwordField;
+    private JPasswordField passwordField;
 
-    public JTextField getPasswordField() {
+    public JPasswordField getPasswordField() {
         return passwordField;
     }
 
@@ -42,7 +43,7 @@ public class LOGIN extends JFrame {
     private JCheckBox isDevMode;
     private JTextField databaseField;
     private String loginID;
-    private String password;
+    private char[] password;
     private String host;
     private String database = "";
     private String port = "3306";
@@ -62,7 +63,7 @@ public class LOGIN extends JFrame {
     private String url;
 
     public String getPassword() {
-        return password;
+        return password == null ? null : new String(password);
     }
 
     public String getLoginID() {
@@ -128,7 +129,10 @@ public class LOGIN extends JFrame {
                 else
                     database = loginID;
                 url = "jdbc:mysql://" + host + ":" + port + "/" + database;
-                password = passwordField.getText();
+                if (password != null) {
+                    Arrays.fill(password, '\0');
+                }
+                password = passwordField.getPassword();
 
                 try (Connection con = MyClass.createConnection();
                 ) {
@@ -137,7 +141,8 @@ public class LOGIN extends JFrame {
                         return;
                     }
                 } catch (SQLException ex) {
-                    throw new RuntimeException(ex);
+                    ex.printStackTrace();
+                    return;
                 }
                 if(!database.isEmpty()) {
                     MyClass.mainScreen = new MainScreen();
@@ -161,6 +166,9 @@ public class LOGIN extends JFrame {
     public void nullLoginParameters() {
         database = null;
         loginID = null;
+        if (password != null) {
+            Arrays.fill(password, '\0');
+        }
         password = null;
     }
 
