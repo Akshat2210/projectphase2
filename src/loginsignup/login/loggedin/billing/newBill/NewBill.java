@@ -17,6 +17,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -103,6 +104,10 @@ public class NewBill extends JFrame {
         return (value != null && !value.toString().trim().isEmpty()) ? value.toString() : defaultValue;
     }
 
+    private BigDecimal getBigDecimalValue(DefaultTableModel model, int row, int columnIndex) {
+        return new BigDecimal(getStringValue(model, row, columnIndex, "0").trim());
+    }
+
     private boolean insertData() {
 
         DefaultTableModel model = (DefaultTableModel) billTable.getModel();
@@ -171,7 +176,7 @@ public class NewBill extends JFrame {
             inventoryStatement = conn.prepareStatement(inventoryQuery);
             journalEntryStatement = conn.prepareStatement(insertJournalEntryQuery);
             linkDirectJournalEntriesStatement = conn.prepareStatement(linkDirectJournalEntriesQuery);
-            double grandTotal = 0;
+            BigDecimal grandTotal = BigDecimal.ZERO;
             for (int i = 0; i < rowCount - 1; i++) {
                 int serialNo = Integer.parseInt(getStringValue(model, i, SNO_INDEX, "0"));
                 String itemName = getStringValue(model, i, ITEM_NAME_INDEX, "Unknown");
@@ -204,18 +209,18 @@ public class NewBill extends JFrame {
                 }
 
                 int quantity = Integer.parseInt(getStringValue(model, i, QUANTITY_INDEX, "0"));
-                double raw = Double.parseDouble(getStringValue(model, i, RAW_INDEX, "0"));
-                double labour = Double.parseDouble(getStringValue(model, i, LABOUR_INDEX, "0"));
-                double dullChillai = Double.parseDouble(getStringValue(model, i, DULL_CHILLAI_INDEX, "0"));
-                double mcm = Double.parseDouble(getStringValue(model, i, MEENA_INDEX, "0"));
-                double rh = Double.parseDouble(getStringValue(model, i, RHODIUM_INDEX, "0"));
-                double nag = Double.parseDouble(getStringValue(model, i, NAG_SETTING_INDEX, "0"));
-                double other = Double.parseDouble(getStringValue(model, i, OTHER_BASE_INDEX, "0"));
-                double totalBaseCost = Double.parseDouble(getStringValue(model, i, PLUSGOLD, "0"));
-                double goldRate = newBill.goldrate;
-                double goldPlatingWeight = Double.parseDouble(getStringValue(model, i, GOLD_WEIGHT_INDEX, "0"));
-                double totalGoldCost = Double.parseDouble(getStringValue(model, i, GOLD_COST_INDEX, "0"));
-                double totalFinalCost = Double.parseDouble(getStringValue(model, i, TOTAL_COST_INDEX, "0"));
+                BigDecimal raw = getBigDecimalValue(model, i, RAW_INDEX);
+                BigDecimal labour = getBigDecimalValue(model, i, LABOUR_INDEX);
+                BigDecimal dullChillai = getBigDecimalValue(model, i, DULL_CHILLAI_INDEX);
+                BigDecimal mcm = getBigDecimalValue(model, i, MEENA_INDEX);
+                BigDecimal rh = getBigDecimalValue(model, i, RHODIUM_INDEX);
+                BigDecimal nag = getBigDecimalValue(model, i, NAG_SETTING_INDEX);
+                BigDecimal other = getBigDecimalValue(model, i, OTHER_BASE_INDEX);
+                BigDecimal totalBaseCost = getBigDecimalValue(model, i, PLUSGOLD);
+                BigDecimal goldRate = BigDecimal.valueOf(newBill.goldrate);
+                BigDecimal goldPlatingWeight = getBigDecimalValue(model, i, GOLD_WEIGHT_INDEX);
+                BigDecimal totalGoldCost = getBigDecimalValue(model, i, GOLD_COST_INDEX);
+                BigDecimal totalFinalCost = getBigDecimalValue(model, i, TOTAL_COST_INDEX);
                 String otherDetails = getStringValue(model, i, OTHER_DETAILS_INDEX, "");
                 int orderSlipNumber = snoToItemIdMap.getOrDefault(serialNo, 0);
                 if ((model.getValueAt(i, ORDER_SLIP_QUANTITY_INDEX) == null || model.getValueAt(i, ORDER_SLIP_QUANTITY_INDEX).toString().trim().isEmpty()) && !designID.contentEquals("NoID")) {
@@ -228,23 +233,23 @@ public class NewBill extends JFrame {
                 billDetailsStatement.setString(3, itemName);
                 billDetailsStatement.setString(4, designID);
                 billDetailsStatement.setString(5, orderType);
-                billDetailsStatement.setDouble(6, raw);
-                billDetailsStatement.setDouble(7, labour);
-                billDetailsStatement.setDouble(8, dullChillai);
-                billDetailsStatement.setDouble(9, mcm);
-                billDetailsStatement.setDouble(10, rh);
-                billDetailsStatement.setDouble(11, nag);
-                billDetailsStatement.setDouble(12, other);
-                billDetailsStatement.setDouble(13, totalBaseCost);
-                billDetailsStatement.setDouble(14, goldRate);
-                billDetailsStatement.setDouble(15, goldPlatingWeight);
-                billDetailsStatement.setDouble(16, totalGoldCost);
-                billDetailsStatement.setDouble(17, totalFinalCost);
+                billDetailsStatement.setBigDecimal(6, raw);
+                billDetailsStatement.setBigDecimal(7, labour);
+                billDetailsStatement.setBigDecimal(8, dullChillai);
+                billDetailsStatement.setBigDecimal(9, mcm);
+                billDetailsStatement.setBigDecimal(10, rh);
+                billDetailsStatement.setBigDecimal(11, nag);
+                billDetailsStatement.setBigDecimal(12, other);
+                billDetailsStatement.setBigDecimal(13, totalBaseCost);
+                billDetailsStatement.setBigDecimal(14, goldRate);
+                billDetailsStatement.setBigDecimal(15, goldPlatingWeight);
+                billDetailsStatement.setBigDecimal(16, totalGoldCost);
+                billDetailsStatement.setBigDecimal(17, totalFinalCost);
                 billDetailsStatement.setLong(18, orderSlipNumber);
                 billDetailsStatement.setString(19, otherDetails);
                 billDetailsStatement.setInt(20, quantity);
                 billDetailsStatement.addBatch();
-                grandTotal = grandTotal + totalFinalCost;
+                grandTotal = grandTotal.add(totalFinalCost);
             }
 
             // Debit the customer's receivable and credit sales for this bill.
@@ -253,8 +258,8 @@ public class NewBill extends JFrame {
             journalEntryStatement.setString(3, customerName);
             journalEntryStatement.setInt(4, getCurBillID());
             journalEntryStatement.setNull(5, Types.INTEGER);
-            journalEntryStatement.setDouble(6, 0);
-            journalEntryStatement.setDouble(7, grandTotal);
+            journalEntryStatement.setBigDecimal(6, BigDecimal.ZERO);
+            journalEntryStatement.setBigDecimal(7, grandTotal);
             journalEntryStatement.addBatch();
 
             journalEntryStatement.setString(1, CONSTANTS.SALE_ENUM);
@@ -262,8 +267,8 @@ public class NewBill extends JFrame {
             journalEntryStatement.setString(3, "Sales");
             journalEntryStatement.setInt(4, getCurBillID());
             journalEntryStatement.setNull(5, Types.INTEGER);
-            journalEntryStatement.setDouble(6, grandTotal);
-            journalEntryStatement.setDouble(7, 0);
+            journalEntryStatement.setBigDecimal(6, grandTotal);
+            journalEntryStatement.setBigDecimal(7, BigDecimal.ZERO);
             journalEntryStatement.addBatch();
             billDetailsStatement.executeBatch();
             inventoryStatement.executeBatch();
@@ -278,7 +283,7 @@ public class NewBill extends JFrame {
 
             customerTableStatement = conn.prepareStatement(updateCustomerTableQuery);
 
-            customerTableStatement.setDouble(1, grandTotal);
+            customerTableStatement.setBigDecimal(1, grandTotal);
             customerTableStatement.setString(2, customerName);
             customerTableStatement.executeUpdate();
             System.out.println(billID + " is the billid");
