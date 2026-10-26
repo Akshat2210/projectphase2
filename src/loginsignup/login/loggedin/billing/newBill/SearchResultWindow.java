@@ -190,6 +190,16 @@ public class SearchResultWindow extends JFrame {
             );
         }
     }
+
+    public void refreshResults() {
+        DefaultTableModel model = (DefaultTableModel) dataTable.getModel();
+        if ("inventory".equals(mode)) {
+            fetchInventory(model);
+        } else if ("orderslip".equals(mode)) {
+            fetchOrderSlip(model);
+        }
+    }
+
     private Vector<Integer> sqlOrderSlipUpdate(int BID) //this will also writen values to append to the bill
     {
         Vector<Integer> detailsToPush = new Vector<>();

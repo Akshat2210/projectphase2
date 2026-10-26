@@ -529,6 +529,9 @@ public class NewBill extends JFrame {
                 int selectedrow = billTable.getSelectedRow();
                 tableModel.fireTableDataChanged();
                 updateGrandTotalLabel();
+                if (searchResultWindow != null && searchResultWindow.isVisible()) {
+                    searchResultWindow.refreshResults();
+                }
                 billTable.setRowSelectionInterval(selectedrow, selectedrow);
             }
 
