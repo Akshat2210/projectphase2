@@ -23,11 +23,11 @@
       "id": "ISSUE-002",
       "title": "Make login and signup password fields secure",
       "priority": "critical",
-      "status": "open",
+      "status": "completed",
       "details": "Password fields use JTextField and are handled as Strings. Use JPasswordField and clear password arrays after use.",
       "files": ["src/loginsignup/login/LOGIN.java", "src/loginsignup/signup/SignUp.java"],
-      "notes": [],
-      "completed_date": null
+      "notes": ["Login and signup now use JPasswordField. Password character arrays are cleared during reset or after signup processing."],
+      "completed_date": "2026-10-26"
     },
     {
       "id": "ISSUE-003",
