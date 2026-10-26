@@ -409,6 +409,14 @@ public class NewBill extends JFrame {
         }
     }
 
+    private void updateGrandTotalLabel() {
+        double grandTotal = 0;
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            grandTotal += getDoubleValue(tableModel.getValueAt(i, TOTAL_COST_INDEX));
+        }
+        grandTotalLabel.setText("Grand total:" + UtilityMethods.round(grandTotal, 2));
+    }
+
     public Connection getTransacTemp() {
         return transacTemp;
     }
@@ -515,6 +523,7 @@ public class NewBill extends JFrame {
                 billTable.getActionMap().put("deleteRow", oldAction);
                 int selectedrow = billTable.getSelectedRow();
                 tableModel.fireTableDataChanged();
+                updateGrandTotalLabel();
                 billTable.setRowSelectionInterval(selectedrow, selectedrow);
             }
 
@@ -807,12 +816,8 @@ public class NewBill extends JFrame {
                 updateThroughSlip = false;
             }
             checkAndRemoveRow(row, tableModel, SNO_INDEX, false);
-            double grandTotal = 0;
-            for (int i = 0; i < tableModel.getRowCount(); i++) {
-                double value = tableModel.getValueAt(i, TOTAL_COST_INDEX) == null ? 0 : tableModel.getValueAt(i, TOTAL_COST_INDEX).toString().isEmpty() ? 0 : Double.parseDouble(tableModel.getValueAt(i, TOTAL_COST_INDEX).toString());
-                grandTotal += value;
-            }
-            grandTotalLabel.setText("Grand total:" + UtilityMethods.round(grandTotal, 2));
+            updateGrandTotalLabel();
+
             if (col == ITEM_NAME_INDEX) {
 
                 String value = codeToItemName.get(getStringValue(tableModel, row, ITEM_NAME_INDEX, "").trim().toUpperCase());
@@ -1122,7 +1127,6 @@ public class NewBill extends JFrame {
 
     private void checkAndRemoveRow(int row, DefaultTableModel tableModel, int snoIndex, boolean forceRemove) {
         // Ensure the row index is valid
-//        Thread.dumpStack();
 
         if (row < 0 || row >= tableModel.getRowCount() - 1) {
             return; // Invalid row index, exit method last row can not be deleted
@@ -1140,10 +1144,7 @@ public class NewBill extends JFrame {
         }
 
         if (isEmpty) {
-//            try {
 
-//            }
-//            catch ()
             relinkAssociations(row + 1);
             tableModel.removeRow(row);
             reCheckEnableDisableInItemNameColumn();
