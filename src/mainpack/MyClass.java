@@ -25,6 +25,7 @@ import loginsignup.login.loggedin.transactionsandaccounts.journalEntry.journalEn
 import loginsignup.login.loggedin.transactionsandaccounts.viewTransactions.ViewTransactions;
 import loginsignup.signup.SignUp;
 import rootSettings.RootSettiingsScreen;
+import rootSettings.accessmodify.AccessModify;
 import rootSettings.users.Users;
 import utils.UtilityMethods;
 
@@ -119,6 +120,7 @@ public class MyClass {
     public static LedgerWindow ledgerWindow;
     public static RootSettiingsScreen rootSettiingsScreen;
     public static Users users;
+    public static AccessModify accessModify;
 
     public static Connection createConnection() throws SQLException {
         Connection conn;

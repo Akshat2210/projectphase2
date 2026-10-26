@@ -1,6 +1,7 @@
 package rootSettings.users;
 
 import mainpack.MyClass;
+import rootSettings.accessmodify.AccessModify;
 
 import javax.swing.*;
 import java.sql.Connection;
@@ -28,6 +29,19 @@ public class Users extends JFrame {
         backButton.addActionListener(e -> {
             dispose();
             MyClass.rootSettiingsScreen.setVisible(true);
+        });
+
+        modifyAccessButton.addActionListener(e -> {
+            String selectedUser = userList.getSelectedValue();
+            if (selectedUser == null) {
+                JOptionPane.showMessageDialog(this, "Please select a user.");
+                return;
+            }
+
+            MyClass.accessModify = new AccessModify();
+            MyClass.accessModify.init(selectedUser);
+            MyClass.accessModify.setVisible(true);
+            setVisible(false);
         });
 
         deleteUserButton.addActionListener(e -> {

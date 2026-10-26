@@ -15,7 +15,8 @@ public class CONSTANTS {
     public static final int NEGATIVE_NUMBER_ERROR = -4;
     public static final int DUPLICATE_SQL_ENTRY=1062;
     public static final int SQL_INVALID_CREDENTIALS_ERROR =1045;
-    public static final int SQL_INVALID_DATABASE_ERROR =1045;
+    public static final int SQL_INVALID_DATABASE_ERROR =1049;
+    public static final int SQL_DATABASE_ACCESS_DENIED_ERROR =1044;
     //---------------------------------------BELOW ARE STATUS CODE FOR SQL-----------------------------------------
     public static final int DRAFT_STATUS_CODE = 1001;
     public static final int COMMITED_STATUS_CODE = 1002;
