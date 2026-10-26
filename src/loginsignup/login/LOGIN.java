@@ -4,6 +4,7 @@ import loginsignup.login.loggedin.MainScreen;
 import loginsignup.login.loggedin.rootAdmin.RootScreen;
 import mainpack.MyClass;
 import rootSettings.RootSettiingsScreen;
+import utils.CONSTANTS;
 import utils.UtilityMethods;
 import utils.Variables;
 
@@ -118,16 +119,12 @@ public class LOGIN extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                loginID = userTextField.getText();
-                if (!"root".contentEquals(loginID) && !databaseField.getText().isEmpty()) {
-                    JOptionPane.showMessageDialog(temp, "please do not enter database name for  a non root user");
-                    return;
+                loginID = userTextField.getText().trim();
+                database = databaseField.getText().trim();
+                if (!"root".contentEquals(loginID) && database.isEmpty()) {
+                    database = loginID;
                 }
                 host = "localhost";
-                if (loginID.contentEquals("root"))
-                    database = databaseField.getText();
-                else
-                    database = loginID;
                 url = "jdbc:mysql://" + host + ":" + port + "/" + database;
                 if (password != null) {
                     Arrays.fill(password, '\0');
@@ -141,7 +138,13 @@ public class LOGIN extends JFrame {
                         return;
                     }
                 } catch (SQLException ex) {
-                    ex.printStackTrace();
+                    if (ex.getErrorCode() == CONSTANTS.SQL_DATABASE_ACCESS_DENIED_ERROR) {
+                        JOptionPane.showMessageDialog(temp,
+                                "This user does not have access to database '" + database + "'.",
+                                "Access denied",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
+                    nullLoginParameters();
                     return;
                 }
                 if(!database.isEmpty()) {
