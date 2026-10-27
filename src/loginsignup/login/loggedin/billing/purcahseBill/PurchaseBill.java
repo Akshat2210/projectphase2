@@ -15,6 +15,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.math.BigDecimal;
 import java.sql.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Vector;
 
 public class PurchaseBill extends JFrame {
@@ -22,6 +24,7 @@ public class PurchaseBill extends JFrame {
     private JPanel panel;
     private int billid;
     private Connection con;
+    private SearchResultWindow searchResultWindow;
 
     public int getBillid() {
         return billid;
@@ -64,7 +67,8 @@ public class PurchaseBill extends JFrame {
     }
 
     private boolean designIDexists(String designID) {
-        String query = "SELECT 1 FROM " + INVENTORY_TABLE + " WHERE " + INVENTORY_DESIGN_ID + " = ? LIMIT 1";
+        designID = designID == null ? "" : designID.trim();
+        String query = "SELECT 1 FROM " + INVENTORY_TABLE + " WHERE TRIM(" + INVENTORY_DESIGN_ID + ") = ? LIMIT 1";
         try (PreparedStatement stmt = con.prepareStatement(query)) {
             stmt.setString(1, designID);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -82,9 +86,9 @@ public class PurchaseBill extends JFrame {
         String customerName = customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString();
         String billDetailsTableQuery = "INSERT INTO " + BILLDETAILS_TABLE + " (" + BILLDETAILS_BILL_ID + ", " + BILLDETAILS_SNO + ", " + BILLDETAILS_DESIGN_ID + ", " + BILLDETAILS_ITEM_NAME + ", " + BILLDETAILS_QUANTITY + ", " + BILLDETAILS_RAW_COST + ", " + BILLDETAILS_TOTAL_FINAL_COST + ", " + "" + BILLDETAILS_ORDER_TYPE + ", " + BILLDETAILS_LABOUR_COST + ", " + BILLDETAILS_TOTAL_BASE_COSTING + ", " + BILLDETAILS_GOLD_RATE + ", " + BILLDETAILS_GOLD_PLATING_WEIGHT + ", " + BILLDETAILS_TOTAL_GOLD_COST + ") " + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         String billsTableQuery = "UPDATE " + BILLS_TABLE + " SET " + BILLS_DATE + " = ?, " + BILLS_CUSTOMER_NAME + " = ?, " + BILLS_BILL_NUMBER + " = ? " + "WHERE " + BILLS_BILL_ID + " = ?";
-        String updateInventoryQuery = "UPDATE " + INVENTORY_TABLE + " SET " + INVENTORY_TOTAL_QUANTITY + " = " + INVENTORY_TOTAL_QUANTITY + " + ? WHERE " + INVENTORY_DESIGN_ID + " = ?";
+        String updateInventoryQuery = "UPDATE " + INVENTORY_TABLE + " SET " + INVENTORY_TOTAL_QUANTITY + " = " + INVENTORY_TOTAL_QUANTITY + " + ? WHERE TRIM(" + INVENTORY_DESIGN_ID + ") = ?";
         String insertInventoryQuery = "INSERT INTO " + INVENTORY_TABLE + "(" + INVENTORY_DESIGN_ID + ", " + INVENTORY_TOTAL_QUANTITY + ", " + INVENTORY_ITEM_NAME + ", " + INVENTORY_BUY_PRICE + ", " + INVENTORY_SELL_PRICE + ") VALUES (?, ?, ?, ?, ?)";
-        String updateOtherQuery = "update " + INVENTORY_TABLE + " set " + INVENTORY_BUY_PRICE + " = ?, " + INVENTORY_SELL_PRICE + " = ?, " + INVENTORY_ITEM_NAME + " = ? where " + INVENTORY_DESIGN_ID + " = ?";
+        String updateOtherQuery = "update " + INVENTORY_TABLE + " set " + INVENTORY_BUY_PRICE + " = ?, " + INVENTORY_SELL_PRICE + " = ?, " + INVENTORY_ITEM_NAME + " = ? where TRIM(" + INVENTORY_DESIGN_ID + ") = ?";
         String customerTableQuery = "update " + CUSTOMERS_TABLE + " set " + CUSTOMERS_BALANCE + " = " + CUSTOMERS_BALANCE + " - ? where " + CUSTOMERS_CUSTOMER_NAME + " = ?";
         String insertJournalEntryQuery = "INSERT INTO " + JOURNAL_ENTRY_TABLE + " (" +
                 JOURNAL_ENTRY_TRANSACTION_TYPE + ", " +
@@ -113,7 +117,7 @@ public class PurchaseBill extends JFrame {
                 Object rawCostObj = model.getValueAt(i, rawCostIndex);
                 Object totalCostObj = model.getValueAt(i, totalIndex);
                 int sno = snoObj == null ? 0 : Integer.parseInt(snoObj.toString());
-                String designID = designIDObj == null ? "" : designIDObj.toString();
+                String designID = designIDObj == null ? "" : designIDObj.toString().trim();
                 String itemName = itemNameObj == null ? "" : itemNameObj.toString();
                 int quantity = quantityObj == null || quantityObj.toString().isEmpty() ? 0 : Integer.parseInt(quantityObj.toString());
                 BigDecimal rawCost = rawCostObj == null ? BigDecimal.ZERO : new BigDecimal(rawCostObj.toString());
@@ -135,7 +139,7 @@ public class PurchaseBill extends JFrame {
                 billStmt.setBigDecimal(12, BigDecimal.ZERO); // GoldPlatingWeight
                 billStmt.setBigDecimal(13, BigDecimal.ZERO); // TotalGoldCost
                 billStmt.addBatch();
-                designID = model.getValueAt(i, designIDIndex) == null ? "" : model.getValueAt(i, designIDIndex).toString();
+                designID = getDesignIdValue(i);
                 quantity = getIntegerValue(model.getValueAt(i, quantityIndex));
                 itemName = model.getValueAt(i, itemNameIndex) == null ? "" : model.getValueAt(i, itemNameIndex).toString();
                 int price = model.getValueAt(i, rawCostIndex) == null ? 0 : getIntegerValue(model.getValueAt(i, rawCostIndex));
@@ -236,7 +240,7 @@ public class PurchaseBill extends JFrame {
 
     public void init() {
         setContentPane(panel);
-        pack();
+
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         headers = new Vector<>();
         headers.add("Sno");
@@ -255,6 +259,7 @@ public class PurchaseBill extends JFrame {
         snoIndex = headers.indexOf("Sno");
         itemNameIndex = headers.indexOf("item name");
         backButton.addActionListener(e -> {
+            if (searchResultWindow != null) searchResultWindow.dispose();
             setVisible(false);
             dispose();
             if (con != null) {
@@ -306,6 +311,7 @@ public class PurchaseBill extends JFrame {
                         return;
                     }
                     if (insertData() ) {
+                        if (searchResultWindow != null) searchResultWindow.dispose();
 
                         dispose();
                         try {
@@ -344,12 +350,13 @@ public class PurchaseBill extends JFrame {
 
             if (col == quantityIndex) {
                 try {
-                    quantity = getDoubleValue(model.getValueAt(row, quantityIndex));
+                    quantity = getIntegerValue(model.getValueAt(row, quantityIndex));
                     if (quantity == 0) model.setValueAt("", row, quantityIndex);
 
                 } catch (NumberFormatException exception) {
                     model.setValueAt("", row, quantityIndex);
                 }
+                updateDisplayedInventory();
                 updateTotal(row);
 
             }
@@ -361,19 +368,22 @@ public class PurchaseBill extends JFrame {
                 } catch (NumberFormatException ex) {
                     model.setValueAt("", row, rawCostIndex);
                 }
-                if (!getStringValue(model.getValueAt(row, designIDIndex)).isEmpty() && designIDexists(getStringValue(model.getValueAt(row, designIDIndex)))) {
+                String designId = getDesignIdValue(row);
+                if (!designId.isEmpty() && designIDexists(designId)) {
                     JOptionPane.showMessageDialog(MyClass.purchaseBill, "raw getBuyPrice will be update in inventory, re enter design id to avoid this");
                 }
                 setDefaultSellPrice(row);
                 updateTotal(row);
             }
             if (col == designIDIndex) {
-
-                fetchAndAppend(model.getValueAt(row, designIDIndex) == null ? "noidblank" : model.getValueAt(row, designIDIndex).toString(), row);
+                String designId = getDesignIdValue(row);
+                model.setValueAt(designId, row, designIDIndex);
+                fetchAndAppend(designId, row);
+                updateDisplayedInventory();
                 billTable.repaint();
             }
             if (col == itemNameIndex) {
-                if (designIDexists(getStringValue(model.getValueAt(row, designIDIndex))))
+                if (designIDexists(getDesignIdValue(row)))
                     JOptionPane.showMessageDialog(MyClass.purchaseBill, "आइटम का नाम इन्वन्टोरी मे बदल जाएगा, कृपया नाम न बदलने की स्थिति मे दुबारा से designid डालें ");
                 String stringValueUperCase = getStringValue(model.getValueAt(row, itemNameIndex)).toUpperCase();
                 String valueToReplace = MyClass.codeToItemName.get(stringValueUperCase);
@@ -397,6 +407,7 @@ public class PurchaseBill extends JFrame {
                 if (model.getRowCount() == 1) return;
                 model.removeRow(billTable.getSelectedRow());
                 reAssignSno();
+                updateDisplayedInventory();
             }
         });
 
@@ -404,11 +415,56 @@ public class PurchaseBill extends JFrame {
         UtilityMethods.generateAndAddNames(customerComboBox);
         UtilityMethods.generateAndAddDates(dateComboBox, false);
 
+        customerComboBox.addActionListener(e -> {
+            if (customerComboBox.getSelectedIndex() <= 0) {
+                if (searchResultWindow != null) searchResultWindow.dispose();
+                setExtendedState(JFrame.MAXIMIZED_BOTH);
+                return;
+            }
+            if (searchResultWindow == null || !searchResultWindow.isDisplayable()) {
+                searchResultWindow = new SearchResultWindow(this);
+                searchResultWindow.init();
+                searchResultWindow.setAutoRequestFocus(false);
+            }
+            searchResultWindow.setCustomerName(String.valueOf(customerComboBox.getSelectedItem()));
+            searchResultWindow.setVisible(true);
+            setExtendedState(JFrame.NORMAL);
+            searchResultWindow.setExtendedState(JFrame.NORMAL);
+            UtilityMethods.splitFrame(this, searchResultWindow, UtilityMethods.VERTI_SPLIT);
+        });
+
         setBillid(fetchBillId());
         billidLabel.setText("bill id:" + getBillid());
-
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
 
     }
+    void addInventoryItem(Object designId, Object itemName, Object purchasePrice, int quantity) {
+        if (billTable.isEditing() && !billTable.getCellEditor().stopCellEditing()) return;
+        TableModelListener[] listeners = UtilityMethods.removeModelListener(model);
+        try {
+            int row = model.getRowCount() - 1;
+            if (!isRowEmpty(row)) {
+                model.addRow(new Object[model.getColumnCount()]);
+                row++;
+            }
+            model.setValueAt(row + 1, row, snoIndex);
+            model.setValueAt(designId == null ? "" : designId.toString().trim(), row, designIDIndex);
+            model.setValueAt(itemName, row, itemNameIndex);
+            model.setValueAt(purchasePrice, row, rawCostIndex);
+            model.setValueAt(quantity, row, quantityIndex);
+            setDefaultSellPrice(row);
+            updateTotal(row);
+            doRowManipulation(row);
+        } finally {
+            UtilityMethods.addModelListeners(listeners, model);
+        }
+        updateDisplayedInventory();
+        // The search window writes several values while the model listener is suspended.
+        // Refresh the table once the complete row has been added so it is visible immediately.
+        billTable.revalidate();
+        billTable.repaint();
+    }
+
     private boolean allQuantityValid() {
         DefaultTableModel model = (DefaultTableModel) billTable.getModel();
         int dataRowCount = model.getRowCount() - 1; // last row is the blank entry row
@@ -456,7 +512,8 @@ public class PurchaseBill extends JFrame {
     }
 
     private void fetchAndAppend(String designID, int row) {
-        String query = "select * from " + INVENTORY_TABLE + " where " + INVENTORY_DESIGN_ID + "=?";
+        designID = designID == null ? "" : designID.trim();
+        String query = "select * from " + INVENTORY_TABLE + " where TRIM(" + INVENTORY_DESIGN_ID + ")=?";
         try (PreparedStatement preparedStatement = con.prepareStatement(query)) {
             preparedStatement.setString(1, designID);
             ResultSet rs = preparedStatement.executeQuery();
@@ -493,6 +550,25 @@ public class PurchaseBill extends JFrame {
         for (int i = 0; i < model.getRowCount(); i++) {
             model.setValueAt(i + 1, i, snoIndex);
         }
+    }
+
+    private String getDesignIdValue(int row) {
+        return getStringValue(model.getValueAt(row, designIDIndex)).trim();
+    }
+
+    /** Updates the search window with database stock plus this bill's pending purchases. */
+    private void updateDisplayedInventory() {
+        if (searchResultWindow == null || !searchResultWindow.isDisplayable()) return;
+
+        Map<String, Integer> pendingPurchases = new HashMap<>();
+        for (int row = 0; row < model.getRowCount(); row++) {
+            String designId = getDesignIdValue(row);
+            if (designId.isEmpty()) continue;
+
+            int quantity = getIntegerValue(model.getValueAt(row, quantityIndex));
+            pendingPurchases.merge(designId, quantity, Integer::sum);
+        }
+        searchResultWindow.updateDisplayedInventory(pendingPurchases);
     }
 
     private boolean isRowEmpty(int row) {
