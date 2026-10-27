@@ -165,7 +165,7 @@ public class NewBill extends JFrame {
 
             String insertBillDetailsQuery = "INSERT INTO billdetails (BillID, SNo, ItemName, DesignID, OrderType, RawCost, LabourCost, DullChillaiCost, " + "MeenaColorMeenaCost, RhodiumCost, NagSettingCost, OtherBaseCosts, TotalBaseCosting, GoldRate, " + "GoldPlatingWeight, TotalGoldCost, TotalFinalCost, OrderSlipNumber,OtherBaseCostNotes,quantity) " + "VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?)";
             billDetailsStatement = conn.prepareStatement(insertBillDetailsQuery);
-            String inventoryQuery = "update " + DBStructure.INVENTORY_TABLE + " set " + DBStructure.INVENTORY_TOTAL_QUANTITY + "=" + DBStructure.INVENTORY_TOTAL_QUANTITY + "-? where " + DBStructure.INVENTORY_DESIGN_ID + "=?";
+            String inventoryQuery = "update " + DBStructure.INVENTORY_TABLE + " set " + DBStructure.INVENTORY_TOTAL_QUANTITY + "=" + DBStructure.INVENTORY_TOTAL_QUANTITY + "-? where TRIM(" + DBStructure.INVENTORY_DESIGN_ID + ")=?";
             String linkDirectJournalEntriesQuery = "UPDATE " + DBStructure.JOURNAL_ENTRY_TABLE +
                     " SET " + DBStructure.JOURNAL_ENTRY_BILL_ID + " = ? WHERE " +
                     DBStructure.JOURNAL_ENTRY_ACCOUNT_NAME + " = ? AND " +
@@ -187,7 +187,7 @@ public class NewBill extends JFrame {
                 }
 
 
-                String designID = getStringValue(model, i, DESIGN_ID_INDEX, "NoID");
+                String designID = getStringValue(model, i, DESIGN_ID_INDEX, "NoID").trim();
                 String orderType = slipTypeComboBox.getSelectedItem() == null ? "" : slipTypeComboBox.getSelectedItem().toString();
 
 
@@ -675,9 +675,10 @@ public class NewBill extends JFrame {
 
             if (col == designIdIndex && !searchResultWindow.isSearchFlag()) {
                 String designID = tableModel.getValueAt(row, designIdIndex) == null ? "" : tableModel.getValueAt(row, designIdIndex).toString().trim();
+                tableModel.setValueAt(designID, row, designIdIndex);
 
                 if (!designID.isEmpty()) {
-                    String query = "SELECT " + DBStructure.INVENTORY_ITEM_NAME + ", " + DBStructure.INVENTORY_SELL_PRICE + " FROM " + DBStructure.INVENTORY_TABLE + " WHERE " + DBStructure.INVENTORY_DESIGN_ID + " = ?";
+                    String query = "SELECT " + DBStructure.INVENTORY_ITEM_NAME + ", " + DBStructure.INVENTORY_SELL_PRICE + " FROM " + DBStructure.INVENTORY_TABLE + " WHERE TRIM(" + DBStructure.INVENTORY_DESIGN_ID + ") = ?";
 
                     try (Connection con = MyClass.createConnection(); PreparedStatement stmt = con.prepareStatement(query)) {
 
@@ -721,12 +722,12 @@ public class NewBill extends JFrame {
 
             if ((col == quantityIndex)) {
 
-                String designID = UtilityMethods.parseString(tableModel.getValueAt(row, designIdIndex));
+                String designID = UtilityMethods.parseString(tableModel.getValueAt(row, designIdIndex)).trim();
                 if (notThroughOrderSlip && designID != null && !designID.toString().contentEquals("")) {
                     String query =
                             "SELECT " + DBStructure.INVENTORY_TOTAL_QUANTITY +
                                     " FROM " + DBStructure.INVENTORY_TABLE +
-                                    " WHERE " + DBStructure.INVENTORY_DESIGN_ID + " = ?";
+                                    " WHERE TRIM(" + DBStructure.INVENTORY_DESIGN_ID + ") = ?";
 
                     try (Connection con = MyClass.createConnection();
                          PreparedStatement preparedStatement = con.prepareStatement(query)) {
