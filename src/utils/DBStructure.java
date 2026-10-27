@@ -123,6 +123,66 @@ public class DBStructure {
     public static final String user_name = "user";
     public static final String password = "password";
     public static final String authority = "authority";
+    public static final String USER_DEFAULT_GODOWN_ID = "default_godown_id";
+
+    // ====================== godowns ======================
+    // A sub-godown is represented by a godowns row with a parent_godown_id.
+    public static final String GODOWNS_TABLE = "godowns";
+    public static final String GODOWNS_GODOWN_ID = "godown_id";
+    public static final String GODOWNS_PARENT_GODOWN_ID = "parent_godown_id";
+    public static final String GODOWNS_GODOWN_NAME = "godown_name";
+    public static final String GODOWNS_IS_ACTIVE = "is_active";
+
+    // ====================== manufacturing send lots ======================
+    public static final String SEND_LOTS_TABLE = "send_lots";
+    public static final String SEND_LOTS_ID = "send_lot_id";
+    public static final String SEND_LOTS_SEND_DATE = "send_date";
+    public static final String SEND_LOTS_DEFAULT_SOURCE_GODOWN_ID = "default_source_godown_id";
+    public static final String SEND_LOTS_DEFAULT_DESTINATION_GODOWN_ID = "default_destination_godown_id";
+    public static final String SEND_LOTS_REMARK = "lot_remark";
+    public static final String SEND_LOTS_CREATED_BY_USER = "created_by_user";
+    public static final String SEND_LOTS_CREATED_AT = "created_at";
+
+    // ====================== manufacturing send packets ======================
+    public static final String SEND_PACKETS_TABLE = "send_packets";
+    public static final String SEND_PACKETS_ID = "send_packet_id";
+    public static final String SEND_PACKETS_SEND_LOT_ID = "send_lot_id";
+    public static final String SEND_PACKETS_PACKET_NUMBER = "packet_number";
+    public static final String SEND_PACKETS_CUSTOMER_NAME = "customer_name";
+    public static final String SEND_PACKETS_REMARK = "packet_remark";
+
+    // ====================== manufacturing send items ======================
+    public static final String SEND_ITEMS_TABLE = "send_items";
+    public static final String SEND_ITEMS_ID = "send_item_id";
+    public static final String SEND_ITEMS_SEND_PACKET_ID = "send_packet_id";
+    public static final String SEND_ITEMS_ITEM_NUMBER = "item_number";
+    public static final String SEND_ITEMS_SOURCE_GODOWN_ID = "source_godown_id";
+    public static final String SEND_ITEMS_DESTINATION_GODOWN_ID = "destination_godown_id";
+    public static final String SEND_ITEMS_INTENDED_RECIPIENT_USER = "intended_recipient_user";
+    public static final String SEND_ITEMS_ORDER_SLIP_ID = "order_slip_id";
+    public static final String SEND_ITEMS_ORDER_SLIP_ITEM_ID = "order_slip_item_id";
+    public static final String SEND_ITEMS_DESIGN_ID = "design_id";
+    public static final String SEND_ITEMS_ITEM_NAME = "item_name";
+    public static final String SEND_ITEMS_SENT_QUANTITY = "sent_quantity";
+    public static final String SEND_ITEMS_REMARK = "item_remark";
+
+    // ====================== manufacturing receive actions ======================
+    public static final String RECEIVE_ACTIONS_TABLE = "receive_actions";
+    public static final String RECEIVE_ACTIONS_ID = "receive_action_id";
+    public static final String RECEIVE_ACTIONS_SEND_LOT_ID = "send_lot_id";
+    public static final String RECEIVE_ACTIONS_RECEIVE_DATE = "receive_date";
+    public static final String RECEIVE_ACTIONS_GODOWN_ID = "receiving_godown_id";
+    public static final String RECEIVE_ACTIONS_RECEIVED_BY_USER = "received_by_user";
+    public static final String RECEIVE_ACTIONS_LOT_REMARK = "receive_lot_remark";
+    public static final String RECEIVE_ACTIONS_CREATED_AT = "created_at";
+
+    // ====================== manufacturing receive items ======================
+    public static final String RECEIVE_ITEMS_TABLE = "receive_items";
+    public static final String RECEIVE_ITEMS_ID = "receive_item_id";
+    public static final String RECEIVE_ITEMS_RECEIVE_ACTION_ID = "receive_action_id";
+    public static final String RECEIVE_ITEMS_SEND_ITEM_ID = "send_item_id";
+    public static final String RECEIVE_ITEMS_RECEIVED_QUANTITY = "received_quantity";
+    public static final String RECEIVE_ITEMS_REMARK = "receive_item_remark";
 
 
     static int getStock(String designID) {
