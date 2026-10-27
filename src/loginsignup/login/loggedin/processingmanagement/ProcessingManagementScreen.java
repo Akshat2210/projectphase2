@@ -2,6 +2,7 @@ package loginsignup.login.loggedin.processingmanagement;
 
 import loginsignup.login.loggedin.processingmanagement.recieve.Recieve;
 import loginsignup.login.loggedin.processingmanagement.send.Send;
+import loginsignup.login.loggedin.processingmanagement.godowns.GodownScreen;
 import mainpack.MyClass;
 
 import javax.swing.*;
@@ -13,6 +14,7 @@ public class ProcessingManagementScreen extends JFrame {
     private JButton backButton;
     private JButton sendButton;
     private JButton recieveButton;
+    private JButton godownsButton;
 
     public ProcessingManagementScreen() {
     }
@@ -46,6 +48,15 @@ public class ProcessingManagementScreen extends JFrame {
                 Recieve recieve = new Recieve(ProcessingManagementScreen.this);
                 recieve.init();
                 recieve.setVisible(true);
+            }
+        });
+        godownsButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                setVisible(false);
+                GodownScreen godownScreen = new GodownScreen(ProcessingManagementScreen.this);
+                godownScreen.init();
+                godownScreen.setVisible(true);
             }
         });
     }
