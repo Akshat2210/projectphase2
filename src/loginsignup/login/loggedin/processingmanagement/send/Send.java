@@ -10,9 +10,9 @@ public class Send extends JFrame {
     private final ProcessingManagementScreen processingManagementScreen;
     private JPanel panel;
     private JButton backButton;
-    private JComboBox comboBox1;
-    private JComboBox comboBox2;
-    private JComboBox comboBox3;
+    private JComboBox sendFrom;
+    private JComboBox sendTo;
+    private JComboBox dateComboBox;
 
     public Send(ProcessingManagementScreen processingManagementScreen) {
         this.processingManagementScreen = processingManagementScreen;
