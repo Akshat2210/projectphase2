@@ -6,6 +6,7 @@ import loginsignup.login.loggedin.billing.BillingScreen;
 import loginsignup.login.loggedin.billing.newBill.NewBill;
 import loginsignup.login.loggedin.inventorymanagement.InventoryScreen;
 import loginsignup.login.loggedin.ordermanagement.OrderScreen;
+import loginsignup.login.loggedin.processingmanagement.ProcessingManagementScreen;
 import loginsignup.login.loggedin.transactionsandaccounts.TransactionsScreen;
 import loginsignup.login.loggedin.transactionsandaccounts.CashEntry.cashTransaction;
 import mainpack.MyClass;
@@ -109,6 +110,15 @@ public class MainScreen extends JFrame {
                 MyClass.aalScreen.setVisible(true);
                 MyClass.aalScreen.init();
                 setVisible(false);
+            }
+        });
+        processingManagementButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ProcessingManagementScreen processingManagementScreen = new ProcessingManagementScreen();
+                processingManagementScreen.init();
+                processingManagementScreen.setVisible(true);
+                setProcessingManagementButtonEnabled(false);
             }
         });
         developerField.addActionListener(new ActionListener() {
@@ -262,6 +272,7 @@ public class MainScreen extends JFrame {
     private JButton inventoryManagementButton;
     private JButton accountingAndLedgerButton;
     private JTextField developerField;
+    private JButton processingManagementButton;
 
     public void setBillingButtonEnabled(boolean b) {
         billingButton.setEnabled(b);
@@ -281,6 +292,10 @@ public class MainScreen extends JFrame {
 
     public void setInventoryManagementButtonEnabled(boolean enabled) {
         inventoryManagementButton.setEnabled(enabled);
+    }
+
+    public void setProcessingManagementButtonEnabled(boolean enabled) {
+        processingManagementButton.setEnabled(enabled);
     }
 
     public void clickBillingButton() {

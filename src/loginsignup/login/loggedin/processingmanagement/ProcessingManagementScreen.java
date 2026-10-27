@@ -1,0 +1,52 @@
+package loginsignup.login.loggedin.processingmanagement;
+
+import loginsignup.login.loggedin.processingmanagement.recieve.Recieve;
+import loginsignup.login.loggedin.processingmanagement.send.Send;
+import mainpack.MyClass;
+
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+public class ProcessingManagementScreen extends JFrame {
+    private JPanel panel;
+    private JButton backButton;
+    private JButton sendButton;
+    private JButton recieveButton;
+
+    public ProcessingManagementScreen() {
+    }
+
+    public void init() {
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setContentPane(panel);
+        pack();
+
+        backButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dispose();
+                MyClass.mainScreen.setVisible(true);
+                MyClass.mainScreen.setProcessingManagementButtonEnabled(true);
+            }
+        });
+        sendButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                setVisible(false);
+                Send send = new Send(ProcessingManagementScreen.this);
+                send.init();
+                send.setVisible(true);
+            }
+        });
+        recieveButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                setVisible(false);
+                Recieve recieve = new Recieve(ProcessingManagementScreen.this);
+                recieve.init();
+                recieve.setVisible(true);
+            }
+        });
+    }
+}
