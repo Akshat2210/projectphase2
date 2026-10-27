@@ -26,6 +26,7 @@ import loginsignup.login.loggedin.transactionsandaccounts.viewTransactions.ViewT
 import loginsignup.signup.SignUp;
 import rootSettings.RootSettiingsScreen;
 import rootSettings.accessmodify.AccessModify;
+import rootSettings.datamanager.DataManager;
 import rootSettings.users.Users;
 import utils.UtilityMethods;
 
@@ -121,6 +122,7 @@ public class MyClass {
     public static RootSettiingsScreen rootSettiingsScreen;
     public static Users users;
     public static AccessModify accessModify;
+    public static DataManager dataManager;
 
     public static Connection createConnection() throws SQLException {
         Connection conn;
