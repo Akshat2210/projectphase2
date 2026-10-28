@@ -1,6 +1,7 @@
 package loginsignup.login.loggedin.processingmanagement.godowns;
 
 import loginsignup.login.loggedin.processingmanagement.ProcessingManagementScreen;
+import loginsignup.login.loggedin.processingmanagement.godowns.addgodown.AddGodown;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -10,6 +11,7 @@ public class GodownScreen extends JFrame {
     private final ProcessingManagementScreen processingManagementScreen;
     private JPanel panel;
     private JButton backButton;
+    private JButton addGodownsButton;
 
     public GodownScreen(ProcessingManagementScreen processingManagementScreen) {
         this.processingManagementScreen = processingManagementScreen;
@@ -25,6 +27,15 @@ public class GodownScreen extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 dispose();
                 processingManagementScreen.setVisible(true);
+            }
+        });
+        addGodownsButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                setVisible(false);
+                AddGodown addGodown = new AddGodown(GodownScreen.this);
+                addGodown.init();
+                addGodown.setVisible(true);
             }
         });
     }
