@@ -277,6 +277,17 @@ CREATE TABLE `users` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `quickremarks`
+--
+
+DROP TABLE IF EXISTS `quickremarks`;
+CREATE TABLE `quickremarks` (
+  `remarkid` int NOT NULL AUTO_INCREMENT,
+  `remark` varchar(1000) NOT NULL,
+  PRIMARY KEY (`remarkid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
 -- Manufacturing send and receive tables
 --
 -- A send_lot is the parent movement. The lot's source/destination values are
