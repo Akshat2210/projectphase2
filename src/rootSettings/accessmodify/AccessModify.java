@@ -1,6 +1,7 @@
 package rootSettings.accessmodify;
 
 import mainpack.MyClass;
+import rootSettings.accessmodify.advancesetting.advancesetting;
 
 import javax.swing.*;
 import java.sql.Connection;
@@ -22,6 +23,7 @@ public class AccessModify extends JFrame {
     private JButton button1;
     private JButton button2;
     private JButton modifyButton;
+    private JButton advanceButton;
     private String username;
     private final DefaultListModel<String> permittedModel = new DefaultListModel<>();
     private final DefaultListModel<String> restrictedModel = new DefaultListModel<>();
@@ -50,6 +52,21 @@ public class AccessModify extends JFrame {
         button2.addActionListener(e -> moveSelectedDatabases(permittedList, permittedModel, restrictedModel));
 
         modifyButton.addActionListener(e -> saveAccessChanges());
+
+        advanceButton.addActionListener(e -> {
+            if (username == null || username.isBlank()) {
+                JOptionPane.showMessageDialog(this,
+                        "Please select a user before opening Advanced Settings.",
+                        "No user selected",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            advancesetting advancedSettings = new advancesetting();
+            advancedSettings.init(this, username);
+            advancedSettings.setVisible(true);
+            setVisible(false);
+        });
     }
 
     private void loadDatabaseLists() {
