@@ -154,6 +154,7 @@ public class SearchResultWindow extends JFrame {
         ) {
             while (resultSet.next()) {
                 String designId = resultSet.getString(DBStructure.INVENTORY_DESIGN_ID);
+                designId = designId == null ? "" : designId.trim();
 
                 int databaseQuantity = resultSet.getInt(
                         DBStructure.INVENTORY_TOTAL_QUANTITY
@@ -376,7 +377,8 @@ public class SearchResultWindow extends JFrame {
         }
 
         DefaultTableModel inventoryModel = (DefaultTableModel) dataTable.getModel();
-        String designId = String.valueOf(inventoryModel.getValueAt(selectedRow, 1));
+        Object designIdValue = inventoryModel.getValueAt(selectedRow, 1);
+        String designId = designIdValue == null ? "" : designIdValue.toString().trim();
         String itemName = String.valueOf(inventoryModel.getValueAt(selectedRow, 2));
 
         int availableQuantity = Integer.parseInt(
