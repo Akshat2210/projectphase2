@@ -4,6 +4,7 @@ import loginsignup.login.loggedin.processingmanagement.recieve.Recieve;
 import loginsignup.login.loggedin.processingmanagement.send.Send;
 import loginsignup.login.loggedin.processingmanagement.godowns.GodownScreen;
 import mainpack.MyClass;
+import loginsignup.login.loggedin.processingmanagement.diary.Diary;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -15,6 +16,7 @@ public class ProcessingManagementScreen extends JFrame {
     private JButton sendButton;
     private JButton recieveButton;
     private JButton godownsButton;
+    private JButton diaryButton;
 
     public ProcessingManagementScreen() {
     }
@@ -49,6 +51,12 @@ public class ProcessingManagementScreen extends JFrame {
                 recieve.init();
                 recieve.setVisible(true);
             }
+        });
+        diaryButton.addActionListener(event -> {
+            Diary diary = new Diary(ProcessingManagementScreen.this);
+            diary.init();
+            diary.setVisible(true);
+            setVisible(false);
         });
         godownsButton.addActionListener(new ActionListener() {
             @Override
