@@ -1,6 +1,7 @@
 package loginsignup.login.loggedin.billing.newBill;
 
 import loginsignup.login.loggedin.billing.viewbills.ViewCustomerBill;
+import loginsignup.login.loggedin.processingmanagement.send.BrowserPdfPrint;
 import mainpack.MyClass;
 import org.jdesktop.swingx.prompt.PromptSupport;
 import utils.CONSTANTS;
@@ -1011,11 +1012,31 @@ public class NewBill extends JFrame {
         viewCustomerBill.loadBillData(viewCustomerBill.getBillTable(),curBillID);
         DefaultTableModel model = (DefaultTableModel) viewCustomerBill.getBillTable().getModel();
         try {
-            String fileName="billsOut/bill_"+viewCustomerBill.getCustomerName()+"_"+viewCustomerBill.getBillID()+".pdf";
-            UtilityMethods.saveBillAsPdf( model ,viewCustomerBill.getBillID(),viewCustomerBill.getDate(),viewCustomerBill.getCustomerName(), CONSTANTS.CUSTOMER_BILL,fileName);
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(NewBill.this, "Could not print bill "+e.getMessage(),"error in printing", JOptionPane.ERROR_MESSAGE);
+            java.nio.file.Path savedPdf = SaleBillPdf.save(model, viewCustomerBill.getBillID(), viewCustomerBill.getDate(),
+                    viewCustomerBill.getCustomerName(), MyClass.login.getDatabase(), java.nio.file.Paths.get("data"));
+            new SwingWorker<Void, Void>() {
+                @Override
+                protected Void doInBackground() throws Exception {
+                    BrowserPdfPrint.openPrintDialog(savedPdf);
+                    return null;
+                }
 
+                @Override
+                protected void done() {
+                    try {
+                        get();
+                    } catch (Exception printError) {
+                        Throwable cause = printError.getCause() == null ? printError : printError.getCause();
+                        JOptionPane.showMessageDialog(NewBill.this,
+                                "The bill and PDF are saved.\n" + cause.getMessage() + "\nPDF: " + savedPdf,
+                                "Open PDF for printing", JOptionPane.WARNING_MESSAGE);
+                    }
+                }
+            }.execute();
+        } catch (Exception pdfError) {
+            JOptionPane.showMessageDialog(NewBill.this,
+                    "Bill is saved, but its PDF could not be created.\n" + pdfError.getMessage(),
+                    "Bill saved - PDF not saved", JOptionPane.WARNING_MESSAGE);
         }
     }
 //    private void insertRandomValues(int rows) {
