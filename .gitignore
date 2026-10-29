@@ -27,11 +27,21 @@ bin/
 ### Mac OS ###
 .DS_Store
 
+
 billsOut/*.pdf
 billsOut/printed.json
-
-
+data
+data/
 tempBack.bat
-
+work/
 *.logs
 workflow.json
+
+
+
+
+SAMPLE_DATA_README.md
+manufacturing_send_receive_swing_ui_guide.pdf
+sample.sql
+sample.summary.json
+samplegenerator.py
