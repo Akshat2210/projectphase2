@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Sequential export of saved order-slip data in the existing six-column print layout. */
-final class OrderSlipPdf {
+public final class OrderSlipPdf {
     private OrderSlipPdf() { }
 
     static Path save(Connection connection, int slipId, String database, Path dataFolder)
@@ -53,17 +53,41 @@ final class OrderSlipPdf {
         return data;
     }
 
+    public static Path saveView(Connection connection, int slipId, String database, Path dataFolder,
+                                javax.swing.table.TableModel displayed) throws SQLException, IOException, DocumentException {
+        if (displayed.getColumnCount() != 6 || displayed.getRowCount() == 0) {
+            throw new IOException("Select an order slip with items before printing.");
+        }
+        SlipData slip = read(connection, slipId);
+        // View Orders displays billed/total quantities. Preserve the displayed values exactly.
+        slip.rows.clear();
+        for (int row = 0; row < displayed.getRowCount(); row++) {
+            String[] values = new String[6];
+            for (int column = 0; column < values.length; column++) {
+                Object value = displayed.getValueAt(row, column);
+                values[column] = value == null ? "" : value.toString();
+            }
+            slip.rows.add(values);
+        }
+        return write(slip, database, dataFolder, "viewslip", "order_", false);
+    }
+
     static Path write(SlipData slip, String database, Path dataFolder) throws IOException, DocumentException {
+        return write(slip, database, dataFolder, "orderslips", "orderslip_", true);
+    }
+
+    private static Path write(SlipData slip, String database, Path dataFolder,
+                              String subfolder, String prefix, boolean includeId) throws IOException, DocumentException {
         if (database == null || database.isBlank() || database.equals(".") || database.equals("..")
                 || database.matches(".*[<>:\"/\\\\|?*\\p{Cntrl}].*") || database.endsWith(".") || database.endsWith(" ")
                 || database.matches("(?i)(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\\..*)?")) {
             throw new IOException("The database name cannot be used as a Windows folder name.");
         }
-        Path directory = dataFolder.toAbsolutePath().normalize().resolve(database).resolve("orderslips");
+        Path directory = dataFolder.toAbsolutePath().normalize().resolve(database).resolve(subfolder);
         Files.createDirectories(directory);
         String stamp = ZonedDateTime.now(java.time.ZoneId.of("Asia/Kolkata"))
                 .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss_SSS"));
-        Path destination = directory.resolve("orderslip_" + stamp + "_" + slip.id + ".pdf");
+        Path destination = directory.resolve(prefix + stamp + (includeId ? "_" + slip.id : "") + ".pdf");
         Path temporary = Files.createTempFile(directory, ".orderslip-", ".tmp");
         try {
             render(slip, destination.getFileName().toString(), temporary);

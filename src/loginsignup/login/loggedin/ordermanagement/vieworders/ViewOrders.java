@@ -1,6 +1,8 @@
 package loginsignup.login.loggedin.ordermanagement.vieworders;
 
 import mainpack.MyClass;
+import loginsignup.login.loggedin.ordermanagement.generateorder.OrderSlipPdf;
+import loginsignup.login.loggedin.processingmanagement.send.BrowserPdfPrint;
 import org.jdesktop.swingx.prompt.PromptSupport;
 import utils.CONSTANTS;
 import utils.UtilityMethods;
@@ -290,14 +292,36 @@ public class ViewOrders extends JFrame {
                 }
             }
         });
-        printButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-
-                //                printPanel(panel);
-                printQueue.offer(() -> printWithDefaultSettings((DefaultTableModel) orderSlipTable.getModel(), getCurrentBillID(), new Date(1000000), customerName, CONSTANTS.ORDER_SLIP));
-
-                writeTableToExcel(orderSlipTable, "myfile.xlxx");
+        printButton.addActionListener(event -> {
+            if (getCurrentBillID() <= 0 || orderSlipTable.getRowCount() == 0) {
+                JOptionPane.showMessageDialog(this, "Select an order slip with items before printing.");
+                return;
+            }
+            java.nio.file.Path pdf;
+            printButton.setEnabled(false);
+            try {
+                // Keep this flow sequential: save the PDF, close the read connection, then open the browser.
+                try (Connection connection = MyClass.createConnection()) {
+                    pdf = OrderSlipPdf.saveView(connection, getCurrentBillID(), MyClass.login.getDatabase(),
+                            java.nio.file.Paths.get("data"), orderSlipTable.getModel());
+                }
+            } catch (Exception exportError) {
+                printButton.setEnabled(true);
+                JOptionPane.showMessageDialog(this, "Could not save the order-slip PDF:\n" + exportError.getMessage(),
+                        "PDF not saved", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            try {
+                BrowserPdfPrint.openPrintDialog(pdf);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                JOptionPane.showMessageDialog(this, "PDF saved. Open it and press Ctrl+P.\n" + pdf,
+                        "Printing interrupted", JOptionPane.WARNING_MESSAGE);
+            } catch (java.io.IOException printError) {
+                JOptionPane.showMessageDialog(this, "PDF saved.\n" + printError.getMessage() + "\nPDF: " + pdf,
+                        "Open PDF for printing", JOptionPane.WARNING_MESSAGE);
+            } finally {
+                printButton.setEnabled(true);
             }
         });
         deleteButton.addActionListener(new ActionListener() {
