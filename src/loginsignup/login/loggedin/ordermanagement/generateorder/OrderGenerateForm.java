@@ -4,6 +4,7 @@ import mainpack.MyClass;
 import utils.DBStructure;
 import utils.CONSTANTS;
 import utils.LogUtils;
+import loginsignup.login.loggedin.processingmanagement.send.BrowserPdfPrint;
 
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
@@ -102,6 +103,12 @@ public class OrderGenerateForm extends JFrame {
             MyClass.orderGenerateForm.setVisible(true);
         });
         submitButton.addActionListener(e -> {
+            if (orderSlipTable.isEditing() && !orderSlipTable.getCellEditor().stopCellEditing()) {
+                JOptionPane.showMessageDialog(this, "Finish editing the current item first.");
+                return;
+            }
+            java.nio.file.Path savedPdf = null;
+            String currentDatabase = MyClass.login.getDatabase();
             if (customerNameComboBox.getSelectedIndex() == 0) {
                 JOptionPane.showMessageDialog(MyClass.orderGenerateForm, "please select a customer name", "incomplete information", JOptionPane.ERROR_MESSAGE);
                 return;
@@ -114,6 +121,16 @@ public class OrderGenerateForm extends JFrame {
             if (pushSlipData() == CONSTANTS.SUCCESS_CODE && updateInventory() == CONSTANTS.SUCCESS_CODE) {
                 try {
                     orderSlipConnectionObject.commit();
+                    // Sequential: export only after commit, before the old form is cleared.
+                    try {
+                        savedPdf = OrderSlipPdf.save(orderSlipConnectionObject, getSlipID(),
+                                currentDatabase, java.nio.file.Paths.get("data"));
+                    } catch (Exception pdfError) {
+                        JOptionPane.showMessageDialog(this,
+                                "Order slip " + getSlipID() + " is saved, but its PDF could not be created.\n"
+                                        + pdfError.getMessage() + "\nDo not submit the order again.",
+                                "Order saved - PDF not saved", JOptionPane.WARNING_MESSAGE);
+                    }
                     JOptionPane.showMessageDialog(this, "Order has been updated successfully", "success", JOptionPane.INFORMATION_MESSAGE);
                     try {
                         orderSlipConnectionObject.close();
@@ -146,6 +163,21 @@ public class OrderGenerateForm extends JFrame {
 
             }
             LogUtils.generateInventorySnapShot("AFTER", uniqueID);
+            // Open only after the replacement form is visible, so it cannot steal browser focus.
+            if (savedPdf != null) {
+                try {
+                    BrowserPdfPrint.openPrintDialog(savedPdf);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    JOptionPane.showMessageDialog(MyClass.orderGenerateForm,
+                            "The order and PDF are saved. Open the PDF and press Ctrl+P.\n" + savedPdf,
+                            "Printing interrupted", JOptionPane.WARNING_MESSAGE);
+                } catch (java.io.IOException printError) {
+                    JOptionPane.showMessageDialog(MyClass.orderGenerateForm,
+                            "The order and PDF are saved.\n" + printError.getMessage() + "\nPDF: " + savedPdf,
+                            "Open PDF for printing", JOptionPane.WARNING_MESSAGE);
+                }
+            }
         });
         inventorySelectButton.addActionListener(e -> {
             if (MyClass.inventorySelect.isVisible()) return;

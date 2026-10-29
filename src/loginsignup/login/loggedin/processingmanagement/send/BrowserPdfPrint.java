@@ -7,10 +7,10 @@ import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 /** Opens a browser PDF viewer and requests its print dialog. Never submits a print job. */
-final class BrowserPdfPrint {
+public final class BrowserPdfPrint {
     private BrowserPdfPrint() { }
 
-    static void openPrintDialog(Path pdf) throws IOException, InterruptedException {
+    public static void openPrintDialog(Path pdf) throws IOException, InterruptedException {
         if (!Files.isRegularFile(pdf)) throw new IOException("The saved PDF could not be found: " + pdf);
         if (!System.getProperty("os.name", "").startsWith("Windows")) {
             throw new IOException("Automatic browser print-dialog opening is currently supported on Windows only.");
