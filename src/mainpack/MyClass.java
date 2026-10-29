@@ -166,15 +166,7 @@ public class MyClass {
     public static InventoryScreen inventoryScreen;
     public static AddInventory addInventory;
 
-    public static Connection createConnection(String s) {
 
-        try {
-            return DriverManager.getConnection("jdbc:mysql://localhost:3306/sample", "root", "m!n8W74bLc#Iwt");
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "error in testing");
-            return null;
-        }
-    }
 
     public static void setCustomer(int i) {
 

@@ -13,11 +13,11 @@
       "id": "ISSUE-001",
       "title": "Remove exposed database credentials",
       "priority": "critical",
-      "status": "open",
+      "status": "completed",
       "details": "A root database password is hard-coded in src/mainpack/MyClass.java. Store credentials outside source code and rotate the exposed password.",
       "files": ["src/mainpack/MyClass.java"],
-      "notes": [],
-      "completed_date": null
+      "notes": ["2026-10-29: Removed the unused connection with embedded credentials from MyClass.java. Confirmed backup.exe.bat, exec.bat.txt, and src/utils/helloworld.bat were removed. User clarified LOGIN.java confirmation code is not an account credential and requested closure. Password rotation was not verified by the assistant."],
+      "completed_date": "2026-10-29"
     },
     {
       "id": "ISSUE-002",
