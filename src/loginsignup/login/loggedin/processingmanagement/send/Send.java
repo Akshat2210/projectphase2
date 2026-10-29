@@ -603,7 +603,7 @@ public class Send extends JFrame {
                     "Check send entries", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        final String database = MyClass.getDatabase(); // Capture the login's database before starting the worker.
+        final String database = MyClass.login.getDatabase(); // Capture the login's database before starting the worker.
         final String from = String.valueOf(sendFrom.getSelectedItem());
         final String to = String.valueOf(sendTo.getSelectedItem());
         setSaving(true);
