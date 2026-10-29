@@ -133,6 +133,12 @@ public class DBStructure {
     public static final String GODOWNS_GODOWN_NAME = "godown_name";
     public static final String GODOWNS_IS_ACTIVE = "is_active";
 
+    // ====================== godownstock ======================
+    public static final String GODOWNSTOCK_TABLE = "godownstock";
+    public static final String GODOWNSTOCK_DESIGN_ID = "design_id";
+    public static final String GODOWNSTOCK_GODOWN_ID = "godown_id";
+    public static final String GODOWNSTOCK_QUANTITY = "quantity";
+
     // ====================== quickremarks ======================
     public static final String QUICKREMARKS_TABLE = "quickremarks";
     public static final String QUICKREMARKS_REMARK_ID = "remarkid";

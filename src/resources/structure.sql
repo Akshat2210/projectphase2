@@ -258,6 +258,19 @@ CREATE TABLE `godowns` (
 
 -- A sub-godown is a godowns row whose parent_godown_id points to its parent godown.
 
+-- Stock quantity per inventory design and godown.
+DROP TABLE IF EXISTS `godownstock`;
+CREATE TABLE `godownstock` (
+  `design_id` varchar(50) NOT NULL,
+  `godown_id` int NOT NULL,
+  `quantity` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`design_id`, `godown_id`),
+  KEY `idx_godownstock_godown` (`godown_id`),
+  CONSTRAINT `fk_godownstock_design` FOREIGN KEY (`design_id`) REFERENCES `inventory` (`DESIGNID`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_godownstock_godown` FOREIGN KEY (`godown_id`) REFERENCES `godowns` (`godown_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
 --
 -- Table structure for table `users`
 --
@@ -314,8 +327,7 @@ CREATE TABLE `send_lots` (
   KEY `idx_send_lots_default_source` (`default_source_godown_id`),
   KEY `idx_send_lots_default_destination` (`default_destination_godown_id`),
   CONSTRAINT `fk_send_lots_source_godown` FOREIGN KEY (`default_source_godown_id`) REFERENCES `godowns` (`godown_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `fk_send_lots_destination_godown` FOREIGN KEY (`default_destination_godown_id`) REFERENCES `godowns` (`godown_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `fk_send_lots_created_by` FOREIGN KEY (`created_by_user`) REFERENCES `users` (`user`) ON DELETE RESTRICT ON UPDATE CASCADE
+  CONSTRAINT `fk_send_lots_destination_godown` FOREIGN KEY (`default_destination_godown_id`) REFERENCES `godowns` (`godown_id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `send_packets` (
@@ -355,7 +367,6 @@ CREATE TABLE `send_items` (
   CONSTRAINT `fk_send_items_packet` FOREIGN KEY (`send_packet_id`) REFERENCES `send_packets` (`send_packet_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_send_items_source_godown` FOREIGN KEY (`source_godown_id`) REFERENCES `godowns` (`godown_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `fk_send_items_destination_godown` FOREIGN KEY (`destination_godown_id`) REFERENCES `godowns` (`godown_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `fk_send_items_recipient` FOREIGN KEY (`intended_recipient_user`) REFERENCES `users` (`user`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `fk_send_items_order_slip` FOREIGN KEY (`order_slip_id`) REFERENCES `order_slips_main` (`slip_id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `fk_send_items_order_slip_item` FOREIGN KEY (`order_slip_item_id`) REFERENCES `order_slips` (`item_id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `fk_send_items_design` FOREIGN KEY (`design_id`) REFERENCES `inventory` (`DESIGNID`) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -375,8 +386,7 @@ CREATE TABLE `receive_actions` (
   KEY `idx_receive_actions_lot` (`send_lot_id`),
   KEY `idx_receive_actions_godown_user` (`receiving_godown_id`,`received_by_user`),
   CONSTRAINT `fk_receive_actions_lot` FOREIGN KEY (`send_lot_id`) REFERENCES `send_lots` (`send_lot_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `fk_receive_actions_godown` FOREIGN KEY (`receiving_godown_id`) REFERENCES `godowns` (`godown_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `fk_receive_actions_user` FOREIGN KEY (`received_by_user`) REFERENCES `users` (`user`) ON DELETE RESTRICT ON UPDATE CASCADE
+  CONSTRAINT `fk_receive_actions_godown` FOREIGN KEY (`receiving_godown_id`) REFERENCES `godowns` (`godown_id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `receive_items` (
