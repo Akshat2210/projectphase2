@@ -353,6 +353,7 @@ public class NewBill extends JFrame {
 //        TableModelListener[] listeners = removeModelListener(tableModel);
         int i = 0;
         for (int row = 0; row < tableModel.getRowCount(); row++) {
+            int quantity = tableModel.getValueAt(row, QUANTITY_INDEX) != null && !tableModel.getValueAt(row, QUANTITY_INDEX).toString().isEmpty() ? Integer.parseInt((tableModel.getValueAt(row, QUANTITY_INDEX).toString())) : 0;
             for (int col : mathColumns) {
 
                 Object value = tableModel.getValueAt(row, col);
@@ -376,13 +377,12 @@ public class NewBill extends JFrame {
                     goldcost = goldrate * numericValue;
                     tableModel.setValueAt(goldcost == 0 ? "" : UtilityMethods.round(goldcost, 2), row, GOLD_COST_INDEX);
 
-                    tableModel.setValueAt((goldcost + plusG) == 0 ? "" : UtilityMethods.round(goldcost + plusG, 2), row, TOTAL_COST_INDEX);
+                    tableModel.setValueAt((goldcost + plusG * quantity) == 0 ? "" : UtilityMethods.round(goldcost + plusG * quantity, 2), row, TOTAL_COST_INDEX);
                 }
 
                 i++;
 
             }
-            int quantity = tableModel.getValueAt(row, QUANTITY_INDEX) != null && !tableModel.getValueAt(row, QUANTITY_INDEX).toString().isEmpty() ? Integer.parseInt((tableModel.getValueAt(row, QUANTITY_INDEX).toString())) : 0;
             plusG = plusG * quantity;
             tableModel.setValueAt(plusG == 0 ? "" : UtilityMethods.round(plusG, 2), row, PLUSGOLD);
 
