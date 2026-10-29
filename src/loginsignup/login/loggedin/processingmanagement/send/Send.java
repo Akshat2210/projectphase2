@@ -98,6 +98,35 @@ public class Send extends JFrame {
         setSplitRatio(75, 25);
     }
 
+    private java.nio.file.Path savePDF(long lotId, LotDraft draft, String database,
+                                      String from, String to) throws Exception {
+        // data/<current database>/send diary/sent_<timestamp>_<lot number>.pdf
+        return SendLotPdf.save(java.nio.file.Paths.get("data"), database, lotId, draft, from, to,
+                java.time.ZonedDateTime.now(java.time.ZoneId.of("Asia/Kolkata")));
+    }
+
+    private void openPdfForPrinting(java.nio.file.Path pdf) {
+        new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                BrowserPdfPrint.openPrintDialog(pdf);
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    get(); // A dialog request is not a claim that paper has been printed.
+                } catch (Exception exception) {
+                    Throwable cause = exception.getCause() == null ? exception : exception.getCause();
+                    JOptionPane.showMessageDialog(processingManagementScreen,
+                            "The send and PDF are saved.\n" + cause.getMessage() + "\n\nPDF: " + pdf,
+                            "Open PDF for printing", JOptionPane.WARNING_MESSAGE);
+                }
+            }
+        }.execute();
+    }
+
     private void configureSourceItemTable() {
         sourceItemTableModel = new DefaultTableModel(
                 new String[]{"Design ID", "Item name", "Quantity", "Details"}, 0
@@ -574,14 +603,19 @@ public class Send extends JFrame {
                     "Check send entries", JOptionPane.WARNING_MESSAGE);
             return;
         }
+        final String database = MyClass.getDatabase(); // Capture the login's database before starting the worker.
+        final String from = String.valueOf(sendFrom.getSelectedItem());
+        final String to = String.valueOf(sendTo.getSelectedItem());
         setSaving(true);
-        new SwingWorker<Long, Void>() {
+        new SwingWorker<SubmissionResult, Void>() {
             @Override
-            protected Long doInBackground() throws SQLException {
+            protected SubmissionResult doInBackground() throws SQLException {
                 Connection connection = MyClass.createConnection();
                 if (connection == null) throw new SQLException("Could not connect to the database.");
+                final long lotId;
                 try {
-                    return persistLot(connection, draft);
+                    // Insert the lot, its packets and items in one transaction; return the generated lot ID.
+                    lotId = persistLot(connection, draft);
                 } finally {
                     // A close error after commit must not turn a saved lot into a failed save.
                     try {
@@ -590,18 +624,33 @@ public class Send extends JFrame {
                         closeError.printStackTrace();
                     }
                 }
+                // Only a committed lot reaches this point. PDF failures never trigger another INSERT.
+                try {
+                    return new SubmissionResult(lotId, savePDF(lotId, draft, database, from, to), null);
+                } catch (Exception pdfError) {
+                    return new SubmissionResult(lotId, null, pdfError);
+                }
             }
 
             @Override
             protected void done() {
                 try {
-                    long lotId = get();
-                    JOptionPane.showMessageDialog(Send.this,
-                            "Send saved successfully.\nLot number: " + lotId
-                                    + "\nPackets: " + draft.packets.size(),
-                            "Send saved", JOptionPane.INFORMATION_MESSAGE);
+                    SubmissionResult result = get();
+                    String message = "Send saved successfully.\nLot number: " + result.lotId
+                            + "\nPackets: " + draft.packets.size();
+                    if (result.pdfError == null) {
+                        message += "\n\nPDF saved to:\n" + result.pdfPath + "\n\nAfter OK, the browser print dialog will be requested.";
+                    } else {
+                        message += "\n\nThe lot is saved, but its PDF could not be created:\n"
+                                + result.pdfError.getMessage()
+                                + "\nDo not submit this lot again; its database records already exist.";
+                    }
+                    JOptionPane.showMessageDialog(Send.this, message,
+                            result.pdfError == null ? "Send and PDF saved" : "Send saved - PDF not saved",
+                            result.pdfError == null ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE);
                     dispose();
                     processingManagementScreen.setVisible(true);
+                    if (result.pdfError == null) openPdfForPrinting(result.pdfPath);
                 } catch (Exception exception) {
                     Throwable cause = exception;
                     while (cause.getCause() != null && !(cause instanceof CommitUncertainException)) cause = cause.getCause();
@@ -731,7 +780,12 @@ public class Send extends JFrame {
         throw new IllegalArgumentException(label + ": enter a whole-number quantity greater than zero.");
     }
 
-    /** Inserts only the three movement tables, using one dedicated connection. */
+    /**
+     * Database part of Submit: inserts send_lots, then send_packets, then send_items.
+     * Generated parent IDs link each child to its lot/packet. Commit only after every
+     * insert succeeds; roll back on failure. Returns the saved lot number used by the PDF.
+     * submitSend() handles validation, background work and user messages around this method.
+     */
     static long persistLot(Connection connection, LotDraft draft) throws SQLException {
         connection.setAutoCommit(false);
         boolean committing = false;
@@ -812,6 +866,18 @@ public class Send extends JFrame {
     static final class CommitUncertainException extends SQLException {
         CommitUncertainException(String message, Throwable cause) {
             super(message, cause);
+        }
+    }
+
+    private static final class SubmissionResult {
+        final long lotId;
+        final java.nio.file.Path pdfPath;
+        final Exception pdfError;
+
+        SubmissionResult(long lotId, java.nio.file.Path pdfPath, Exception pdfError) {
+            this.lotId = lotId;
+            this.pdfPath = pdfPath;
+            this.pdfError = pdfError;
         }
     }
 
