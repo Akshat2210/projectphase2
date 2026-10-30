@@ -858,7 +858,7 @@ public class Send extends JFrame {
                     throw new IllegalArgumentException(itemLabel + ": an order-slip item requires a customer.");
                 }
                 items.add(new ItemDraft(source.designId, source.orderSlipId, source.orderSlipItemId,
-                        name, quantity, itemRemark));
+                        source.parentSendItemId, name, quantity, itemRemark));
             }
             packets.add(new PacketDraft(index + 1, customer, remark, items));
         }
@@ -938,9 +938,9 @@ public class Send extends JFrame {
             String packetSql = "INSERT INTO " + DBStructure.SEND_PACKETS_TABLE
                     + " (send_lot_id, packet_number, customer_name, packet_remark) VALUES (?, ?, ?, ?)";
             String itemSql = "INSERT INTO " + DBStructure.SEND_ITEMS_TABLE
-                    + " (send_packet_id, item_number, source_godown_id, destination_godown_id,"
+                    + " (parent_send_item_id, send_packet_id, item_number, source_godown_id, destination_godown_id,"
                     + " order_slip_id, order_slip_item_id, design_id, item_name, sent_quantity, item_remark)"
-                    + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             try (PreparedStatement packets = connection.prepareStatement(packetSql, Statement.RETURN_GENERATED_KEYS);
                  PreparedStatement items = connection.prepareStatement(itemSql)) {
                 for (PacketDraft packet : draft.packets) {
@@ -952,18 +952,20 @@ public class Send extends JFrame {
                     long packetId = generatedId(packets);
                     for (int index = 0; index < packet.items.size(); index++) {
                         ItemDraft item = packet.items.get(index);
-                        items.setLong(1, packetId);
-                        items.setInt(2, index + 1);
-                        items.setInt(3, draft.fromId);
-                        items.setInt(4, draft.toId);
-                        if (item.slipId == null) items.setNull(5, Types.INTEGER);
-                        else items.setInt(5, item.slipId);
-                        if (item.slipItemId == null) items.setNull(6, Types.BIGINT);
-                        else items.setLong(6, item.slipItemId);
-                        nullableString(items, 7, item.designId);
-                        items.setString(8, item.name);
-                        items.setInt(9, item.quantity);
-                        nullableString(items, 10, item.remark);
+                        if (item.parentSendItemId == null) items.setNull(1, Types.BIGINT);
+                        else items.setLong(1, item.parentSendItemId);
+                        items.setLong(2, packetId);
+                        items.setInt(3, index + 1);
+                        items.setInt(4, draft.fromId);
+                        items.setInt(5, draft.toId);
+                        if (item.slipId == null) items.setNull(6, Types.INTEGER);
+                        else items.setInt(6, item.slipId);
+                        if (item.slipItemId == null) items.setNull(7, Types.BIGINT);
+                        else items.setLong(7, item.slipItemId);
+                        nullableString(items, 8, item.designId);
+                        items.setString(9, item.name);
+                        items.setInt(10, item.quantity);
+                        nullableString(items, 11, item.remark);
                         items.executeUpdate();
                     }
                 }
@@ -1048,14 +1050,17 @@ public class Send extends JFrame {
         final String designId;
         final Integer slipId;
         final Long slipItemId;
+        final Long parentSendItemId;
         final String name;
         final int quantity;
         final String remark;
 
-        ItemDraft(String designId, Integer slipId, Long slipItemId, String name, int quantity, String remark) {
+        ItemDraft(String designId, Integer slipId, Long slipItemId, Long parentSendItemId,
+                  String name, int quantity, String remark) {
             this.designId = designId;
             this.slipId = slipId;
             this.slipItemId = slipItemId;
+            this.parentSendItemId = parentSendItemId;
             this.name = name;
             this.quantity = quantity;
             this.remark = remark;
