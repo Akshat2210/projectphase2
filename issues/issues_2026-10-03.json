@@ -228,6 +228,16 @@
       "files": ["src/loginsignup/login/loggedin/billing/newBill/NewBill.java", "src/loginsignup/login/loggedin/billing/newBill/SearchResultWindow.java"],
       "notes": ["Added on 2026-10-14. Negative stock is allowed; this is a feedback and consistency improvement, not a stock-blocking rule."],
       "completed_date": null
+    },
+    {
+      "id": "ISSUE-023",
+      "title": "Add a reproducible library setup script",
+      "priority": "low",
+      "status": "open",
+      "details": "Keep IntelliJ GUI Designer as the application builder while providing a script that restores the approved JAR versions into lib on a new computer. The script should avoid duplicate versions, skip already-present valid JARs, and document how to run it.",
+      "files": ["lib", "setup-libraries.ps1", "README.md"],
+      "notes": ["Added on 2026-10-31. This is the first dependency-management step; it must not replace IntelliJ's handling of .form files."],
+      "completed_date": null
     }
   ]
 }
