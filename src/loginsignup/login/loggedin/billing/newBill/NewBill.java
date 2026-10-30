@@ -174,7 +174,7 @@ public class NewBill extends JFrame {
             BigDecimal grandTotal = BigDecimal.ZERO;
             for (int i = 0; i < rowCount - 1; i++) {
                 int serialNo = Integer.parseInt(getStringValue(model, i, SNO_INDEX, "0"));
-                String itemName = getStringValue(model, i, ITEM_NAME_INDEX, "Unknown");
+                String itemName = getStringValue(model, i, ITEM_NAME_INDEX, "");
                 if (itemName.isEmpty()) {
                     JOptionPane.showMessageDialog(newBill, "please do not leave item name empty");
                     throw new RuntimeException();

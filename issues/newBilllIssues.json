@@ -119,15 +119,17 @@
       "id": "NEWBILL-007",
       "title": "The empty-item-name check does not work",
       "priority": "medium",
-      "status": "open",
+      "status": "completed",
       "original_review_line": 183,
       "methods": [
         "insertData",
         "getStringValue"
       ],
       "details": "A blank item name is replaced with Unknown before checking isEmpty, so the intended validation never rejects a blank name.",
-      "notes": [],
-      "completed_date": null
+      "notes": [
+        "2026-10-31: insertData now uses an empty-string fallback for item names. getStringValue maps null, empty and whitespace-only values to that fallback; the isEmpty check displays a warning and throws to abort the save. Verified by source review; no live database test performed."
+      ],
+      "completed_date": "2026-10-31"
     },
     {
       "id": "NEWBILL-008",
