@@ -607,9 +607,7 @@ public class Send extends JFrame {
         int row = itemTable.convertRowIndexToModel(viewRow);
         String source = String.valueOf(selectionComboBox.getSelectedItem());
         if ("Incoming transfers".equals(source)) {
-            JOptionPane.showMessageDialog(this,
-                    "Incoming transfers can now be looked up. Adding them to a packet is the next step.",
-                    "Incoming transfers", JOptionPane.INFORMATION_MESSAGE);
+            pushSendSlipData();
             return;
         }
         boolean inventory = "Inventory".equals(source);
@@ -648,15 +646,71 @@ public class Send extends JFrame {
         packet.itemTable.scrollRectToVisible(packet.itemTable.getCellRect(addedRow, 0, true));
     }
 
+    /** Copies the selected Incoming transfers row into the active packet. */
+    private void pushSendSlipData() {
+        if (saving || !sourceItemsReady) return;
+
+        PacketPanel packet = selectedPacket;
+        int viewRow = itemTable.getSelectedRow();
+        if (packet == null || viewRow < 0) {
+            JOptionPane.showMessageDialog(this, "Select an incoming transfer to add.");
+            return;
+        }
+        if (packet.itemTable.isEditing() && !packet.itemTable.getCellEditor().stopCellEditing()) return;
+
+        int row = itemTable.convertRowIndexToModel(viewRow);
+        String designId = text(sourceItemTableModel.getValueAt(row, 4));
+        String itemName = text(sourceItemTableModel.getValueAt(row, 5));
+        int availableQuantity = ((Number) sourceItemTableModel.getValueAt(row, 8)).intValue();
+        String itemRemark = text(sourceItemTableModel.getValueAt(row, 9));
+        long parentSendItemId = ((Number) sourceItemTableModel.getValueAt(row, 10)).longValue();
+        long requestNumber = sourceLoadRequestNumber;
+
+        String input = JOptionPane.showInputDialog(this,
+                "Quantity to add for " + itemName + "\nAvailable at this godown: " + availableQuantity,
+                "Add incoming transfer to packet", JOptionPane.QUESTION_MESSAGE);
+        if (input == null) return;
+
+        final int quantity;
+        try {
+            quantity = Integer.parseInt(input.trim());
+            if (quantity <= 0 || quantity > availableQuantity) throw new NumberFormatException();
+        } catch (NumberFormatException exception) {
+            JOptionPane.showMessageDialog(this,
+                    "Enter a whole number from 1 to " + availableQuantity + ".",
+                    "Invalid quantity", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (!sourceItemsReady || requestNumber != sourceLoadRequestNumber || packet != selectedPacket) {
+            JOptionPane.showMessageDialog(this, "The source changed. Select the incoming transfer again.");
+            return;
+        }
+
+        packet.itemSources.add(new PacketItemSource(designId, null, null, parentSendItemId));
+        packet.itemTableModel.addRow(new Object[]{itemName, quantity, itemRemark});
+        int addedRow = packet.itemTableModel.getRowCount() - 1;
+        packet.itemTable.setRowSelectionInterval(addedRow, addedRow);
+        packet.itemTable.scrollRectToVisible(packet.itemTable.getCellRect(addedRow, 0, true));
+    }
+
     private static final class PacketItemSource {
         private final String designId;
         private final Integer orderSlipId;
         private final Long orderSlipItemId;
+        // Null for Inventory and Order-slip rows; set for an item forwarded from an incoming Send item.
+        private final Long parentSendItemId;
 
         private PacketItemSource(String designId, Integer orderSlipId, Long orderSlipItemId) {
+            this(designId, orderSlipId, orderSlipItemId, null);
+        }
+
+        private PacketItemSource(String designId, Integer orderSlipId, Long orderSlipItemId,
+                                 Long parentSendItemId) {
             this.designId = designId;
             this.orderSlipId = orderSlipId;
             this.orderSlipItemId = orderSlipItemId;
+            this.parentSendItemId = parentSendItemId;
         }
     }
 
