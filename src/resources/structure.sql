@@ -346,6 +346,7 @@ CREATE TABLE `send_packets` (
 
 CREATE TABLE `send_items` (
   `send_item_id` bigint NOT NULL AUTO_INCREMENT,
+  `parent_send_item_id` bigint DEFAULT NULL,
   `send_packet_id` bigint NOT NULL,
   `item_number` int NOT NULL,
   `source_godown_id` int NOT NULL,
@@ -360,11 +361,13 @@ CREATE TABLE `send_items` (
   PRIMARY KEY (`send_item_id`),
   UNIQUE KEY `uq_send_items_packet_number` (`send_packet_id`,`item_number`),
   KEY `idx_send_items_destination_recipient` (`destination_godown_id`,`intended_recipient_user`),
+  KEY `idx_send_items_parent` (`parent_send_item_id`),
   KEY `idx_send_items_source` (`source_godown_id`),
   KEY `idx_send_items_order_slip` (`order_slip_id`),
   KEY `idx_send_items_order_slip_item` (`order_slip_item_id`),
   KEY `idx_send_items_design` (`design_id`),
   CONSTRAINT `fk_send_items_packet` FOREIGN KEY (`send_packet_id`) REFERENCES `send_packets` (`send_packet_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_send_items_parent` FOREIGN KEY (`parent_send_item_id`) REFERENCES `send_items` (`send_item_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `fk_send_items_source_godown` FOREIGN KEY (`source_godown_id`) REFERENCES `godowns` (`godown_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `fk_send_items_destination_godown` FOREIGN KEY (`destination_godown_id`) REFERENCES `godowns` (`godown_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `fk_send_items_order_slip` FOREIGN KEY (`order_slip_id`) REFERENCES `order_slips_main` (`slip_id`) ON DELETE SET NULL ON UPDATE CASCADE,

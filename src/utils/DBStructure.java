@@ -165,6 +165,7 @@ public class DBStructure {
     // ====================== manufacturing send items ======================
     public static final String SEND_ITEMS_TABLE = "send_items";
     public static final String SEND_ITEMS_ID = "send_item_id";
+    public static final String SEND_ITEMS_PARENT_SEND_ITEM_ID = "parent_send_item_id";
     public static final String SEND_ITEMS_SEND_PACKET_ID = "send_packet_id";
     public static final String SEND_ITEMS_ITEM_NUMBER = "item_number";
     public static final String SEND_ITEMS_SOURCE_GODOWN_ID = "source_godown_id";
