@@ -472,17 +472,20 @@ public class NewBill extends JFrame {
         });
         NewBill temp = this;
         submitButton.addActionListener(e -> {
+            if (billTable.isEditing()) {
+                JOptionPane.showMessageDialog(NewBill.this, "please complete changes and stop editing before submiting", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             if (!allQuantityValid()) {
+
                 return;
             }
 
             if (askConfirmation() && insertData()) {
 //                linkBillToTransactions();
-            try {
-                printBill(getCurBillID());
-            }
-                finally
-                {
+                try {
+                    printBill(getCurBillID());
+                } finally {
                     try {
                         getTransacTemp().close();
                     } catch (SQLException ex) {
@@ -527,16 +530,18 @@ public class NewBill extends JFrame {
                 billTable.getActionMap().remove("deleteRow");
                 int selectedRow = billTable.getSelectedRow(); // Get selected row
                 TableModelListener[] listeners = UtilityMethods.removeModelListener((tableModel));
+                try {
+                    if (selectedRow != -1) {
+                        // Ensure a row is selected
+                        if (billTable.getRowCount() != 1)
+                            checkAndRemoveRow(selectedRow, tableModel, SNO_INDEX, true);// Remove the row
+                    }
+                } finally {
 
-                if (selectedRow != -1) {
-                    // Ensure a row is selected
-                    if (billTable.getRowCount() != 1)
-                        checkAndRemoveRow(selectedRow, tableModel, SNO_INDEX, true);// Remove the row
+                    UtilityMethods.addModelListeners(listeners, tableModel);
+                    billTable.getActionMap().put("deleteRow", oldAction);
                 }
 
-                UtilityMethods.addModelListeners(listeners, tableModel);
-
-                billTable.getActionMap().put("deleteRow", oldAction);
                 int selectedrow = billTable.getSelectedRow();
                 tableModel.fireTableDataChanged();
                 updateGrandTotalLabel();
@@ -637,201 +642,204 @@ public class NewBill extends JFrame {
 
             int snoValue = (tableModel.getValueAt(row, SNO_INDEX) != null && !tableModel.getValueAt(row, SNO_INDEX).toString().isEmpty()) ? Integer.parseInt(tableModel.getValueAt(row, SNO_INDEX).toString().contentEquals("") ? "0" : tableModel.getValueAt(row, SNO_INDEX).toString()) : -1;
             TableModelListener[] listeners = UtilityMethods.removeModelListener(tableModel);
-            if (customerComboBox.getSelectedIndex() == 0) {
-                JOptionPane.showMessageDialog(NewBill.this, "please select customer");
-                tableModel.setValueAt("", row, col);
-                UtilityMethods.addModelListeners(listeners, tableModel);
-                return;
-            }
-            if (customerComboBox.isEnabled()) {
-                customerComboBox.setEnabled(false);
-            }
-            if (snoValue == -1) {
-                sno++;
 
-                tableModel.setValueAt(sno, row, SNO_INDEX);
-                snoValue = sno;
+            try {
+                if (customerComboBox.getSelectedIndex() == 0) {
+                    JOptionPane.showMessageDialog(NewBill.this, "please select customer");
+                    tableModel.setValueAt("", row, col);
+                    return;
+                }
+                if (customerComboBox.isEnabled()) {
+                    customerComboBox.setEnabled(false);
+                }
+                if (snoValue == -1) {
+                    sno++;
+
+                    tableModel.setValueAt(sno, row, SNO_INDEX);
+                    snoValue = sno;
 
 //                    tableModel.getValueAt(row, SNO_INDEX) == null ? -1 : Integer.parseInt(tableModel.getValueAt(row, SNO_INDEX).toString().contentEquals("") ? "0" : tableModel.getValueAt(row, SNO_INDEX).toString());
-            }
-
-
-            if (row == tableModel.getRowCount() - 1) {
-                // Check if any column in this row has data
-                boolean rowHasData = false;
-                for (int i = 0; i < tableModel.getColumnCount(); i++) {
-                    if (tableModel.getValueAt(row, i) != null && !tableModel.getValueAt(row, i).toString().trim().isEmpty()) {
-                        rowHasData = true;
-                        break;
-                    }
                 }
 
 
-                // If the last row has data, add a new empty row
-                if (rowHasData) {
-                    tableModel.addRow(new Vector<>(billDetails.size()));
-                }
-
-            }
-            int designIdIndex = DESIGN_ID_INDEX;
-            int quantityIndex = QUANTITY_INDEX;
-
-            int quantity = 0;
-            try {
-                quantity = (tableModel.getValueAt(row, quantityIndex) == null || tableModel.getValueAt(row, quantityIndex).toString().trim().isEmpty()) ? 0 : Integer.parseInt(tableModel.getValueAt(row, quantityIndex).toString().trim());
-            } catch (NumberFormatException ex) {
-                tableModel.setValueAt("", row, col);
-
-            }
-
-            if (col == designIdIndex && !searchResultWindow.isSearchFlag()) {
-                String designID = tableModel.getValueAt(row, designIdIndex) == null ? "" : tableModel.getValueAt(row, designIdIndex).toString().trim();
-                tableModel.setValueAt(designID, row, designIdIndex);
-
-                if (!designID.isEmpty()) {
-                    String query = "SELECT " + DBStructure.INVENTORY_ITEM_NAME + ", " + DBStructure.INVENTORY_SELL_PRICE + " FROM " + DBStructure.INVENTORY_TABLE + " WHERE TRIM(" + DBStructure.INVENTORY_DESIGN_ID + ") = ?";
-
-                    try (Connection con = MyClass.createConnection(); PreparedStatement stmt = con.prepareStatement(query)) {
-
-                        stmt.setString(1, designID);
-                        ResultSet rs = stmt.executeQuery();
-
-                        if (rs.next()) {
-
-                            listOfNonEditableCells.add(new Integer[]{row, ITEM_NAME_INDEX});
-                            String itemName = rs.getString("itemname");
-                            String price = rs.getString(DBStructure.INVENTORY_SELL_PRICE);
-                            tableModel.setValueAt(itemName, row, ITEM_NAME_INDEX);
-                            tableModel.setValueAt(price, row, RAW_INDEX);
-                        } else {
-                            listOfNonEditableCells.removeIf(cell -> cell[0] == row && cell[1] == ITEM_NAME_INDEX);
-
-                            tableModel.setValueAt("", row, designIdIndex);
-                            tableModel.setValueAt("", row, ITEM_NAME_INDEX);
-                            tableModel.setValueAt("", row, RAW_INDEX);
+                if (row == tableModel.getRowCount() - 1) {
+                    // Check if any column in this row has data
+                    boolean rowHasData = false;
+                    for (int i = 0; i < tableModel.getColumnCount(); i++) {
+                        if (tableModel.getValueAt(row, i) != null && !tableModel.getValueAt(row, i).toString().trim().isEmpty()) {
+                            rowHasData = true;
+                            break;
                         }
+                    }
 
-                        DefaultTableModel newModel = constructModel();
 
-                        billTable.setModel(newModel);
-                        tableModel = newModel;
-                    } catch (SQLException ex) {
+                    // If the last row has data, add a new empty row
+                    if (rowHasData) {
+                        tableModel.addRow(new Vector<>(billDetails.size()));
+                    }
+
+                }
+                int designIdIndex = DESIGN_ID_INDEX;
+                int quantityIndex = QUANTITY_INDEX;
+
+                int quantity = 0;
+                try {
+                    quantity = (tableModel.getValueAt(row, quantityIndex) == null || tableModel.getValueAt(row, quantityIndex).toString().trim().isEmpty()) ? 0 : Integer.parseInt(tableModel.getValueAt(row, quantityIndex).toString().trim());
+                } catch (NumberFormatException ex) {
+                    tableModel.setValueAt("", row, col);
+
+                }
+
+                if (col == designIdIndex && !searchResultWindow.isSearchFlag()) {
+                    String designID = tableModel.getValueAt(row, designIdIndex) == null ? "" : tableModel.getValueAt(row, designIdIndex).toString().trim();
+                    tableModel.setValueAt(designID, row, designIdIndex);
+
+                    if (!designID.isEmpty()) {
+                        String query = "SELECT " + DBStructure.INVENTORY_ITEM_NAME + ", " + DBStructure.INVENTORY_SELL_PRICE + " FROM " + DBStructure.INVENTORY_TABLE + " WHERE TRIM(" + DBStructure.INVENTORY_DESIGN_ID + ") = ?";
+
+                        try (Connection con = MyClass.createConnection(); PreparedStatement stmt = con.prepareStatement(query)) {
+
+                            stmt.setString(1, designID);
+                            ResultSet rs = stmt.executeQuery();
+
+                            if (rs.next()) {
+
+                                listOfNonEditableCells.add(new Integer[]{row, ITEM_NAME_INDEX});
+                                String itemName = rs.getString("itemname");
+                                String price = rs.getString(DBStructure.INVENTORY_SELL_PRICE);
+                                tableModel.setValueAt(itemName, row, ITEM_NAME_INDEX);
+                                tableModel.setValueAt(price, row, RAW_INDEX);
+                            } else {
+                                listOfNonEditableCells.removeIf(cell -> cell[0] == row && cell[1] == ITEM_NAME_INDEX);
+
+                                tableModel.setValueAt("", row, designIdIndex);
+                                tableModel.setValueAt("", row, ITEM_NAME_INDEX);
+                                tableModel.setValueAt("", row, RAW_INDEX);
+                            }
+
+                            DefaultTableModel newModel = constructModel();
+
+                            billTable.setModel(newModel);
+                            tableModel = newModel;
+                        } catch (SQLException ex) {
 //                        Thread.dumpStack();
-                        JOptionPane.showMessageDialog(NewBill.this, ex.getMessage());
-                        ex.printStackTrace();
+                            JOptionPane.showMessageDialog(NewBill.this, ex.getMessage());
+                            ex.printStackTrace();
 
-                    }
-                } else {
-                    // If designID field is empty, clear ItemName as well
-                    tableModel.setValueAt("", row, designIdIndex);
-                    tableModel.setValueAt("", row, ITEM_NAME_INDEX);
-                    tableModel.setValueAt("", row, RAW_INDEX);
-                    listOfNonEditableCells.removeIf(cell -> cell[0] == row && cell[1] == ITEM_NAME_INDEX);
-
-                }
-            }
-
-            if ((col == quantityIndex)) {
-
-                String designID = UtilityMethods.parseString(tableModel.getValueAt(row, designIdIndex)).trim();
-                if (notThroughOrderSlip && designID != null && !designID.toString().contentEquals("")) {
-                    String query = "SELECT " + DBStructure.INVENTORY_TOTAL_QUANTITY + " FROM " + DBStructure.INVENTORY_TABLE + " WHERE TRIM(" + DBStructure.INVENTORY_DESIGN_ID + ") = ?";
-
-                    try (Connection con = MyClass.createConnection(); PreparedStatement preparedStatement = con.prepareStatement(query)) {
-
-                        preparedStatement.setString(1, designID);
-
-                        try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                            if (resultSet.next()) {
-                                int availableQuantity = resultSet.getInt(DBStructure.INVENTORY_TOTAL_QUANTITY);
-
-                                if (availableQuantity < quantity) {
-                                    JOptionPane.showMessageDialog(NewBill.this, "Warning: Stock is not remaining.");
-                                }
-                            }
                         }
+                    } else {
+                        // If designID field is empty, clear ItemName as well
+                        tableModel.setValueAt("", row, designIdIndex);
+                        tableModel.setValueAt("", row, ITEM_NAME_INDEX);
+                        tableModel.setValueAt("", row, RAW_INDEX);
+                        listOfNonEditableCells.removeIf(cell -> cell[0] == row && cell[1] == ITEM_NAME_INDEX);
 
-                    } catch (SQLException ex) {
-                        JOptionPane.showMessageDialog(NewBill.this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                        ex.printStackTrace();
                     }
-
-
                 }
-                if (snoToItemIdMap.containsKey(snoValue)) {
-                    try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
-                        String query = "select * from " + DBStructure.ORDER_SLIPS_TABLE + " where " + DBStructure.ORDER_SLIPS_ITEM_ID + "=" + snoToItemIdMap.get(snoValue);
-                        int item_id = snoToItemIdMap.get(snoValue);
-                        int netQuantity = 0;
-                        for (int key : snoToItemIdMap.keySet()) {
-                            if (snoToItemIdMap.get(key) == item_id) {
-                                netQuantity = netQuantity + ((tableModel.getValueAt(key - 1, quantityIndex) != null && !tableModel.getValueAt(key - 1, quantityIndex).toString().isEmpty()) ? Integer.parseInt(tableModel.getValueAt(key - 1, quantityIndex).toString()) : 0);
-                            }
-                            try (ResultSet rs = stmt.executeQuery(query)) {
-                                if (rs.next()) {
-                                    int quantityTemp = rs.getInt("quantity") - rs.getInt("billed_quantity");
-                                    if (quantityTemp < netQuantity) {
-                                        JOptionPane.showMessageDialog(newBill, "invalid quanity has been entered for an item connected to a order slip");
-                                        tableModel.setValueAt("", row, quantityIndex);
+
+                if ((col == quantityIndex)) {
+
+                    String designID = UtilityMethods.parseString(tableModel.getValueAt(row, designIdIndex)).trim();
+                    if (notThroughOrderSlip && designID != null && !designID.toString().contentEquals("")) {
+                        String query = "SELECT " + DBStructure.INVENTORY_TOTAL_QUANTITY + " FROM " + DBStructure.INVENTORY_TABLE + " WHERE TRIM(" + DBStructure.INVENTORY_DESIGN_ID + ") = ?";
+
+                        try (Connection con = MyClass.createConnection(); PreparedStatement preparedStatement = con.prepareStatement(query)) {
+
+                            preparedStatement.setString(1, designID);
+
+                            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                                if (resultSet.next()) {
+                                    int availableQuantity = resultSet.getInt(DBStructure.INVENTORY_TOTAL_QUANTITY);
+
+                                    if (availableQuantity < quantity) {
+                                        JOptionPane.showMessageDialog(NewBill.this, "Warning: Stock is not remaining.");
                                     }
-                                } else {
-                                    JOptionPane.showMessageDialog(NewBill.this, "Stock Updation failed to display");
-
-
                                 }
                             }
+
+                        } catch (SQLException ex) {
+                            JOptionPane.showMessageDialog(NewBill.this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                            ex.printStackTrace();
                         }
 
-                    } catch (SQLException ex) {
-                        throw new RuntimeException(ex);
+
                     }
+                    if (snoToItemIdMap.containsKey(snoValue)) {
+                        try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
+                            String query = "select * from " + DBStructure.ORDER_SLIPS_TABLE + " where " + DBStructure.ORDER_SLIPS_ITEM_ID + "=" + snoToItemIdMap.get(snoValue);
+                            int item_id = snoToItemIdMap.get(snoValue);
+                            int netQuantity = 0;
+                            for (int key : snoToItemIdMap.keySet()) {
+                                if (snoToItemIdMap.get(key) == item_id) {
+                                    netQuantity = netQuantity + ((tableModel.getValueAt(key - 1, quantityIndex) != null && !tableModel.getValueAt(key - 1, quantityIndex).toString().isEmpty()) ? Integer.parseInt(tableModel.getValueAt(key - 1, quantityIndex).toString()) : 0);
+                                }
+                                try (ResultSet rs = stmt.executeQuery(query)) {
+                                    if (rs.next()) {
+                                        int quantityTemp = rs.getInt("quantity") - rs.getInt("billed_quantity");
+                                        if (quantityTemp < netQuantity) {
+                                            JOptionPane.showMessageDialog(newBill, "invalid quanity has been entered for an item connected to a order slip");
+                                            tableModel.setValueAt("", row, quantityIndex);
+                                        }
+                                    } else {
+                                        JOptionPane.showMessageDialog(NewBill.this, "Stock Updation failed to display");
+
+
+                                    }
+                                }
+                            }
+
+                        } catch (SQLException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    }
+
                 }
 
+                double labour = getDoubleValue(tableModel.getValueAt(row, LABOUR_INDEX));
+                tableModel.setValueAt(labour == 0 ? "" : labour, row, LABOUR_INDEX);
+                double raw = getDoubleValue(tableModel.getValueAt(row, RAW_INDEX));
+                tableModel.setValueAt(raw == 0 ? "" : raw, row, RAW_INDEX);
+                double dullChillai = getDoubleValue(tableModel.getValueAt(row, DULL_CHILLAI_INDEX));
+                tableModel.setValueAt(dullChillai == 0 ? "" : dullChillai, row, DULL_CHILLAI_INDEX);
+                double mCm = getDoubleValue(tableModel.getValueAt(row, MEENA_INDEX));
+                tableModel.setValueAt(mCm == 0 ? "" : mCm, row, MEENA_INDEX);
+                double rh = getDoubleValue(tableModel.getValueAt(row, RHODIUM_INDEX));
+                tableModel.setValueAt(rh == 0 ? "" : rh, row, RHODIUM_INDEX);
+                double nag = getDoubleValue(tableModel.getValueAt(row, NAG_SETTING_INDEX));
+                tableModel.setValueAt(nag == 0 ? "" : nag, row, NAG_SETTING_INDEX);
+                double other = getDoubleValue(tableModel.getValueAt(row, OTHER_BASE_INDEX));
+                tableModel.setValueAt(other == 0 ? "" : other, row, OTHER_BASE_INDEX);
+                double plusG;
+                double goldIngG = getDoubleValue(tableModel.getValueAt(row, GOLD_WEIGHT_INDEX));
+                tableModel.setValueAt(goldIngG == 0 ? "" : goldIngG, row, GOLD_WEIGHT_INDEX);
+                double goldCost;
+                double total;
+
+                plusG = labour + raw + dullChillai + mCm + rh + nag + other;
+                goldCost = goldIngG * goldrate;
+                plusG *= quantity;
+                total = plusG + goldCost;
+                tableModel.setValueAt(total == 0 ? "" : UtilityMethods.round(total, 2), row, TOTAL_COST_INDEX);
+                tableModel.setValueAt(plusG == 0 ? "" : UtilityMethods.round(plusG, 2), row, PLUSGOLD);
+                tableModel.setValueAt(goldCost == 0 ? "" : UtilityMethods.round(goldCost, 2), row, GOLD_COST_INDEX);
+
+
+                if (updateThroughSlip) {
+                    createBillToOrderSlipAssosciation(sno, itemID);
+                    updateThroughSlip = false;
+                }
+                checkAndRemoveRow(row, tableModel, SNO_INDEX, false);
+                updateGrandTotalLabel();
+
+                if (col == ITEM_NAME_INDEX) {
+
+                    String value = codeToItemName.get(getStringValue(tableModel, row, ITEM_NAME_INDEX, "").trim().toUpperCase());
+                    if (value != null) tableModel.setValueAt(value, row, ITEM_NAME_INDEX);
+                }
+                billTable.repaint();
+            } finally {
+                UtilityMethods.addModelListeners(listeners, tableModel);
             }
-
-            double labour = getDoubleValue(tableModel.getValueAt(row, LABOUR_INDEX));
-            tableModel.setValueAt(labour == 0 ? "" : labour, row, LABOUR_INDEX);
-            double raw = getDoubleValue(tableModel.getValueAt(row, RAW_INDEX));
-            tableModel.setValueAt(raw == 0 ? "" : raw, row, RAW_INDEX);
-            double dullChillai = getDoubleValue(tableModel.getValueAt(row, DULL_CHILLAI_INDEX));
-            tableModel.setValueAt(dullChillai == 0 ? "" : dullChillai, row, DULL_CHILLAI_INDEX);
-            double mCm = getDoubleValue(tableModel.getValueAt(row, MEENA_INDEX));
-            tableModel.setValueAt(mCm == 0 ? "" : mCm, row, MEENA_INDEX);
-            double rh = getDoubleValue(tableModel.getValueAt(row, RHODIUM_INDEX));
-            tableModel.setValueAt(rh == 0 ? "" : rh, row, RHODIUM_INDEX);
-            double nag = getDoubleValue(tableModel.getValueAt(row, NAG_SETTING_INDEX));
-            tableModel.setValueAt(nag == 0 ? "" : nag, row, NAG_SETTING_INDEX);
-            double other = getDoubleValue(tableModel.getValueAt(row, OTHER_BASE_INDEX));
-            tableModel.setValueAt(other == 0 ? "" : other, row, OTHER_BASE_INDEX);
-            double plusG;
-            double goldIngG = getDoubleValue(tableModel.getValueAt(row, GOLD_WEIGHT_INDEX));
-            tableModel.setValueAt(goldIngG == 0 ? "" : goldIngG, row, GOLD_WEIGHT_INDEX);
-            double goldCost;
-            double total;
-
-            plusG = labour + raw + dullChillai + mCm + rh + nag + other;
-            goldCost = goldIngG * goldrate;
-            plusG *= quantity;
-            total = plusG + goldCost;
-            tableModel.setValueAt(total == 0 ? "" : UtilityMethods.round(total, 2), row, TOTAL_COST_INDEX);
-            tableModel.setValueAt(plusG == 0 ? "" : UtilityMethods.round(plusG, 2), row, PLUSGOLD);
-            tableModel.setValueAt(goldCost == 0 ? "" : UtilityMethods.round(goldCost, 2), row, GOLD_COST_INDEX);
-
-
-            if (updateThroughSlip) {
-                createBillToOrderSlipAssosciation(sno, itemID);
-                updateThroughSlip = false;
-            }
-            checkAndRemoveRow(row, tableModel, SNO_INDEX, false);
-            updateGrandTotalLabel();
-
-            if (col == ITEM_NAME_INDEX) {
-
-                String value = codeToItemName.get(getStringValue(tableModel, row, ITEM_NAME_INDEX, "").trim().toUpperCase());
-                if (value != null) tableModel.setValueAt(value, row, ITEM_NAME_INDEX);
-            }
-            billTable.repaint();
-            UtilityMethods.addModelListeners(listeners, tableModel);
         });
 
 

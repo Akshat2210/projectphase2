@@ -1,0 +1,181 @@
+{
+  "project": "AccountingSoftwarePro",
+  "file": "src/loginsignup/login/loggedin/billing/newBill/NewBill.java",
+  "review_date": "2026-10-30",
+  "status_values": [
+    "open",
+    "in_progress",
+    "completed"
+  ],
+  "notes": [
+    "Original findings are retained even where subsequent user edits have fixed or partially fixed them. Status is based on source review, not a live database test. Original review line numbers may shift as the file changes."
+  ],
+  "issues": [
+    {
+      "id": "NEWBILL-001",
+      "title": "Deleting a manual row can break later order-slip links",
+      "priority": "high",
+      "status": "completed",
+      "original_review_line": 1203,
+      "methods": [
+        "relinkAssociations",
+        "checkAndRemoveRow",
+        "updateOrderSlipQuantity"
+      ],
+      "details": "relinkAssociations originally returned immediately if the deleted row was not linked to an order slip, although later rows were renumbered. For example, deleting manual row 1 moves linked row 2 to row 1 while its map entry remains under serial 2. Saving or deleting afterward can use the wrong reference.",
+      "notes": [
+        "User separated quantity restoration into updateOrderSlipQuantity. checkAndRemoveRow now calls quantity restoration, unconditional map relinking, then row deletion. Verified by source review."
+      ],
+      "completed_date": "2026-10-30"
+    },
+    {
+      "id": "NEWBILL-002",
+      "title": "Reset leaves the previous transaction open",
+      "priority": "high",
+      "status": "completed",
+      "original_review_line": 500,
+      "methods": [
+        "init",
+        "insertData"
+      ],
+      "details": "Reset originally disposed the window without rolling back or closing transacTemp, retaining draft records, order-slip quantity reservations and database locks. The successful-save path also does not close this connection.",
+      "notes": [
+        "2026-10-30: Reset rolls back and closes its connection. Successful Submit now closes transacTemp in a finally block around printBill, including when printing throws. Back closes the connection after a successful rollback. Verified by source review.",
+        "User accepted that an unexpected printing exception can prevent the subsequent form reset. Rollback failures remain separately deferred under NEWBILL-010. No live database test performed."
+      ],
+      "completed_date": "2026-10-30"
+    },
+    {
+      "id": "NEWBILL-003",
+      "title": "Retrying after a failed save is unreliable",
+      "priority": "high",
+      "status": "completed",
+      "original_review_line": 305,
+      "methods": [
+        "insertData",
+        "init"
+      ],
+      "details": "A full rollback removes the draft bill created during initialization and reverses order-slip reservations, while the screen retains the old bill ID and item associations. Another Submit does not recreate that state.",
+      "notes": [
+        "2026-10-30: Savepoint is created before the bill-header update. Both save blocks catch SQL and runtime exceptions and roll back to the savepoint, preserving the draft and earlier order-slip reservations. Source review and compilation passed; live failure recovery was not tested.",
+        "User agreed to close ordinary failed-save retry recovery and track rollback failures separately as NEWBILL-010."
+      ],
+      "completed_date": "2026-10-30"
+    },
+    {
+      "id": "NEWBILL-004",
+      "title": "Some data errors terminate the entire application",
+      "priority": "high",
+      "status": "completed",
+      "original_review_lines": [
+        712,
+        782
+      ],
+      "methods": [
+        "init"
+      ],
+      "details": "The table listener calls System.exit(1) after an inventory-query error and System.exit(-1) when an expected order-slip item cannot be found. These terminate the full application and interrupt active work.",
+      "notes": [
+        "2026-10-30: System.exit calls were removed from NewBill.java. The previously reviewed error paths now show dialogs rather than terminating the application. Marked completed at the user's request; source review only, no live database test."
+      ],
+      "completed_date": "2026-10-30"
+    },
+    {
+      "id": "NEWBILL-005",
+      "title": "Submit does not explicitly finish the active cell edit",
+      "priority": "high",
+      "status": "completed",
+      "original_review_line": 486,
+      "methods": [
+        "init",
+        "allQuantityValid",
+        "askConfirmation"
+      ],
+      "details": "There is no stopCellEditing call before validation and preview. Text still being edited can differ from the table model, causing the previous value to be previewed or saved. Stop editing and check whether the editor accepts the value before continuing.",
+      "notes": [
+        "2026-10-30: Submit checks billTable.isEditing(), shows a warning and returns before quantity validation, preview or saving. Users must finish editing before submitting. Verified by source review; no live UI test performed."
+      ],
+      "completed_date": "2026-10-30"
+    },
+    {
+      "id": "NEWBILL-006",
+      "title": "An exception can permanently disconnect the calculation listener",
+      "priority": "high",
+      "status": "completed",
+      "original_review_lines": [
+        629,
+        837
+      ],
+      "methods": [
+        "init"
+      ],
+      "details": "The table-edit listener removes listeners and restores them later without finally. An exception can leave subsequent edits without automatic calculation. The Delete handler similarly removes its action and listeners without guaranteed restoration.",
+      "notes": [
+        "2026-10-30: Calculation listeners are restored in finally, including the early-return path. The redundant restoration before return was removed. The Delete handler restores both model listeners and its deleteRow action in finally. Verified by source review; no live UI test performed."
+      ],
+      "completed_date": "2026-10-30"
+    },
+    {
+      "id": "NEWBILL-007",
+      "title": "The empty-item-name check does not work",
+      "priority": "medium",
+      "status": "open",
+      "original_review_line": 183,
+      "methods": [
+        "insertData",
+        "getStringValue"
+      ],
+      "details": "A blank item name is replaced with Unknown before checking isEmpty, so the intended validation never rejects a blank name.",
+      "notes": [],
+      "completed_date": null
+    },
+    {
+      "id": "NEWBILL-008",
+      "title": "Invalid numeric input silently becomes zero",
+      "priority": "high",
+      "status": "open",
+      "original_review_line": 406,
+      "methods": [
+        "getDoubleValue",
+        "insertData",
+        "reCalculateValuesAndAppend"
+      ],
+      "details": "getDoubleValue returns zero when parsing fails. Mistyped charges can disappear without an explanatory error. Plating precision and floating-point money rounding also remain inconsistent: calculation should use the same normalized weight that is saved, with an agreed decimal rounding policy.",
+      "notes": [
+        "The schema now declares plating weights as DECIMAL(10,3); that alone does not normalize Java calculations before saving."
+      ],
+      "completed_date": null
+    },
+    {
+      "id": "NEWBILL-009",
+      "title": "Bill-number generation can collide between users",
+      "priority": "medium",
+      "status": "open",
+      "methods": [
+        "insertData",
+        "UtilityMethods.getBillNumber"
+      ],
+      "related_files": [
+        "src/utils/UtilityMethods.java",
+        "src/resources/structure.sql"
+      ],
+      "details": "Bill numbers use MAX(BillNumber) + 1. Two simultaneous saves can select the same number. The unique database key prevents duplicate numbers, but one save fails rather than safely obtaining another number.",
+      "notes": [],
+      "completed_date": null
+    },
+    {
+      "id": "NEWBILL-010",
+      "title": "Rollback failures are not handled safely",
+      "priority": "high",
+      "status": "open",
+      "methods": [
+        "insertData"
+      ],
+      "details": "If rollback to the submission savepoint fails, the handler displays an error and returns false, but the same screen still permits another submission on an uncertain transaction. Prevent further saves and require safe transaction recovery or a checked restart.",
+      "notes": [
+        "2026-10-30: Deferred explicitly by the user and separated from NEWBILL-003."
+      ],
+      "completed_date": null
+    }
+  ]
+}
