@@ -46,7 +46,7 @@ public class NewBill extends JFrame {
     public static final int GOLD_COST_INDEX = 15;
     public static final int TOTAL_COST_INDEX = 16;        // "total"
     private static int modular = 1;
-    public static final int INVENTORY_MODE=-35;
+    public static final int INVENTORY_MODE = -35;
     int itemID;
     private LocalDateTime dateTime;
     private double goldrate;
@@ -130,7 +130,7 @@ public class NewBill extends JFrame {
             return false;
         }
         String updateCustomerTableQuery = "update " + DBStructure.CUSTOMERS_TABLE + " set " + DBStructure.CUSTOMERS_BALANCE + "=" + DBStructure.CUSTOMERS_BALANCE + "+? where " + DBStructure.CUSTOMERS_CUSTOMER_NAME + "=?";
-        String updateBillsTableQuery = "update "+DBStructure.BILLS_TABLE+" set "+DBStructure.BILLS_DATE+"=?,"+DBStructure.BILLS_CUSTOMER_NAME+"=?, "+DBStructure.BILLS_BILL_NUMBER+ "=? where "+DBStructure.BILLS_BILL_ID+"=?";
+        String updateBillsTableQuery = "update " + DBStructure.BILLS_TABLE + " set " + DBStructure.BILLS_DATE + "=?," + DBStructure.BILLS_CUSTOMER_NAME + "=?, " + DBStructure.BILLS_BILL_NUMBER + "=? where " + DBStructure.BILLS_BILL_ID + "=?";
         String insertJournalEntryQuery = "INSERT INTO " + DBStructure.JOURNAL_ENTRY_TABLE + " (" +
                 DBStructure.JOURNAL_ENTRY_TRANSACTION_TYPE + ", " +
                 DBStructure.JOURNAL_ENTRY_DATE + ", " +
@@ -139,7 +139,7 @@ public class NewBill extends JFrame {
                 DBStructure.JOURNAL_ENTRY_TRANSACTION_ID + ", " +
                 DBStructure.JOURNAL_ENTRY_CREDIT + ", " +
                 DBStructure.JOURNAL_ENTRY_DEBIT + ") VALUES (?, ?, ?, ?, ?, ?, ?)";
-        int billNumber= UtilityMethods.getBillNumber(getTransacTemp());
+        int billNumber = UtilityMethods.getBillNumber(getTransacTemp());
         try {
             PreparedStatement billsTableStatement = conn.prepareStatement(updateBillsTableQuery);
 
@@ -289,7 +289,7 @@ public class NewBill extends JFrame {
             customerTableStatement.executeUpdate();
             System.out.println(billID + " is the billid");
 
-            String linkQuery = "UPDATE "+DBStructure.TRANSACTIONS_TABLE+" SET "+DBStructure.TRANSACTIONS_BILLID+" = ? WHERE "+DBStructure.TRANSACTIONS_CUSTOMER_NAME+" = ? AND "+DBStructure.TRANSACTIONS_BILLID+" IS NULL";
+            String linkQuery = "UPDATE " + DBStructure.TRANSACTIONS_TABLE + " SET " + DBStructure.TRANSACTIONS_BILLID + " = ? WHERE " + DBStructure.TRANSACTIONS_CUSTOMER_NAME + " = ? AND " + DBStructure.TRANSACTIONS_BILLID + " IS NULL";
             linkTransactionsStatement = conn.prepareStatement(linkQuery);
             linkTransactionsStatement.setInt(1, getCurBillID());
             linkTransactionsStatement.setString(2, customerName);
@@ -320,7 +320,7 @@ public class NewBill extends JFrame {
                 if (billDetailsStatement != null) billDetailsStatement.close();
                 if (inventoryStatement != null) inventoryStatement.close();
                 if (customerTableStatement != null) customerTableStatement.close();
-                if(linkTransactionsStatement!=null) linkTransactionsStatement.close();
+                if (linkTransactionsStatement != null) linkTransactionsStatement.close();
                 if (journalEntryStatement != null) journalEntryStatement.close();
                 if (linkDirectJournalEntriesStatement != null) linkDirectJournalEntriesStatement.close();
             } catch (SQLException closeEx) {
@@ -483,8 +483,8 @@ public class NewBill extends JFrame {
 
         });
         NewBill temp = this;
-       submitButton.addActionListener(e -> {
-            if(!allQuantityValid()){
+        submitButton.addActionListener(e -> {
+            if (!allQuantityValid()) {
                 return;
             }
             if (askConfirmation() && insertData()) {
@@ -548,10 +548,10 @@ public class NewBill extends JFrame {
         }
         Connection conn = getTransacTemp();
 
-        String billsQuery = "INSERT INTO " + DBStructure.BILLS_TABLE + " ("+DBStructure.BILLS_BILL_TYPE+ ") VALUES (?)";
+        String billsQuery = "INSERT INTO " + DBStructure.BILLS_TABLE + " (" + DBStructure.BILLS_BILL_TYPE + ") VALUES (?)";
         try (PreparedStatement billsStatement = conn.prepareStatement(billsQuery, Statement.RETURN_GENERATED_KEYS)) {
             conn.setAutoCommit(false); // Start transaction
-            billsStatement.setString(1,CONSTANTS.SALE_ENUM);
+            billsStatement.setString(1, CONSTANTS.SALE_ENUM);
             billsStatement.executeUpdate();
             ResultSet rs = billsStatement.getGeneratedKeys();
             if (rs.next()) setCurBillID((rs.getInt(1)));
@@ -763,7 +763,7 @@ public class NewBill extends JFrame {
                 }
                 if (snoToItemIdMap.containsKey(snoValue)) {
                     try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
-                        String query = "select * from "+DBStructure.ORDER_SLIPS_TABLE+" where "+DBStructure.ORDER_SLIPS_ITEM_ID+"=" + snoToItemIdMap.get(snoValue);
+                        String query = "select * from " + DBStructure.ORDER_SLIPS_TABLE + " where " + DBStructure.ORDER_SLIPS_ITEM_ID + "=" + snoToItemIdMap.get(snoValue);
                         int item_id = snoToItemIdMap.get(snoValue);
                         int netQuantity = 0;
                         for (int key : snoToItemIdMap.keySet()) {
@@ -855,16 +855,16 @@ public class NewBill extends JFrame {
         UtilityMethods.generateAndAddNames(customerComboBox);
         UtilityMethods.generateAndAddDates(dateComboBox, false);
         customerComboBox.addActionListener(e -> {
-            if(customerComboBox.getSelectedIndex()==0){
-                if(searchResultWindow!=null){
+            if (customerComboBox.getSelectedIndex() == 0) {
+                if (searchResultWindow != null) {
                     searchResultWindow.dispose();
                     setExtendedState(JFrame.MAXIMIZED_BOTH);
-                    searchResultWindow=null;
+                    searchResultWindow = null;
                 }
                 return;
             }
             setCustomerName(customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString());
-            if(searchResultWindow==null || !searchResultWindow.isVisible()){
+            if (searchResultWindow == null || !searchResultWindow.isVisible()) {
                 searchResultWindow = new SearchResultWindow(INVENTORY_MODE);
                 searchResultWindow.setAutoRequestFocus(false);
                 searchResultWindow.setVisible(true);
@@ -873,7 +873,7 @@ public class NewBill extends JFrame {
             searchResultWindow.setInventorySelected();
             UtilityMethods.splitFrame(temp, searchResultWindow, UtilityMethods.HORIZONTAL_SPLIT);
         });
-    
+
     }
 
     private boolean allQuantityValid() {
@@ -915,6 +915,7 @@ public class NewBill extends JFrame {
 
         return true;
     }
+
     private boolean askConfirmation() {
         final boolean[] confirmed = {false};
 
@@ -1009,7 +1010,7 @@ public class NewBill extends JFrame {
         ViewCustomerBill viewCustomerBill = new ViewCustomerBill();
         viewCustomerBill.init();
         viewCustomerBill.setVisible(false);
-        viewCustomerBill.loadBillData(viewCustomerBill.getBillTable(),curBillID);
+        viewCustomerBill.loadBillData(viewCustomerBill.getBillTable(), curBillID);
         DefaultTableModel model = (DefaultTableModel) viewCustomerBill.getBillTable().getModel();
         try {
             java.nio.file.Path savedPdf = SaleBillPdf.save(model, viewCustomerBill.getBillID(), viewCustomerBill.getDate(),
@@ -1174,7 +1175,7 @@ public class NewBill extends JFrame {
         }
 
         if (isEmpty) {
-
+            updateOrderSlipQuantity(row + 1);
             relinkAssociations(row + 1);
             tableModel.removeRow(row);
             reCheckEnableDisableInItemNameColumn();
@@ -1189,6 +1190,31 @@ public class NewBill extends JFrame {
         }
     }
 
+    private void updateOrderSlipQuantity(int removeSNO) {
+
+        Integer itemid = snoToItemIdMap.get(removeSNO);
+        if (itemid == null) {
+            return;
+        }
+        int quantity = Integer.parseInt(tableModel.getValueAt(removeSNO - 1, QUANTITY_INDEX).toString());
+        Connection temp = getTransacTemp();
+
+        try {
+            String query = "update " + DBStructure.ORDER_SLIPS_TABLE + " set " + DBStructure.ORDER_SLIPS_BILLED_QUANTITY + " =" + DBStructure.ORDER_SLIPS_BILLED_QUANTITY + "-? where " + DBStructure.ORDER_SLIPS_ITEM_ID + "=?";
+            PreparedStatement stmt = temp.prepareStatement(query);
+            stmt.setInt(1, quantity);
+            stmt.setInt(2, itemid);
+
+
+            stmt.executeUpdate();
+            if (searchResultWindow.isVisible())
+                searchResultWindow.fetchOrderSlip(searchResultWindow.getTableModel());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
     private void reCheckEnableDisableInItemNameColumn() {
         listOfNonEditableCells.removeIf(cell -> cell[1] == ITEM_NAME_INDEX);
         for (int i = 0; i < tableModel.getRowCount(); i++) {
@@ -1197,28 +1223,8 @@ public class NewBill extends JFrame {
         }
     }
 
-    private void relinkAssociations(int removeSNO) //THIS FUNCTION IS ONLY CALLED WHEN DELETING A ITEM ROW FROM BILL TABLE WHICH
-//            CORRUSPONDS TO A ORDER SLIP
-    {
-        if (snoToItemIdMap.get(removeSNO) == null) return;
+    private void relinkAssociations(int removeSNO) {
         HashMap<Integer, Integer> tempMap = new HashMap<>();
-        int itemid = snoToItemIdMap.get(removeSNO);
-        int quantity = Integer.parseInt(tableModel.getValueAt(removeSNO - 1, QUANTITY_INDEX).toString());
-        Connection temp = getTransacTemp();
-
-        try {
-            String query = "update "+DBStructure.ORDER_SLIPS_TABLE+" set "+DBStructure.ORDER_SLIPS_BILLED_QUANTITY+" ="+DBStructure.ORDER_SLIPS_BILLED_QUANTITY+"-? where "+DBStructure.ORDER_SLIPS_ITEM_ID+"=?";
-            PreparedStatement stmt = temp.prepareStatement(query);
-            stmt.setInt(1, quantity);
-            stmt.setInt(2, itemid);
-
-
-            stmt.executeUpdate();
-            if (searchResultWindow.isVisible()) searchResultWindow.fetchOrderSlip(searchResultWindow.getTableModel());
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
         Iterator<Integer> i = snoToItemIdMap.keySet().iterator();
         while (i.hasNext()) {
             int key = i.next();
