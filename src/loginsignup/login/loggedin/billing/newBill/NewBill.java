@@ -110,6 +110,7 @@ public class NewBill extends JFrame {
     }
 
     private boolean insertData() {
+        Savepoint savepoint = null;
 
         DefaultTableModel model = (DefaultTableModel) billTable.getModel();
         int rowCount = model.getRowCount();
@@ -131,16 +132,16 @@ public class NewBill extends JFrame {
         }
         String updateCustomerTableQuery = "update " + DBStructure.CUSTOMERS_TABLE + " set " + DBStructure.CUSTOMERS_BALANCE + "=" + DBStructure.CUSTOMERS_BALANCE + "+? where " + DBStructure.CUSTOMERS_CUSTOMER_NAME + "=?";
         String updateBillsTableQuery = "update " + DBStructure.BILLS_TABLE + " set " + DBStructure.BILLS_DATE + "=?," + DBStructure.BILLS_CUSTOMER_NAME + "=?, " + DBStructure.BILLS_BILL_NUMBER + "=? where " + DBStructure.BILLS_BILL_ID + "=?";
-        String insertJournalEntryQuery = "INSERT INTO " + DBStructure.JOURNAL_ENTRY_TABLE + " (" +
-                DBStructure.JOURNAL_ENTRY_TRANSACTION_TYPE + ", " +
-                DBStructure.JOURNAL_ENTRY_DATE + ", " +
-                DBStructure.JOURNAL_ENTRY_ACCOUNT_NAME + ", " +
-                DBStructure.JOURNAL_ENTRY_BILL_ID + ", " +
-                DBStructure.JOURNAL_ENTRY_TRANSACTION_ID + ", " +
-                DBStructure.JOURNAL_ENTRY_CREDIT + ", " +
-                DBStructure.JOURNAL_ENTRY_DEBIT + ") VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String insertJournalEntryQuery = "INSERT INTO " + DBStructure.JOURNAL_ENTRY_TABLE + " (" + DBStructure.JOURNAL_ENTRY_TRANSACTION_TYPE + ", " + DBStructure.JOURNAL_ENTRY_DATE + ", " + DBStructure.JOURNAL_ENTRY_ACCOUNT_NAME + ", " + DBStructure.JOURNAL_ENTRY_BILL_ID + ", " + DBStructure.JOURNAL_ENTRY_TRANSACTION_ID + ", " + DBStructure.JOURNAL_ENTRY_CREDIT + ", " + DBStructure.JOURNAL_ENTRY_DEBIT + ") VALUES (?, ?, ?, ?, ?, ?, ?)";
         int billNumber = UtilityMethods.getBillNumber(getTransacTemp());
         try {
+            try {
+                savepoint = conn.setSavepoint();
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(NewBill.this, e.getMessage());
+                e.printStackTrace();
+                return false;
+            }
             PreparedStatement billsTableStatement = conn.prepareStatement(updateBillsTableQuery);
 
             billsTableStatement.setTimestamp(1, Timestamp.valueOf(getDateTime()));
@@ -150,30 +151,23 @@ public class NewBill extends JFrame {
             billsTableStatement.setInt(4, getCurBillID());
             billsTableStatement.executeUpdate();
             billsTableStatement.close();
-        } catch (SQLException exception) {
-            JOptionPane.showMessageDialog(newBill, "error");
+        } catch (Exception exception) {
             try {
-                conn.rollback();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
+                conn.rollback(savepoint);
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(NewBill.this, e.getMessage());
+                return false;
             }
-            Thread.dumpStack();
-            throw new RuntimeException();
+            JOptionPane.showMessageDialog(NewBill.this, exception.getMessage());
+            return false;
         }
 
         try {
 //            conn = DriverManager.getConnection(url, user, password);
-
             String insertBillDetailsQuery = "INSERT INTO billdetails (BillID, SNo, ItemName, DesignID, OrderType, RawCost, LabourCost, DullChillaiCost, " + "MeenaColorMeenaCost, RhodiumCost, NagSettingCost, OtherBaseCosts, TotalBaseCosting, GoldRate, " + "GoldPlatingWeight, TotalGoldCost, TotalFinalCost, OrderSlipNumber,OtherBaseCostNotes,quantity) " + "VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?)";
             billDetailsStatement = conn.prepareStatement(insertBillDetailsQuery);
             String inventoryQuery = "update " + DBStructure.INVENTORY_TABLE + " set " + DBStructure.INVENTORY_TOTAL_QUANTITY + "=" + DBStructure.INVENTORY_TOTAL_QUANTITY + "-? where TRIM(" + DBStructure.INVENTORY_DESIGN_ID + ")=?";
-            String linkDirectJournalEntriesQuery = "UPDATE " + DBStructure.JOURNAL_ENTRY_TABLE +
-                    " SET " + DBStructure.JOURNAL_ENTRY_BILL_ID + " = ? WHERE " +
-                    DBStructure.JOURNAL_ENTRY_ACCOUNT_NAME + " = ? AND " +
-                    DBStructure.JOURNAL_ENTRY_TRANSACTION_TYPE + " = ? AND " +
-                    DBStructure.JOURNAL_ENTRY_BILL_ID + " IS NULL AND " +
-                    DBStructure.JOURNAL_ENTRY_TRANSACTION_ID + " IS NULL AND " +
-                    DBStructure.JOURNAL_ENTRY_DATE + " <= ?";
+            String linkDirectJournalEntriesQuery = "UPDATE " + DBStructure.JOURNAL_ENTRY_TABLE + " SET " + DBStructure.JOURNAL_ENTRY_BILL_ID + " = ? WHERE " + DBStructure.JOURNAL_ENTRY_ACCOUNT_NAME + " = ? AND " + DBStructure.JOURNAL_ENTRY_TRANSACTION_TYPE + " = ? AND " + DBStructure.JOURNAL_ENTRY_BILL_ID + " IS NULL AND " + DBStructure.JOURNAL_ENTRY_TRANSACTION_ID + " IS NULL AND " + DBStructure.JOURNAL_ENTRY_DATE + " <= ?";
             inventoryStatement = conn.prepareStatement(inventoryQuery);
             journalEntryStatement = conn.prepareStatement(insertJournalEntryQuery);
             linkDirectJournalEntriesStatement = conn.prepareStatement(linkDirectJournalEntriesQuery);
@@ -181,7 +175,6 @@ public class NewBill extends JFrame {
             for (int i = 0; i < rowCount - 1; i++) {
                 int serialNo = Integer.parseInt(getStringValue(model, i, SNO_INDEX, "0"));
                 String itemName = getStringValue(model, i, ITEM_NAME_INDEX, "Unknown");
-
                 if (itemName.isEmpty()) {
                     JOptionPane.showMessageDialog(newBill, "please do not leave item name empty");
                     throw new RuntimeException();
@@ -301,22 +294,16 @@ public class NewBill extends JFrame {
             return true;
         } catch (Exception ex) {
             try {
-                if (conn != null) {
-                    conn.rollback(); // Rollback on error
-                }
-
-            } catch (SQLException rollbackEx) {
-                Thread.dumpStack();
-                throw new RuntimeException();
+                conn.rollback(savepoint);
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(NewBill.this, "rollBackFailed\n" + e.getMessage());
+                return false;
             }
-            Thread.dumpStack();
+            JOptionPane.showMessageDialog(NewBill.this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
-            JOptionPane.showMessageDialog(null, "Error saving bill details!", "Error", JOptionPane.ERROR_MESSAGE);
             return false;
-
         } finally {
             try {
-
                 if (billDetailsStatement != null) billDetailsStatement.close();
                 if (inventoryStatement != null) inventoryStatement.close();
                 if (customerTableStatement != null) customerTableStatement.close();
@@ -477,6 +464,7 @@ public class NewBill extends JFrame {
                 getTransacTemp().rollback();
                 getTransacTemp().close();
             } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(NewBill.this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 ex.printStackTrace();
             }
 
@@ -487,9 +475,21 @@ public class NewBill extends JFrame {
             if (!allQuantityValid()) {
                 return;
             }
+
             if (askConfirmation() && insertData()) {
 //                linkBillToTransactions();
+            try {
                 printBill(getCurBillID());
+            }
+                finally
+                {
+                    try {
+                        getTransacTemp().close();
+                    } catch (SQLException ex) {
+                        JOptionPane.showMessageDialog(NewBill.this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                        ex.printStackTrace();
+                    }
+                }
                 dispose();
                 newBill = new NewBill();
                 newBill.init();
@@ -500,8 +500,18 @@ public class NewBill extends JFrame {
         resetButton1.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                try {
+                    try {
+                        getTransacTemp().rollback();
+                    } catch (SQLException ex) {
+                        JOptionPane.showMessageDialog(NewBill.this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    } finally {
+                        getTransacTemp().close();
+                    }
+                } catch (SQLException ex) {
+                    JOptionPane.showMessageDialog(NewBill.this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
                 dispose();
-
                 newBill = new NewBill();
                 newBill.init();
                 newBill.setVisible(true);
@@ -707,9 +717,9 @@ public class NewBill extends JFrame {
                         tableModel = newModel;
                     } catch (SQLException ex) {
 //                        Thread.dumpStack();
+                        JOptionPane.showMessageDialog(NewBill.this, ex.getMessage());
                         ex.printStackTrace();
-                        JOptionPane.showMessageDialog(null, "Database error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                        System.exit(1);
+
                     }
                 } else {
                     // If designID field is empty, clear ItemName as well
@@ -725,37 +735,24 @@ public class NewBill extends JFrame {
 
                 String designID = UtilityMethods.parseString(tableModel.getValueAt(row, designIdIndex)).trim();
                 if (notThroughOrderSlip && designID != null && !designID.toString().contentEquals("")) {
-                    String query =
-                            "SELECT " + DBStructure.INVENTORY_TOTAL_QUANTITY +
-                                    " FROM " + DBStructure.INVENTORY_TABLE +
-                                    " WHERE TRIM(" + DBStructure.INVENTORY_DESIGN_ID + ") = ?";
+                    String query = "SELECT " + DBStructure.INVENTORY_TOTAL_QUANTITY + " FROM " + DBStructure.INVENTORY_TABLE + " WHERE TRIM(" + DBStructure.INVENTORY_DESIGN_ID + ") = ?";
 
-                    try (Connection con = MyClass.createConnection();
-                         PreparedStatement preparedStatement = con.prepareStatement(query)) {
+                    try (Connection con = MyClass.createConnection(); PreparedStatement preparedStatement = con.prepareStatement(query)) {
 
                         preparedStatement.setString(1, designID);
 
                         try (ResultSet resultSet = preparedStatement.executeQuery()) {
                             if (resultSet.next()) {
-                                int availableQuantity =
-                                        resultSet.getInt(DBStructure.INVENTORY_TOTAL_QUANTITY);
+                                int availableQuantity = resultSet.getInt(DBStructure.INVENTORY_TOTAL_QUANTITY);
 
                                 if (availableQuantity < quantity) {
-                                    JOptionPane.showMessageDialog(
-                                            NewBill.this,
-                                            "Warning: Stock is not remaining."
-                                    );
+                                    JOptionPane.showMessageDialog(NewBill.this, "Warning: Stock is not remaining.");
                                 }
                             }
                         }
 
                     } catch (SQLException ex) {
-                        JOptionPane.showMessageDialog(
-                                NewBill.this,
-                                ex.getMessage(),
-                                "Error",
-                                JOptionPane.ERROR_MESSAGE
-                        );
+                        JOptionPane.showMessageDialog(NewBill.this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                         ex.printStackTrace();
                     }
 
@@ -778,9 +775,9 @@ public class NewBill extends JFrame {
                                         tableModel.setValueAt("", row, quantityIndex);
                                     }
                                 } else {
-                                    JOptionPane.showMessageDialog(newBill, "error has occured");
-                                    System.exit(-1);
-                                    throw new RuntimeException();
+                                    JOptionPane.showMessageDialog(NewBill.this, "Stock Updation failed to display");
+
+
                                 }
                             }
                         }
@@ -880,35 +877,24 @@ public class NewBill extends JFrame {
         DefaultTableModel tableModel = (DefaultTableModel) billTable.getModel();
         int dataRowCount = tableModel.getRowCount() - 1; // Last row is the blank entry row
         if (dataRowCount <= 0) {
-            JOptionPane.showMessageDialog(
-                    NewBill.this,
-                    "Please add at least one item."
-            );
+            JOptionPane.showMessageDialog(NewBill.this, "Please add at least one item.");
             return false;
         }
 
         for (int row = 0; row < dataRowCount; row++) {
             Object quantityValue = tableModel.getValueAt(row, QUANTITY_INDEX);
-            String quantityText = quantityValue == null
-                    ? ""
-                    : quantityValue.toString().trim();
+            String quantityText = quantityValue == null ? "" : quantityValue.toString().trim();
 
             int quantity;
             try {
                 quantity = Integer.parseInt(quantityText);
             } catch (NumberFormatException exception) {
-                JOptionPane.showMessageDialog(
-                        NewBill.this,
-                        "Please enter a whole quantity greater than zero in row " + (row + 1) + "."
-                );
+                JOptionPane.showMessageDialog(NewBill.this, "Please enter a whole quantity greater than zero in row " + (row + 1) + ".");
                 return false;
             }
 
             if (quantity <= 0) {
-                JOptionPane.showMessageDialog(
-                        NewBill.this,
-                        "Please enter a quantity greater than zero in row " + (row + 1) + "."
-                );
+                JOptionPane.showMessageDialog(NewBill.this, "Please enter a quantity greater than zero in row " + (row + 1) + ".");
                 return false;
             }
         }
@@ -976,9 +962,7 @@ public class NewBill extends JFrame {
         previewTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
         JScrollPane previewScrollPane = new JScrollPane(previewTable);
-        previewScrollPane.setBorder(
-                BorderFactory.createTitledBorder("Bill Items")
-        );
+        previewScrollPane.setBorder(BorderFactory.createTitledBorder("Bill Items"));
 
         JButton editButton = new JButton("Back to Edit");
         JButton confirmButton = new JButton("Confirm & Save");
@@ -1013,8 +997,7 @@ public class NewBill extends JFrame {
         viewCustomerBill.loadBillData(viewCustomerBill.getBillTable(), curBillID);
         DefaultTableModel model = (DefaultTableModel) viewCustomerBill.getBillTable().getModel();
         try {
-            java.nio.file.Path savedPdf = SaleBillPdf.save(model, viewCustomerBill.getBillID(), viewCustomerBill.getDate(),
-                    viewCustomerBill.getCustomerName(), MyClass.login.getDatabase(), java.nio.file.Paths.get("data"));
+            java.nio.file.Path savedPdf = SaleBillPdf.save(model, viewCustomerBill.getBillID(), viewCustomerBill.getDate(), viewCustomerBill.getCustomerName(), MyClass.login.getDatabase(), java.nio.file.Paths.get("data"));
             new SwingWorker<Void, Void>() {
                 @Override
                 protected Void doInBackground() throws Exception {
@@ -1028,16 +1011,12 @@ public class NewBill extends JFrame {
                         get();
                     } catch (Exception printError) {
                         Throwable cause = printError.getCause() == null ? printError : printError.getCause();
-                        JOptionPane.showMessageDialog(NewBill.this,
-                                "The bill and PDF are saved.\n" + cause.getMessage() + "\nPDF: " + savedPdf,
-                                "Open PDF for printing", JOptionPane.WARNING_MESSAGE);
+                        JOptionPane.showMessageDialog(NewBill.this, "The bill and PDF are saved.\n" + cause.getMessage() + "\nPDF: " + savedPdf, "Open PDF for printing", JOptionPane.WARNING_MESSAGE);
                     }
                 }
             }.execute();
         } catch (Exception pdfError) {
-            JOptionPane.showMessageDialog(NewBill.this,
-                    "Bill is saved, but its PDF could not be created.\n" + pdfError.getMessage(),
-                    "Bill saved - PDF not saved", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(NewBill.this, "Bill is saved, but its PDF could not be created.\n" + pdfError.getMessage(), "Bill saved - PDF not saved", JOptionPane.WARNING_MESSAGE);
         }
     }
 //    private void insertRandomValues(int rows) {
@@ -1093,17 +1072,10 @@ public class NewBill extends JFrame {
 
         if (customer_name == null)
             customerComboBox.setSelectedIndex(1 + random.nextInt(customerComboBox.getItemCount() - 1));
-        else
-            customerComboBox.setSelectedItem(customer_name);
+        else customerComboBox.setSelectedItem(customer_name);
 
         for (int i = 0; i < rows; i++) {
-            String[] JEWELRY_ITEMS = {
-                    "Solitaire Ring", "Pearl Stud Earrings", "Diamond Pendant", "Gold Bangle", "Kundan Necklace",
-                    "Ruby Cocktail Ring", "Meenakari Jhumka", "Emerald Choker", "Platinum Chain", "CZ Toe Ring",
-                    "Antique Kada", "Temple Design Pendant", "Rose Gold Bracelet", "Dual-tone Hoops", "Navratna Necklace",
-                    "Sapphire Studs", "Victorian Brooch", "Adjustable Finger Ring", "Oxidized Anklet", "Layered Mangalsutra",
-                    "Traditional Nose Pin", "Butterfly Charm Pendant", "Bridal Matha Patti", "Tanzanite Drop Earrings", "Floral Armlet (Bajuband)"
-            };
+            String[] JEWELRY_ITEMS = {"Solitaire Ring", "Pearl Stud Earrings", "Diamond Pendant", "Gold Bangle", "Kundan Necklace", "Ruby Cocktail Ring", "Meenakari Jhumka", "Emerald Choker", "Platinum Chain", "CZ Toe Ring", "Antique Kada", "Temple Design Pendant", "Rose Gold Bracelet", "Dual-tone Hoops", "Navratna Necklace", "Sapphire Studs", "Victorian Brooch", "Adjustable Finger Ring", "Oxidized Anklet", "Layered Mangalsutra", "Traditional Nose Pin", "Butterfly Charm Pendant", "Bridal Matha Patti", "Tanzanite Drop Earrings", "Floral Armlet (Bajuband)"};
 
 
             int row = tableModel.getRowCount() - 1; // newly created row
@@ -1207,8 +1179,7 @@ public class NewBill extends JFrame {
 
 
             stmt.executeUpdate();
-            if (searchResultWindow.isVisible())
-                searchResultWindow.fetchOrderSlip(searchResultWindow.getTableModel());
+            if (searchResultWindow.isVisible()) searchResultWindow.fetchOrderSlip(searchResultWindow.getTableModel());
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
