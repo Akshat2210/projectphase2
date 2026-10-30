@@ -93,6 +93,11 @@ public class Send extends JFrame {
         addPacketButton.addActionListener(event -> addPacket());
         configureSourceItemTable();
         selectionComboBox.addActionListener(event -> loadSelectedSourceItems());
+        sendFrom.addActionListener(event -> {
+            if ("Incoming transfers".equals(selectionComboBox.getSelectedItem())) {
+                loadSelectedSourceItems();
+            }
+        });
         setupInitialPacketPanel();
         loadPresetRemarks();
         setPanelHeight(200);
@@ -390,6 +395,8 @@ public class Send extends JFrame {
         final String source = selectedSource.toString().trim();
         final PacketPanel packet = selectedPacket;
         final String customerName = getCustomerName(packet);
+        final GodownOption fromGodown = (GodownOption) sendFrom.getSelectedItem();
+        final Integer fromGodownId = fromGodown == null ? null : fromGodown.id;
         final long requestNumber = ++sourceLoadRequestNumber;
 
         new SwingWorker<SourceTableData, Void>() {
@@ -397,6 +404,9 @@ public class Send extends JFrame {
             protected SourceTableData doInBackground() throws SQLException {
                 if ("Inventory".equals(source)) {
                     return loadInventorySourceData();
+                }
+                if ("Incoming transfers".equals(source)) {
+                    return fetchSendTableData(fromGodownId);
                 }
                 return loadOrderSlipSourceData(source, customerName);
             }
@@ -406,18 +416,23 @@ public class Send extends JFrame {
                 try {
                     Object currentSelection = selectionComboBox.getSelectedItem();
                     String currentSource = currentSelection == null ? "" : currentSelection.toString().trim();
+                    GodownOption currentFromGodown = (GodownOption) sendFrom.getSelectedItem();
                     if (requestNumber != sourceLoadRequestNumber
                             || selectedPacket != packet
                             || !source.equals(currentSource)
+                            || (fromGodownId != null
+                            && (currentFromGodown == null || currentFromGodown.id != fromGodownId))
                             || !customerName.equals(getCustomerName(packet))) {
                         return;
                     }
 
                     SourceTableData data = get();
                     sourceItemTableModel.setDataVector(data.rows, data.columnNames);
-                    // Keep the database item ID in the model, but out of the browser view.
-                    if (!"Inventory".equals(source)) {
+                    // Keep database IDs in the model, but out of the browser view.
+                    if (!"Inventory".equals(source) && !"Incoming transfers".equals(source)) {
                         itemTable.removeColumn(itemTable.getColumnModel().getColumn(5));
+                    } else if ("Incoming transfers".equals(source)) {
+                        itemTable.removeColumn(itemTable.getColumnModel().getColumn(itemTable.getColumnCount() - 1));
                     }
                     sourceItemsReady = true;
                 } catch (Exception exception) {
@@ -455,6 +470,59 @@ public class Send extends JFrame {
                 new String[]{"Design ID", "Item name", "Available quantity", "Source"},
                 rows.toArray(new Object[0][])
         );
+    }
+
+    /**
+     * Loads items previously sent to the active Send From godown. A later step
+     * will use the hidden parent ID to add one of these rows into a new packet.
+     */
+    private SourceTableData fetchSendTableData(Integer destinationGodownId) throws SQLException {
+        String[] columns = new String[]{"Lot", "Packet", "Sent from", "Customer", "Design ID", "Item name",
+                "Sent here", "Sent onward", "Available", "Item remark", "Send item ID"};
+        if (destinationGodownId == null) return new SourceTableData(columns, new Object[0][columns.length]);
+
+        String sql = "SELECT i.send_item_id, l.send_lot_id, p.packet_number, source.godown_name AS source_name, "
+                + "p.customer_name, i.design_id, i.item_name, i.sent_quantity, i.item_remark, "
+                + "COALESCE(SUM(forwarded.sent_quantity), 0) AS sent_onward "
+                + "FROM send_items i "
+                + "JOIN send_packets p ON p.send_packet_id = i.send_packet_id "
+                + "JOIN send_lots l ON l.send_lot_id = p.send_lot_id "
+                + "JOIN godowns source ON source.godown_id = i.source_godown_id "
+                + "LEFT JOIN send_items forwarded ON forwarded.parent_send_item_id = i.send_item_id "
+                + "AND forwarded.source_godown_id = ? "
+                + "WHERE i.destination_godown_id = ? "
+                + "GROUP BY i.send_item_id, l.send_lot_id, p.packet_number, source.godown_name, p.customer_name, "
+                + "i.design_id, i.item_name, i.sent_quantity, i.item_remark, i.item_number "
+                + "HAVING i.sent_quantity - COALESCE(SUM(forwarded.sent_quantity), 0) > 0 "
+                + "ORDER BY l.send_lot_id DESC, p.packet_number, i.item_number";
+        List<Object[]> rows = new ArrayList<>();
+        try (Connection connection = MyClass.createConnection()) {
+            if (connection == null) throw new SQLException("Could not connect to the database.");
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, destinationGodownId);
+                statement.setInt(2, destinationGodownId);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    while (resultSet.next()) {
+                        int sentQuantity = resultSet.getInt("sent_quantity");
+                        int sentOnward = resultSet.getInt("sent_onward");
+                        rows.add(new Object[]{
+                                resultSet.getLong("send_lot_id"),
+                                resultSet.getInt("packet_number"),
+                                resultSet.getString("source_name"),
+                                resultSet.getString("customer_name"),
+                                resultSet.getString("design_id"),
+                                resultSet.getString("item_name"),
+                                sentQuantity,
+                                sentOnward,
+                                sentQuantity - sentOnward,
+                                resultSet.getString("item_remark"),
+                                resultSet.getLong("send_item_id")
+                        });
+                    }
+                }
+            }
+        }
+        return new SourceTableData(columns, rows.toArray(new Object[0][]));
     }
 
     private SourceTableData loadOrderSlipSourceData(String source, String customerName) throws SQLException {
@@ -538,6 +606,12 @@ public class Send extends JFrame {
         if (packet.itemTable.isEditing() && !packet.itemTable.getCellEditor().stopCellEditing()) return;
         int row = itemTable.convertRowIndexToModel(viewRow);
         String source = String.valueOf(selectionComboBox.getSelectedItem());
+        if ("Incoming transfers".equals(source)) {
+            JOptionPane.showMessageDialog(this,
+                    "Incoming transfers can now be looked up. Adding them to a packet is the next step.",
+                    "Incoming transfers", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
         boolean inventory = "Inventory".equals(source);
         String customer = getCustomerName(packet);
         String designId = (String) sourceItemTableModel.getValueAt(row, inventory ? 0 : 1);
