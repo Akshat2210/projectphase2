@@ -15,8 +15,12 @@
       "priority": "critical",
       "status": "completed",
       "details": "A root database password is hard-coded in src/mainpack/MyClass.java. Store credentials outside source code and rotate the exposed password.",
-      "files": ["src/mainpack/MyClass.java"],
-      "notes": ["2026-10-29: Removed the unused connection with embedded credentials from MyClass.java. Confirmed backup.exe.bat, exec.bat.txt, and src/utils/helloworld.bat were removed. User clarified LOGIN.java confirmation code is not an account credential and requested closure. Password rotation was not verified by the assistant."],
+      "files": [
+        "src/mainpack/MyClass.java"
+      ],
+      "notes": [
+        "2026-10-29: Removed the unused connection with embedded credentials from MyClass.java. Confirmed backup.exe.bat, exec.bat.txt, and src/utils/helloworld.bat were removed. User clarified LOGIN.java confirmation code is not an account credential and requested closure. Password rotation was not verified by the assistant."
+      ],
       "completed_date": "2026-10-29"
     },
     {
@@ -25,19 +29,30 @@
       "priority": "critical",
       "status": "completed",
       "details": "Password fields use JTextField and are handled as Strings. Use JPasswordField and clear password arrays after use.",
-      "files": ["src/loginsignup/login/LOGIN.java", "src/loginsignup/signup/SignUp.java"],
-      "notes": ["Login and signup now use JPasswordField. Password character arrays are cleared during reset or after signup processing."],
+      "files": [
+        "src/loginsignup/login/LOGIN.java",
+        "src/loginsignup/signup/SignUp.java"
+      ],
+      "notes": [
+        "Login and signup now use JPasswordField. Password character arrays are cleared during reset or after signup processing."
+      ],
       "completed_date": "2026-10-26"
     },
     {
       "id": "ISSUE-003",
       "title": "Eliminate command injection and password exposure in batch files",
       "priority": "critical",
-      "status": "open",
+      "status": "completed",
       "details": "Signup and backup construct batch commands from user, database, and password text. Replace generated batch files with safer process execution and protected configuration.",
-      "files": ["src/loginsignup/signup/SignUp.java", "src/loginsignup/login/loggedin/MainScreen.java"],
-      "notes": [],
-      "completed_date": null
+      "files": [
+        "src/loginsignup/signup/SignUp.java",
+        "src/loginsignup/login/loggedin/MainScreen.java"
+      ],
+      "notes": [
+        "Signup now uses JDBC instead of generated batch files. BackupAndRestore.createBackUpFile now runs mysqldump directly with separate arguments, protected temporary MySQL option-file credentials and cleanup; passwords are not command arguments. Compilation passed.",
+        "2026-10-31: Inspected the user-generated tempback.sql backup of jivan: 19 CREATE TABLE statements, 13 INSERT statements, a dump-completed marker and no error lines. Restore testing was not performed. Historical plaintext batch artifacts, if any, are not removed by this change."
+      ],
+      "completed_date": "2026-10-31"
     },
     {
       "id": "ISSUE-004",
@@ -45,7 +60,9 @@
       "priority": "high",
       "status": "open",
       "details": "Require a clear confirmation, backup check, preview of affected records, audit log, and a recoverable archive before deletion.",
-      "files": ["src/loginsignup/login/loggedin/MainScreen.java"],
+      "files": [
+        "src/loginsignup/login/loggedin/MainScreen.java"
+      ],
       "notes": [],
       "completed_date": null
     },
@@ -55,7 +72,9 @@
       "priority": "high",
       "status": "open",
       "details": "Billing calculations use double, which can cause rounding errors. Use BigDecimal for prices, tax, totals, balances, and applicable quantities.",
-      "files": ["src/loginsignup/login/loggedin/billing/newBill/NewBill.java"],
+      "files": [
+        "src/loginsignup/login/loggedin/billing/newBill/NewBill.java"
+      ],
       "notes": [],
       "completed_date": null
     },
@@ -85,7 +104,9 @@
       "priority": "medium",
       "status": "open",
       "details": "MyClass stores many windows and login state as public static fields. Use an application context and dependency injection instead.",
-      "files": ["src/mainpack/MyClass.java"],
+      "files": [
+        "src/mainpack/MyClass.java"
+      ],
       "notes": [],
       "completed_date": null
     },
@@ -115,7 +136,10 @@
       "priority": "medium",
       "status": "open",
       "details": "Backup and signup wait for external processes and may freeze the application. Use SwingWorker or background tasks with progress and cancellation support.",
-      "files": ["src/loginsignup/signup/SignUp.java", "src/loginsignup/login/loggedin/MainScreen.java"],
+      "files": [
+        "src/loginsignup/signup/SignUp.java",
+        "src/loginsignup/login/loggedin/MainScreen.java"
+      ],
       "notes": [],
       "completed_date": null
     },
@@ -135,7 +159,9 @@
       "priority": "low",
       "status": "open",
       "details": "The lib folder includes duplicate library versions and Javadoc jars. Use a build file with pinned dependencies and reproducible builds.",
-      "files": ["lib"],
+      "files": [
+        "lib"
+      ],
       "notes": [],
       "completed_date": null
     },
@@ -155,8 +181,13 @@
       "priority": "critical",
       "status": "completed",
       "details": "NewBill commits the bill, bill details, inventory, and customer balance before linkBillToTransactions updates matching transactions through a separate connection. If transaction linking fails, the saved bill and the customer's outstanding balance can disagree. Use one transaction for every part of bill submission.",
-      "files": ["src/loginsignup/login/loggedin/billing/newBill/NewBill.java"],
-      "notes": ["Reviewed for production readiness on 2026-10-04.", "Completed on 2026-10-05: bill-to-transaction linking now runs on the bill-save connection before commit, so a linking failure rolls back the whole save."],
+      "files": [
+        "src/loginsignup/login/loggedin/billing/newBill/NewBill.java"
+      ],
+      "notes": [
+        "Reviewed for production readiness on 2026-10-04.",
+        "Completed on 2026-10-05: bill-to-transaction linking now runs on the bill-save connection before commit, so a linking failure rolls back the whole save."
+      ],
       "completed_date": "2026-10-05"
     },
     {
@@ -165,8 +196,13 @@
       "priority": "critical",
       "status": "open",
       "details": "New Bill and Generate Order Slip subtract stock without a database condition requiring enough remaining quantity. UI warnings are not sufficient when two users or windows sell the same item. Reject the save when any conditional inventory update affects zero rows, unless an explicit approved oversell policy is implemented.",
-      "files": ["src/loginsignup/login/loggedin/billing/newBill/NewBill.java", "src/loginsignup/login/loggedin/ordermanagement/generateorder/OrderGenerateForm.java"],
-      "notes": ["Reviewed for production readiness on 2026-10-04."],
+      "files": [
+        "src/loginsignup/login/loggedin/billing/newBill/NewBill.java",
+        "src/loginsignup/login/loggedin/ordermanagement/generateorder/OrderGenerateForm.java"
+      ],
+      "notes": [
+        "Reviewed for production readiness on 2026-10-04."
+      ],
       "completed_date": null
     },
     {
@@ -175,8 +211,12 @@
       "priority": "critical",
       "status": "open",
       "details": "NewBill calls System.exit(-1) when an expected order-slip item cannot be found. This closes the production application and can interrupt active work. Show an error, roll back the current bill transaction, and keep the application running.",
-      "files": ["src/loginsignup/login/loggedin/billing/newBill/NewBill.java"],
-      "notes": ["Reviewed for production readiness on 2026-10-04."],
+      "files": [
+        "src/loginsignup/login/loggedin/billing/newBill/NewBill.java"
+      ],
+      "notes": [
+        "Reviewed for production readiness on 2026-10-04."
+      ],
       "completed_date": null
     },
     {
@@ -185,8 +225,12 @@
       "priority": "critical",
       "status": "open",
       "details": "Generate Order Slip creates a draft row in an uncommitted transaction during initialization. Back and Reset dispose the form without rolling back and closing that transaction, which can leave database locks and abandoned draft work. Centralize cancellation in a method that rolls back, closes, and then exits the form.",
-      "files": ["src/loginsignup/login/loggedin/ordermanagement/generateorder/OrderGenerateForm.java"],
-      "notes": ["Reviewed for production readiness on 2026-10-04."],
+      "files": [
+        "src/loginsignup/login/loggedin/ordermanagement/generateorder/OrderGenerateForm.java"
+      ],
+      "notes": [
+        "Reviewed for production readiness on 2026-10-04."
+      ],
       "completed_date": null
     },
     {
@@ -195,8 +239,12 @@
       "priority": "high",
       "status": "open",
       "details": "Generated bill PDFs use a relative billsOut path and an unsanitized customer name. The final folder can vary with the application's working directory, and Windows-invalid filename characters can make saving fail. Configure one production folder and sanitize the customer-name portion of each filename.",
-      "files": ["src/loginsignup/login/loggedin/billing/newBill/NewBill.java"],
-      "notes": ["Reviewed for production readiness on 2026-10-04."],
+      "files": [
+        "src/loginsignup/login/loggedin/billing/newBill/NewBill.java"
+      ],
+      "notes": [
+        "Reviewed for production readiness on 2026-10-04."
+      ],
       "completed_date": null
     },
     {
@@ -205,8 +253,12 @@
       "priority": "high",
       "status": "open",
       "details": "The order-slip deletion flow restores the original quantity from the displayed billed/original value. When a slip is partially or fully billed, this restores stock that has already been sold. Restore original quantity minus billed quantity, or block deletion once billing has begun.",
-      "files": ["src/loginsignup/login/loggedin/ordermanagement/vieworders/ViewOrders.java"],
-      "notes": ["Reviewed on 2026-10-09."],
+      "files": [
+        "src/loginsignup/login/loggedin/ordermanagement/vieworders/ViewOrders.java"
+      ],
+      "notes": [
+        "Reviewed on 2026-10-09."
+      ],
       "completed_date": null
     },
     {
@@ -215,8 +267,14 @@
       "priority": "low",
       "status": "completed",
       "details": "In SearchResultWindow, double-click temporarily marks NewBill.notThroughOrderSlip as false before transferring an order-slip item, while Enter does not. The difference can cause an unnecessary inventory-stock warning when using Enter. Route both actions through one shared selection method.",
-      "files": ["src/loginsignup/login/loggedin/billing/newBill/SearchResultWindow.java", "src/loginsignup/login/loggedin/billing/newBill/NewBill.java"],
-      "notes": ["Reviewed on 2026-10-12.", "Completed on 2026-10-12: Enter and double-click both use activateSelection(), which applies the same temporary order-slip mode."],
+      "files": [
+        "src/loginsignup/login/loggedin/billing/newBill/SearchResultWindow.java",
+        "src/loginsignup/login/loggedin/billing/newBill/NewBill.java"
+      ],
+      "notes": [
+        "Reviewed on 2026-10-12.",
+        "Completed on 2026-10-12: Enter and double-click both use activateSelection(), which applies the same temporary order-slip mode."
+      ],
       "completed_date": "2026-10-12"
     },
     {
@@ -225,8 +283,13 @@
       "priority": "low",
       "status": "open",
       "details": "When a Design ID is typed directly into NewBill, the item and raw cost are filled from inventory, but the manual-entry feedback does not use the same combined remaining-stock calculation shown in SearchResultWindow. Keep the existing policy of ignoring order-slip rows, but calculate and show database stock minus quantities for the same Design ID already entered directly in the current bill.",
-      "files": ["src/loginsignup/login/loggedin/billing/newBill/NewBill.java", "src/loginsignup/login/loggedin/billing/newBill/SearchResultWindow.java"],
-      "notes": ["Added on 2026-10-14. Negative stock is allowed; this is a feedback and consistency improvement, not a stock-blocking rule."],
+      "files": [
+        "src/loginsignup/login/loggedin/billing/newBill/NewBill.java",
+        "src/loginsignup/login/loggedin/billing/newBill/SearchResultWindow.java"
+      ],
+      "notes": [
+        "Added on 2026-10-14. Negative stock is allowed; this is a feedback and consistency improvement, not a stock-blocking rule."
+      ],
       "completed_date": null
     },
     {
@@ -235,8 +298,14 @@
       "priority": "low",
       "status": "open",
       "details": "Keep IntelliJ GUI Designer as the application builder while providing a script that restores the approved JAR versions into lib on a new computer. The script should avoid duplicate versions, skip already-present valid JARs, and document how to run it.",
-      "files": ["lib", "setup-libraries.ps1", "README.md"],
-      "notes": ["Added on 2026-10-31. This is the first dependency-management step; it must not replace IntelliJ's handling of .form files."],
+      "files": [
+        "lib",
+        "setup-libraries.ps1",
+        "README.md"
+      ],
+      "notes": [
+        "Added on 2026-10-31. This is the first dependency-management step; it must not replace IntelliJ's handling of .form files."
+      ],
       "completed_date": null
     }
   ]
