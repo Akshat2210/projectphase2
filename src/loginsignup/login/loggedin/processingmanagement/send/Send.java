@@ -79,6 +79,10 @@ public class Send extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (saving) return;
+                int answer = JOptionPane.showConfirmDialog(Send.this,
+                        "Go back? Any unsaved packet entries will be lost.",
+                        "Confirm going back", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                if (answer != JOptionPane.YES_OPTION) return;
                 dispose();
                 processingManagementScreen.setVisible(true);
             }
@@ -312,8 +316,8 @@ public class Send extends JFrame {
     }
 
     /**
-     * The source selector always begins with Inventory.  If the selected packet
-     * has a customer, the remaining choices are that customer's order-slip IDs.
+     * The source selector begins with Inventory and Incoming transfers. If the
+     * selected packet has a customer, the remaining choices are that customer's order-slip IDs.
      */
     private void updateSelectionComboBoxModel() {
         final PacketPanel packet = selectedPacket;
@@ -328,6 +332,7 @@ public class Send extends JFrame {
             protected DefaultComboBoxModel<String> doInBackground() throws SQLException {
                 DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
                 model.addElement("Inventory");
+                model.addElement("Incoming transfers");
 
                 if (customerName.isEmpty()) {
                     return model;
