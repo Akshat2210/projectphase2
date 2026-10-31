@@ -402,8 +402,7 @@ CREATE TABLE `receive_items` (
   UNIQUE KEY `uq_receive_items_action_send_item` (`receive_action_id`,`send_item_id`),
   KEY `idx_receive_items_send_item` (`send_item_id`),
   CONSTRAINT `fk_receive_items_action` FOREIGN KEY (`receive_action_id`) REFERENCES `receive_actions` (`receive_action_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_receive_items_send_item` FOREIGN KEY (`send_item_id`) REFERENCES `send_items` (`send_item_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `chk_receive_items_quantity` CHECK (`received_quantity` > 0)
+  CONSTRAINT `fk_receive_items_send_item` FOREIGN KEY (`send_item_id`) REFERENCES `send_items` (`send_item_id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 insert into ordertype(type_name) values('कच्चे का बाकी');
 insert into ordertype(type_name) values('कच्चे मे जमा');
