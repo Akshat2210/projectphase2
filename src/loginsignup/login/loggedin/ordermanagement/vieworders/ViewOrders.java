@@ -81,7 +81,7 @@ public class ViewOrders extends JFrame {
                 }
             }
             if (count == 0) {
-                JOptionPane.showMessageDialog(MyClass.viewOrders, "slip not found error", "error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(ViewOrders.this, "slip not found error", "error", JOptionPane.ERROR_MESSAGE);
                 setCurrentBill(-1);
                 throw new RuntimeException();
             }
@@ -266,12 +266,12 @@ public class ViewOrders extends JFrame {
                     id = searchField.getText().contentEquals("") ? -1 : Integer.parseInt(searchField.getText().trim());
 
                 } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(MyClass.viewOrders, "invalid number entered", "error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(ViewOrders.this, "invalid number entered", "error", JOptionPane.ERROR_MESSAGE);
                     searchField.setText("");
                     return;
                 }
                 if (!IDExists(id)) {
-                    JOptionPane.showMessageDialog(MyClass.viewOrders, "id not found from field", "error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(ViewOrders.this, "id not found from field", "error", JOptionPane.ERROR_MESSAGE);
                     searchField.setText("");
 
                     return;
@@ -327,7 +327,7 @@ public class ViewOrders extends JFrame {
         deleteButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int deleteAction = JOptionPane.showConfirmDialog(MyClass.viewOrders, "Are you sure you want to delete order slip " + id, "confirm delete action", JOptionPane.OK_CANCEL_OPTION);
+                int deleteAction = JOptionPane.showConfirmDialog(ViewOrders.this, "Are you sure you want to delete order slip " + id, "confirm delete action", JOptionPane.OK_CANCEL_OPTION);
                 if (deleteAction == JOptionPane.CANCEL_OPTION) {
                     return;
                 }
@@ -356,7 +356,7 @@ public class ViewOrders extends JFrame {
                         } else prevNextQuery += ";";
                         prevNextStatement = con.createStatement();
                         ResultSet rs = prevNextStatement.executeQuery(prevNextQuery);
-                        int idd = MyClass.viewOrders.id;
+                        int idd = ViewOrders.this.id;
 //                        if (rs.next()) {
 //                            if (rs.getString(1).contentEquals("" + idd)) {
 //                                System.out.println(rs.getString(1) + "       " + idd);
@@ -400,7 +400,7 @@ public class ViewOrders extends JFrame {
                             ex.printStackTrace();
                             return;
                         } catch (SQLException exc) {
-                            JOptionPane.showMessageDialog(MyClass.viewOrders, "rollback error occured");
+                            JOptionPane.showMessageDialog(ViewOrders.this, "rollback error occured");
                             exc.printStackTrace();
                             return;
                         }
@@ -413,7 +413,7 @@ public class ViewOrders extends JFrame {
                             if (con != null) con.close();
 
                         } catch (SQLException ex) {
-                            JOptionPane.showMessageDialog(MyClass.viewOrders, "logs are saved in logs file contact the technical support");
+                            JOptionPane.showMessageDialog(ViewOrders.this, "logs are saved in logs file contact the technical support");
                             ex.printStackTrace();
                             UtilityMethods.storeLogs(ex);
                         }

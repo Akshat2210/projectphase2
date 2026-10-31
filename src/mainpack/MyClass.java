@@ -2,31 +2,16 @@ package mainpack;
 
 import loginsignup.LOGIN_SIGNUP;
 import loginsignup.login.LOGIN;
-import loginsignup.login.loggedin.AddParty;
 import loginsignup.login.loggedin.MainScreen;
-import loginsignup.login.loggedin.accountingandledger.AALScreen;
-import loginsignup.login.loggedin.accountingandledger.ledgerwindows.LedgerWindow;
 import loginsignup.login.loggedin.billing.BillingScreen;
-import loginsignup.login.loggedin.billing.newBill.NewBill;
-import loginsignup.login.loggedin.billing.newBill.SearchResultWindow;
-import loginsignup.login.loggedin.billing.purcahseBill.PurchaseBill;
-import loginsignup.login.loggedin.billing.viewbills.ViewBackendBill;
 import loginsignup.login.loggedin.billing.viewbills.ViewCustomerBill;
 import loginsignup.login.loggedin.inventorymanagement.InventoryScreen;
 import loginsignup.login.loggedin.inventorymanagement.addinventory.AddInventory;
 import loginsignup.login.loggedin.ordermanagement.OrderScreen;
 import loginsignup.login.loggedin.ordermanagement.generateorder.InventorySelect;
 import loginsignup.login.loggedin.ordermanagement.generateorder.OrderGenerateForm;
-import loginsignup.login.loggedin.ordermanagement.vieworders.ViewOrders;
-import loginsignup.login.loggedin.rootAdmin.RootScreen;
 import loginsignup.login.loggedin.transactionsandaccounts.TransactionsScreen;
-import loginsignup.login.loggedin.transactionsandaccounts.CashEntry.cashTransaction;
-import loginsignup.login.loggedin.transactionsandaccounts.journalEntry.journalEntry;
-import loginsignup.login.loggedin.transactionsandaccounts.viewTransactions.ViewTransactions;
 import loginsignup.signup.SignUp;
-import rootSettings.RootSettiingsScreen;
-import rootSettings.accessmodify.AccessModify;
-import rootSettings.datamanager.DataManager;
 import rootSettings.users.Users;
 import utils.UtilityMethods;
 
@@ -109,20 +94,7 @@ public class MyClass {
         login_signup.setVisible(true);
     }
 
-    public static PurchaseBill purchaseBill;
-    public static AALScreen aalScreen;
-    public static ViewOrders viewOrders;
-    public static cashTransaction newTransaction;
-    public static journalEntry journalEntry;
-    public static SearchResultWindow searchResultWindow;
-    public static ViewTransactions viewTransactions;
-    public static AddParty addParty;
-    public static ViewBackendBill viewBackendBill;
-    public static LedgerWindow ledgerWindow;
-    public static RootSettiingsScreen rootSettiingsScreen;
     public static Users users;
-    public static AccessModify accessModify;
-    public static DataManager dataManager;
 
     public static Connection createConnection() throws SQLException {
         Connection conn;
@@ -151,8 +123,7 @@ public class MyClass {
 
     }
 
-    public static RootScreen rootScreen;
-    public static NewBill newBill;
+
     public static TransactionsScreen transactions;
     public static LOGIN login;
     public static SignUp signUp;

@@ -1,5 +1,6 @@
 package loginsignup.login.loggedin.transactionsandaccounts.viewTransactions;
 
+import loginsignup.login.loggedin.transactionsandaccounts.TransactionsScreen;
 import mainpack.MyClass;
 import utils.UtilityMethods;
 
@@ -19,9 +20,11 @@ public class ViewTransactions extends JFrame {
     private JPanel panel;
     private JTable transactionsTable;
     DefaultTableModel tableModel;
+    private final TransactionsScreen parentWindow;
 
-    public ViewTransactions() {
+    public ViewTransactions(TransactionsScreen parentWindow) {
 
+        this.parentWindow = parentWindow;
     }
 
     public void init() {
@@ -44,7 +47,7 @@ public class ViewTransactions extends JFrame {
         backButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                MyClass.transactions.setVisible(true);
+                parentWindow.setVisible(true);
                 setVisible(false);
                 for (ActionListener listener : partyNameComboBox.getActionListeners())
                     partyNameComboBox.removeActionListener(listener);

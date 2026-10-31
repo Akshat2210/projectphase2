@@ -153,9 +153,9 @@ public class LOGIN extends JFrame {
                     MyClass.mainScreen.setVisible(true);
                     setVisible(false);
                 } else {
-                    MyClass.rootSettiingsScreen = new RootSettiingsScreen();
-                    MyClass.rootSettiingsScreen.init();
-                    MyClass.rootSettiingsScreen.setVisible(true);}
+                    RootSettiingsScreen rootSettiingsScreen = new RootSettiingsScreen();
+                    rootSettiingsScreen.init();
+                    rootSettiingsScreen.setVisible(true);}
                     setVisible(false);
             }
         });

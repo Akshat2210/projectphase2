@@ -12,7 +12,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
 
-import static mainpack.MyClass.addParty;
 
 public class AddParty extends JFrame {
     private JPanel panel1;
@@ -78,7 +77,7 @@ public class AddParty extends JFrame {
                         throw new NumberFormatException();
                     }
                 } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(addParty,"please enter valid balance");
+                JOptionPane.showMessageDialog(AddParty.this,"please enter valid balance");
                 return;
                 }
                 try(Connection con=MyClass.createConnection();
@@ -115,15 +114,15 @@ public class AddParty extends JFrame {
                     } finally {
                         con.setAutoCommit(originalAutoCommit);
                     }
-                    JOptionPane.showMessageDialog(addParty, "Party added successfully.");
+                    JOptionPane.showMessageDialog(AddParty.this, "Party added successfully.");
                     reset();
                 } catch (SQLIntegrityConstraintViolationException ex) {
 //                    throw new RuntimeException(ex);
-                    JOptionPane.showMessageDialog(addParty, "Part Name already exists");
+                    JOptionPane.showMessageDialog(AddParty.this, "Part Name already exists");
                     ex.printStackTrace();
                 } catch (SQLException ex) {
                     ex.printStackTrace();
-                    JOptionPane.showMessageDialog(addParty, ex.getMessage());
+                    JOptionPane.showMessageDialog(AddParty.this, ex.getMessage());
                     return;
                 }
 

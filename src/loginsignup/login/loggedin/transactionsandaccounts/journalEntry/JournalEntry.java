@@ -1,5 +1,6 @@
 package loginsignup.login.loggedin.transactionsandaccounts.journalEntry;
 
+import loginsignup.login.loggedin.transactionsandaccounts.TransactionsScreen;
 import mainpack.MyClass;
 import utils.CONSTANTS;
 import utils.DBStructure;
@@ -20,7 +21,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Set;
 import java.util.TreeSet;
 
-public class journalEntry extends JFrame {
+public class JournalEntry extends JFrame {
     private JPanel panel;
     private JButton backButton;
     private JButton submitButton;
@@ -29,8 +30,10 @@ public class journalEntry extends JFrame {
     private JComboBox<String> comboBox3;
     private JTextField textField1;
     private JTextField textField2;
+    private final TransactionsScreen parentWindow;
 
-    public journalEntry() {
+    public JournalEntry(TransactionsScreen parentWindow) {
+        this.parentWindow = parentWindow;
         submitButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -48,7 +51,7 @@ public class journalEntry extends JFrame {
         populateAccountComboBoxes();
         backButton.addActionListener(e -> {
             dispose();
-            MyClass.transactions.setVisible(true);
+            parentWindow.setVisible(true);
         });
     }
 

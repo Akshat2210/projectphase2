@@ -1,5 +1,6 @@
 package loginsignup.login.loggedin.transactionsandaccounts.CashEntry;
 
+import loginsignup.login.loggedin.transactionsandaccounts.TransactionsScreen;
 import mainpack.MyClass;
 import utils.UtilityMethods;
 
@@ -31,6 +32,7 @@ public class cashTransaction extends JFrame {
             "AND j.transaction_type = 'direct'), 0) AS outstanding " +
             "FROM customers c WHERE c.customer_name = ?";
     private LocalDate date;
+    private final TransactionsScreen parentWindow;
 
     public JButton getBackButton() {
         return backButton;
@@ -51,8 +53,9 @@ public class cashTransaction extends JFrame {
         return date;
     }
 
-    public cashTransaction() {
+    public cashTransaction(TransactionsScreen parentWindow) {
 
+        this.parentWindow = parentWindow;
     }
 
     private void appendListOfCustomers(JComboBox comboBox) {
@@ -129,7 +132,7 @@ public class cashTransaction extends JFrame {
             public void actionPerformed(ActionEvent e) {
 
                 addedTransactions.dispose();
-                MyClass.transactions.setVisible(true);
+                parentWindow.setVisible(true);
                 dispose();
 
             }
@@ -143,13 +146,13 @@ public class cashTransaction extends JFrame {
                     try {
                         amount = Double.parseDouble(amountTextField.getText());
                     } catch (NumberFormatException exception) {
-                        JOptionPane.showMessageDialog(MyClass.newTransaction, "invalid amount entered");
+                        JOptionPane.showMessageDialog(cashTransaction.this, "invalid amount entered");
                         throw new RuntimeException();
                     }
 
                     String customerName = partyNameComboBox.getSelectedItem() == null ? "" : partyNameComboBox.getSelectedItem().toString();
                     if (customerName.isEmpty() || partyNameComboBox.getSelectedIndex() == 0) {
-                        JOptionPane.showMessageDialog(MyClass.newTransaction, "select valid party name");
+                        JOptionPane.showMessageDialog(cashTransaction.this, "select valid party name");
                         return;
 
                     }
@@ -269,7 +272,7 @@ public class cashTransaction extends JFrame {
 
                     if (balance.signum() == 0) {
                         amountTextField.setText("");
-                        JOptionPane.showMessageDialog(MyClass.newTransaction, "no advances or dues found");
+                        JOptionPane.showMessageDialog(cashTransaction.this, "no advances or dues found");
 
                         return;
                     }
@@ -302,7 +305,7 @@ public class cashTransaction extends JFrame {
 
 
         addedTransactions.fetchData(getDate());
-        UtilityMethods.splitFrame(MyClass.newTransaction, addedTransactions, UtilityMethods.VERTI_SPLIT);
+        UtilityMethods.splitFrame(cashTransaction.this, addedTransactions, UtilityMethods.VERTI_SPLIT);
 
     }
 

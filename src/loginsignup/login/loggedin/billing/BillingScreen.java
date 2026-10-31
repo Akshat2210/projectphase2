@@ -1,5 +1,6 @@
 package loginsignup.login.loggedin.billing;
 
+import loginsignup.login.loggedin.MainScreen;
 import loginsignup.login.loggedin.billing.newBill.NewBill;
 import loginsignup.login.loggedin.billing.newBill.SearchResultWindow;
 import loginsignup.login.loggedin.billing.purcahseBill.PurchaseBill;
@@ -10,13 +11,15 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import static mainpack.MyClass.*;
+import static mainpack.MyClass.viewCustomerBill;
+
 
 public class BillingScreen extends JFrame {
     private JPanel panel;
     private JButton newBillButton;
     private JButton backButton;
     private JButton viewCustomerBillsButton;
+    private final MainScreen parentWindow;
 
     public JButton getViewBillButton() {
         return viewCustomerBillsButton;
@@ -29,8 +32,9 @@ public class BillingScreen extends JFrame {
         return newBillButton;
     }
 
-    public BillingScreen() {
-      }
+    public BillingScreen(MainScreen parentWindow) {
+        this.parentWindow = parentWindow;
+    }
     public void init(){
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -40,8 +44,7 @@ public class BillingScreen extends JFrame {
         newBillButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                newBill=new NewBill();
-                searchResultWindow=new SearchResultWindow();
+               NewBill newBill=new NewBill();
                 newBill.init();
                 newBill.setVisible(true);
 
@@ -54,8 +57,8 @@ public class BillingScreen extends JFrame {
             public void actionPerformed(ActionEvent e) {
 //                setVisible(false);
                     dispose();
-                    mainScreen.setBillingButtonEnabled(true);
-                    mainScreen.setVisible(true);
+                    parentWindow.setBillingButtonEnabled(true);
+                    parentWindow.setVisible(true);
             }
         });
         viewCustomerBillsButton.addActionListener(new ActionListener() {
@@ -68,7 +71,7 @@ public class BillingScreen extends JFrame {
             }
         });
         viewBillButton.addActionListener(e -> {
-            viewBackendBill=new ViewBackendBill();
+            ViewBackendBill viewBackendBill=new ViewBackendBill(BillingScreen.this);
             viewBackendBill.init();
             viewBackendBill.setVisible(true);
             setVisible(false);
@@ -76,7 +79,7 @@ public class BillingScreen extends JFrame {
         newPurchaseButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-               purchaseBill=new PurchaseBill();
+                PurchaseBill purchaseBill=new PurchaseBill(BillingScreen.this);
                 purchaseBill.init();
                 purchaseBill.setVisible(true);
                 setVisible(false);

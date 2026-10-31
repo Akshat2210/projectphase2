@@ -16,6 +16,8 @@ public class SearchResultWindow extends JFrame {
     private static final int DESIGN_ID_INDEX = 0;
     private JPanel panel1;
     private String mode="inventory";
+    private final NewBill parent;
+
 
     public void setSearchFlag(boolean searchFlag) {
         this.searchFlag = searchFlag;
@@ -60,9 +62,6 @@ public class SearchResultWindow extends JFrame {
 
     }
 
-    public SearchResultWindow() {
-
-    }
 
     public void init() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -83,9 +82,9 @@ public class SearchResultWindow extends JFrame {
             }
         });
         backButton.addActionListener(e -> {
-            MyClass.newBill.setExtendedState(JFrame.MAXIMIZED_BOTH);
-            MyClass.newBill.getBackButton().setEnabled(true);
-            MyClass.newBill.getSubmitButton().setEnabled(true);
+            parent.setExtendedState(JFrame.MAXIMIZED_BOTH);
+            parent.getBackButton().setEnabled(true);
+            parent.getSubmitButton().setEnabled(true);
 
             dispose();
         });
@@ -115,7 +114,7 @@ public class SearchResultWindow extends JFrame {
         // Design ID -> quantity already selected directly from inventory in this bill.
         HashMap<String, Integer> alreadyAddedToBill = new HashMap<>();
 
-        JTable billTable = MyClass.newBill.getBillTable();
+        JTable billTable = parent.getBillTable();
         DefaultTableModel billModel = (DefaultTableModel) billTable.getModel();
 
         for (int row = 0; row < billModel.getRowCount(); row++) {
@@ -215,7 +214,7 @@ public class SearchResultWindow extends JFrame {
         if (selectedQuantity < 0) return null;
         String query = "UPDATE " + DBStructure.ORDER_SLIPS_TABLE + " SET " + DBStructure.ORDER_SLIPS_BILLED_QUANTITY + " = " + DBStructure.ORDER_SLIPS_BILLED_QUANTITY + " + ? WHERE " + DBStructure.ORDER_SLIPS_SLIP_ID + " = ? AND " + DBStructure.ORDER_SLIPS_ITEM_ID + " = ?";
         try {
-            Connection con = MyClass.newBill.getTransacTemp();
+            Connection con = parent.getTransacTemp();
             PreparedStatement statement = con.prepareStatement(query);
             int itemid = snoToItemIdMap.get(Integer.parseInt(dataTable.getValueAt(dataTable.getSelectedRow(), ((DefaultTableModel) dataTable.getModel()).findColumn("sno")).toString()));
             statement.setInt(1, selectedQuantity);
@@ -317,8 +316,10 @@ public class SearchResultWindow extends JFrame {
 
     }
 
-    public SearchResultWindow(int modeID) {// -INVENTORY_MODE FOR  getting started with inventory
+    public SearchResultWindow(int modeID,NewBill parent) {// -INVENTORY_MODE FOR  getting started with inventory
+        this.parent=parent;
         init();
+
         String customerName = "";
         selectionComboBox.setModel(generateSlipListModel(customerName));
         if(modeID!=NewBill.INVENTORY_MODE){
@@ -352,11 +353,11 @@ public class SearchResultWindow extends JFrame {
     private void activateSelection() {
 
        if(mode.contentEquals("orderslip")) {
-           MyClass.newBill.notThroughOrderSlip = false;
+           parent.notThroughOrderSlip = false;
            try {
                orderSlipItem(sqlOrderSlipUpdate(orderSlipID));
            } finally {
-               MyClass.newBill.notThroughOrderSlip = true;
+               parent.notThroughOrderSlip = true;
            }
        }else if(mode.contentEquals("inventory")) {
            pushInventoryData();
@@ -391,7 +392,7 @@ public class SearchResultWindow extends JFrame {
             return; // User cancelled or entered an invalid quantity.
         }
 
-        JTable billTable = MyClass.newBill.getBillTable();
+        JTable billTable = parent.getBillTable();
         DefaultTableModel billModel = (DefaultTableModel) billTable.getModel();
 
         // NewBill keeps its final row blank for entering the next item.
@@ -436,11 +437,11 @@ public class SearchResultWindow extends JFrame {
             return;
         }
 
-        Connection con = MyClass.newBill.getTransacTemp();
+        Connection con = parent.getTransacTemp();
         int itemId = detailsToPush.get(0);
         int quantity = detailsToPush.get(1);
 
-        JTable billTable = MyClass.newBill.getBillTable();
+        JTable billTable = parent.getBillTable();
         DefaultTableModel model = (DefaultTableModel) billTable.getModel();
 
         String query = "SELECT "
@@ -461,7 +462,7 @@ public class SearchResultWindow extends JFrame {
             if (rs.next()) {
                 TableColumnModel columnModel = billTable.getColumnModel();
                 setUpdateThroughSlip(true);
-                MyClass.newBill.setItemID(itemId);
+                parent.setItemID(itemId);
                 setSearchFlag(true);
                 model.setValueAt(rs.getString("slip_id") + "." + itemId + "/" + (rs.getInt("quantity") - rs.getInt("billed_quantity")), lastrow, columnModel.getColumnIndex("OrderSlip/quantity"));
                 model.setValueAt(String.valueOf(quantity), lastrow, columnModel.getColumnIndex("Quantity"));
@@ -482,7 +483,7 @@ public class SearchResultWindow extends JFrame {
     }
 
     private void setUpdateThroughSlip(boolean b) {
-        MyClass.newBill.updateThroughSlip = b;
+        parent.updateThroughSlip = b;
     }
 
 
@@ -506,7 +507,7 @@ public class SearchResultWindow extends JFrame {
                 + " WHERE " + DBStructure.ORDER_SLIPS_SLIP_ID + " = ? "
                 + " ORDER BY " + DBStructure.ORDER_SLIPS_ITEM_ID;
         try {
-            PreparedStatement pstmt = MyClass.newBill.getTransacTemp().prepareStatement(query);
+            PreparedStatement pstmt = parent.getTransacTemp().prepareStatement(query);
             pstmt.setInt(1, orderSlipID);
             ResultSet rs = pstmt.executeQuery();
             snoToItemIdMap = new HashMap<>();

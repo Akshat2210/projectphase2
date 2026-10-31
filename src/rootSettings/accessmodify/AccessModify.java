@@ -2,6 +2,7 @@ package rootSettings.accessmodify;
 
 import mainpack.MyClass;
 import rootSettings.accessmodify.advancesetting.advancesetting;
+import rootSettings.users.Users;
 
 import javax.swing.*;
 import java.sql.Connection;
@@ -27,8 +28,10 @@ public class AccessModify extends JFrame {
     private String username;
     private final DefaultListModel<String> permittedModel = new DefaultListModel<>();
     private final DefaultListModel<String> restrictedModel = new DefaultListModel<>();
+    private final Users parentWindow;
 
-    public AccessModify() {
+    public AccessModify(Users parentWindow) {
+    this.parentWindow=parentWindow;
     }
 
     public void init(String username) {
@@ -45,7 +48,7 @@ public class AccessModify extends JFrame {
 
         backButton.addActionListener(e -> {
             dispose();
-            MyClass.users.setVisible(true);
+            parentWindow.setVisible(true);
         });
 
         button1.addActionListener(e -> moveSelectedDatabases(restrictedList, restrictedModel, permittedModel));

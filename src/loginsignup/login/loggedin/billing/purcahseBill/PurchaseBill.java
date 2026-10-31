@@ -1,5 +1,6 @@
 package loginsignup.login.loggedin.billing.purcahseBill;
 
+import loginsignup.login.loggedin.billing.BillingScreen;
 import mainpack.MyClass;
 import utils.CONSTANTS;
 import utils.UtilityMethods;
@@ -21,6 +22,7 @@ import java.util.Vector;
 
 public class PurchaseBill extends JFrame {
     private static final int SUCCESS_DONE = 18 * 2;
+    private final BillingScreen parentWindow;
     private JPanel panel;
     private int billid;
     private Connection con;
@@ -62,8 +64,8 @@ public class PurchaseBill extends JFrame {
         return true;
     }
 
-    public PurchaseBill() {
-
+    public PurchaseBill(BillingScreen  billingScreen) {
+    parentWindow=billingScreen;
     }
 
     private boolean designIDexists(String designID) {
@@ -199,7 +201,7 @@ public class PurchaseBill extends JFrame {
             JOptionPane.showMessageDialog(PurchaseBill.this, "bill created successfully");
             return true;
         } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(MyClass.purchaseBill, "Error: " + ex.getMessage());
+            JOptionPane.showMessageDialog(PurchaseBill.this, "Error: " + ex.getMessage());
             try {
                 con.rollback();
                 con.close();
@@ -278,8 +280,8 @@ public class PurchaseBill extends JFrame {
                     }
                 }
             }
-            MyClass.purchaseBill = new PurchaseBill();
-            MyClass.billingScreen.setVisible(true);
+            PurchaseBill purchaseBill = new PurchaseBill(parentWindow);
+            parentWindow.setVisible(true);
         });
         try {
             con = MyClass.createConnection();
@@ -320,13 +322,13 @@ public class PurchaseBill extends JFrame {
                             JOptionPane.showMessageDialog(PurchaseBill.this, "Error: " + ex.getMessage());
                             ex.printStackTrace();
                         }
-                        MyClass.purchaseBill = new PurchaseBill();
-                        MyClass.purchaseBill.init();
-                        MyClass.purchaseBill.setVisible(true);
+                        PurchaseBill purchaseBill = new PurchaseBill(parentWindow);
+                        purchaseBill.init();
+                        purchaseBill.setVisible(true);
                     }
 
                 } else {
-                    JOptionPane.showMessageDialog(MyClass.purchaseBill, "select a customer");
+                    JOptionPane.showMessageDialog(PurchaseBill.this, "select a customer");
                 }
 
 
@@ -370,7 +372,7 @@ public class PurchaseBill extends JFrame {
                 }
                 String designId = getDesignIdValue(row);
                 if (!designId.isEmpty() && designIDexists(designId)) {
-                    JOptionPane.showMessageDialog(MyClass.purchaseBill, "raw getBuyPrice will be update in inventory, re enter design id to avoid this");
+                    JOptionPane.showMessageDialog(PurchaseBill.this, "raw getBuyPrice will be update in inventory, re enter design id to avoid this");
                 }
                 setDefaultSellPrice(row);
                 updateTotal(row);
@@ -384,7 +386,7 @@ public class PurchaseBill extends JFrame {
             }
             if (col == itemNameIndex) {
                 if (designIDexists(getDesignIdValue(row)))
-                    JOptionPane.showMessageDialog(MyClass.purchaseBill, "आइटम का नाम इन्वन्टोरी मे बदल जाएगा, कृपया नाम न बदलने की स्थिति मे दुबारा से designid डालें ");
+                    JOptionPane.showMessageDialog(PurchaseBill.this, "आइटम का नाम इन्वन्टोरी मे बदल जाएगा, कृपया नाम न बदलने की स्थिति मे दुबारा से designid डालें ");
                 String stringValueUperCase = getStringValue(model.getValueAt(row, itemNameIndex)).toUpperCase();
                 String valueToReplace = MyClass.codeToItemName.get(stringValueUperCase);
                 if (valueToReplace != null) {

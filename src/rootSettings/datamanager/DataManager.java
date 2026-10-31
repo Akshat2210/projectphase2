@@ -2,6 +2,7 @@ package rootSettings.datamanager;
 
 import mainpack.MyClass;
 import org.jdesktop.swingx.JXMonthView;
+import rootSettings.RootSettiingsScreen;
 
 import javax.swing.*;
 import java.sql.Connection;
@@ -24,6 +25,11 @@ public class DataManager extends JFrame {
     private JList<String> databaselist;
     private JButton deleteTillDateButton;
     private JButton deleteAllDataButton;
+    private final RootSettiingsScreen parentWindow;
+
+    public DataManager(RootSettiingsScreen parentWindow) {
+        this.parentWindow = parentWindow;
+    }
 
     public void init() {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -35,7 +41,7 @@ public class DataManager extends JFrame {
 
         backButton.addActionListener(e -> {
             dispose();
-            MyClass.rootSettiingsScreen.setVisible(true);
+            parentWindow.setVisible(true);
         });
         deleteAllDataButton.addActionListener(e -> confirmDeleteAll());
         deleteTillDateButton.addActionListener(e -> confirmDeleteTillDate());

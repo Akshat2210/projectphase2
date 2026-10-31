@@ -51,7 +51,7 @@ public class NewBill extends JFrame {
     private LocalDateTime dateTime;
     private double goldrate;
     private String customerName;
-
+    private  SearchResultWindow searchResultWindow;
     public JButton getSubmitButton() {
         return submitButton;
     }
@@ -127,7 +127,7 @@ public class NewBill extends JFrame {
         String customerName = customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString();
 
         if (customerComboBox.getSelectedIndex() == 0) {
-            JOptionPane.showMessageDialog(newBill, "select customer please");
+            JOptionPane.showMessageDialog(NewBill.this, "select customer please");
             return false;
         }
         String updateCustomerTableQuery = "update " + DBStructure.CUSTOMERS_TABLE + " set " + DBStructure.CUSTOMERS_BALANCE + "=" + DBStructure.CUSTOMERS_BALANCE + "+? where " + DBStructure.CUSTOMERS_CUSTOMER_NAME + "=?";
@@ -176,7 +176,7 @@ public class NewBill extends JFrame {
                 int serialNo = Integer.parseInt(getStringValue(model, i, SNO_INDEX, "0"));
                 String itemName = getStringValue(model, i, ITEM_NAME_INDEX, "");
                 if (itemName.isEmpty()) {
-                    JOptionPane.showMessageDialog(newBill, "please do not leave item name empty");
+                    JOptionPane.showMessageDialog(NewBill.this, "please do not leave item name empty");
                     throw new RuntimeException();
                 }
 
@@ -211,7 +211,7 @@ public class NewBill extends JFrame {
                 BigDecimal nag = getBigDecimalValue(model, i, NAG_SETTING_INDEX);
                 BigDecimal other = getBigDecimalValue(model, i, OTHER_BASE_INDEX);
                 BigDecimal totalBaseCost = getBigDecimalValue(model, i, PLUSGOLD);
-                BigDecimal goldRate = BigDecimal.valueOf(newBill.goldrate);
+                BigDecimal goldRate = BigDecimal.valueOf(NewBill.this.goldrate);
                 BigDecimal goldPlatingWeight = getBigDecimalValue(model, i, GOLD_WEIGHT_INDEX);
                 BigDecimal totalGoldCost = getBigDecimalValue(model, i, GOLD_COST_INDEX);
                 BigDecimal totalFinalCost = getBigDecimalValue(model, i, TOTAL_COST_INDEX);
@@ -494,7 +494,7 @@ public class NewBill extends JFrame {
                     }
                 }
                 dispose();
-                newBill = new NewBill();
+                NewBill newBill = new NewBill();
                 newBill.init();
                 newBill.setVisible(true);
             }
@@ -515,7 +515,7 @@ public class NewBill extends JFrame {
                     JOptionPane.showMessageDialog(NewBill.this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
                 dispose();
-                newBill = new NewBill();
+                NewBill newBill = new NewBill();
                 newBill.init();
                 newBill.setVisible(true);
             }
@@ -573,7 +573,7 @@ public class NewBill extends JFrame {
             idLabel.setText("bill id: " + getCurBillID());
 
         } catch (SQLException exception) {
-            JOptionPane.showMessageDialog(newBill, "error");
+            JOptionPane.showMessageDialog(NewBill.this, "error");
             exception.printStackTrace();
             throw new RuntimeException();
         }
@@ -777,7 +777,7 @@ public class NewBill extends JFrame {
                                     if (rs.next()) {
                                         int quantityTemp = rs.getInt("quantity") - rs.getInt("billed_quantity");
                                         if (quantityTemp < netQuantity) {
-                                            JOptionPane.showMessageDialog(newBill, "invalid quanity has been entered for an item connected to a order slip");
+                                            JOptionPane.showMessageDialog(NewBill.this, "invalid quanity has been entered for an item connected to a order slip");
                                             tableModel.setValueAt("", row, quantityIndex);
                                         }
                                     } else {
@@ -870,7 +870,7 @@ public class NewBill extends JFrame {
             }
             setCustomerName(customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString());
             if (searchResultWindow == null || !searchResultWindow.isVisible()) {
-                searchResultWindow = new SearchResultWindow(INVENTORY_MODE);
+                searchResultWindow = new SearchResultWindow(INVENTORY_MODE,NewBill.this);
                 searchResultWindow.setAutoRequestFocus(false);
                 searchResultWindow.setVisible(true);
             }

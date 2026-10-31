@@ -1,5 +1,6 @@
 package loginsignup.login.loggedin.billing.viewbills;
 
+import loginsignup.login.loggedin.billing.BillingScreen;
 import mainpack.MyClass;
 import utils.CONSTANTS;
 import utils.UtilityMethods;
@@ -15,7 +16,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Vector;
 
-import static mainpack.MyClass.*;
+import static mainpack.MyClass.billingScreen;
 import static utils.UtilityMethods.*;
 
 public class ViewBackendBill extends JFrame {
@@ -30,10 +31,12 @@ public class ViewBackendBill extends JFrame {
     private JLabel customerNameLabel;
     private JLabel billIDLabel;
     private JLabel dateLabel;
+    private final BillingScreen parentWindow;
 
-    public ViewBackendBill() {
+    public ViewBackendBill(BillingScreen parentWindow) {
 
 
+        this.parentWindow = parentWindow;
     }
 
     Vector<String> billDetails;
@@ -46,7 +49,7 @@ public class ViewBackendBill extends JFrame {
                 try {
                     loadBillData(Integer.parseInt(searchID.getText()));
                 } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(viewBackendBill, "error", "error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(ViewBackendBill.this, "error", "error", JOptionPane.ERROR_MESSAGE);
                 }
                 searchID.setText("");
             }
@@ -160,13 +163,13 @@ public class ViewBackendBill extends JFrame {
         if(value!= CONSTANTS.SUCCESS_CODE) {
             dispose();
 
-            billingScreen.setVisible(true);
+            parentWindow.setVisible(true);
         }
 
         backButton.addActionListener(e -> {
             setVisible(false);
             dispose();
-            billingScreen.setVisible(true);
+            parentWindow.setVisible(true);
         });
     }
 
@@ -187,7 +190,7 @@ public class ViewBackendBill extends JFrame {
             stmt1.setInt(1, billid);
            try( ResultSet rs = stmt1.executeQuery();){
                 if (!rs.next()) {
-                    JOptionPane.showMessageDialog(viewBackendBill, "empty resultset returned");
+                    JOptionPane.showMessageDialog(ViewBackendBill.this, "empty resultset returned");
                     Thread.dumpStack();
                     return CONSTANTS.FAIL_CODE;
 

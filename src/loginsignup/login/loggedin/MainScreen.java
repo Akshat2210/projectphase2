@@ -40,7 +40,7 @@ public class MainScreen extends JFrame {
         billingButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                MyClass.billingScreen = new BillingScreen();
+                MyClass.billingScreen = new BillingScreen(MainScreen.this);
                 MyClass.billingScreen.init();
                 MyClass.billingScreen.setVisible(true);
                 MainScreen.this.billingButton.setEnabled(false);
@@ -88,27 +88,27 @@ public class MainScreen extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                MyClass.transactions = new TransactionsScreen();
-                MyClass.transactions.init();
-                MyClass.transactions.setVisible(true);
-                MyClass.mainScreen.transactionManagementButton.setEnabled(false);
+                TransactionsScreen transactions = new TransactionsScreen();
+                transactions.init();
+                transactions.setVisible(true);
+                MainScreen.this.transactionManagementButton.setEnabled(false);
             }
         });
         addPartyButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                MyClass.addParty = new AddParty();
-                MyClass.addParty.init();
-                MyClass.addParty.setVisible(true);
+                AddParty addParty = new AddParty();
+                addParty.init();
+                addParty.setVisible(true);
                 addPartyButton.setEnabled(false);
             }
         });
         accountingAndLedgerButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                MyClass.aalScreen = new AALScreen();
-                MyClass.aalScreen.setVisible(true);
-                MyClass.aalScreen.init();
+                AALScreen aalScreen = new AALScreen();
+                aalScreen.setVisible(true);
+                aalScreen.init();
                 setVisible(false);
             }
         });
@@ -163,22 +163,22 @@ public class MainScreen extends JFrame {
             int numberOfTransactions = 1 + random.nextInt(4);
             if (!choice) {
                 for (int subCounter = 0; subCounter < numberOfTransactions; subCounter++) {
-                    MyClass.newBill = new NewBill();
-                    MyClass.newBill.init();
+                    NewBill newBill = new NewBill();
+                    newBill.init();
                     int numberOfItems = 1 + random.nextInt(10);
                     int date = numberOfDays - counter;
 
-                    MyClass.newBill.insertRandomValues(numberOfItems, date, null);
-                    MyClass.newBill.getSubmitButton().doClick();
-                    MyClass.newBill.dispose();
+                    newBill.insertRandomValues(numberOfItems, date, null);
+                    newBill.getSubmitButton().doClick();
+                    newBill.dispose();
                 }
             }
             if (choice) {
-                MyClass.newTransaction = new cashTransaction();
-                MyClass.newTransaction.init();
-                int date = numberOfDays - counter;
-                MyClass.newTransaction.generateTransactions(numberOfTransactions, date);
-                MyClass.newTransaction.dispose();
+//                loginsignup.login.loggedin.transactionsandaccounts.CashEntry.cashTransaction newTransaction = new cashTransaction(TransactionsScreen.this);
+//                newTransaction.init();
+//                int date = numberOfDays - counter;
+//                newTransaction.generateTransactions(numberOfTransactions, date);
+//                newTransaction.dispose();
             }
 
         }

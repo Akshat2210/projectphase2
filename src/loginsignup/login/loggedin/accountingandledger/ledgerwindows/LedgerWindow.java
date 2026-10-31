@@ -2,6 +2,7 @@ package loginsignup.login.loggedin.accountingandledger.ledgerwindows;
 
 import com.mysql.cj.callback.MysqlCallback;
 import jdk.jshell.execution.Util;
+import loginsignup.login.loggedin.accountingandledger.AALScreen;
 import mainpack.MyClass;
 import utils.DBStructure;
 import utils.UtilityMethods;
@@ -31,9 +32,10 @@ public class LedgerWindow extends JFrame {
     private JTable ledgerTable;
     private JPanel panel;
     private JLabel nameLabel;
+    private final AALScreen parentWindow;
 
-    public LedgerWindow() {
-
+    public LedgerWindow(AALScreen aalScreen) {
+        parentWindow=aalScreen;
     }
 
     public void init(String customerName, int mode) {
@@ -44,7 +46,7 @@ public class LedgerWindow extends JFrame {
         backButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                MyClass.aalScreen.setVisible(true);
+                parentWindow.setVisible(true);
                 dispose();
 
             }
@@ -66,7 +68,7 @@ public class LedgerWindow extends JFrame {
         };
         ledgerTable.setModel(defaultTableModel);
         if (mode == CUSTOMER_MODE) {
-            DefaultTableModel model = GetData.fetchCustomerLedger(customerName);
+            DefaultTableModel model = GetData.fetchCustomerLedger(customerName,LedgerWindow.this);
 
             if (model != null) {
                 ledgerTable.setModel(model);
@@ -104,7 +106,7 @@ class GetData {
     static final String BALANCE_COLUMN = "balance";
     static final int BALANCE_COLUMN_INDEX = 4;
 
-    static DefaultTableModel fetchCustomerLedger(String customerName) {
+    static DefaultTableModel fetchCustomerLedger(String customerName,LedgerWindow ledgerWindow) {
 
         String[] columnNames = new String[]{ID_COLUMN, DATE_COLUMN, DEBIT_COLUMN, CREDIT_COLUMN, BALANCE_COLUMN};
         DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
@@ -204,7 +206,7 @@ class GetData {
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(MyClass.ledgerWindow, "error: " + e.getMessage());
+            JOptionPane.showMessageDialog(ledgerWindow, "error: " + e.getMessage());
             return null;
         }
         return tableModel;

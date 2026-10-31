@@ -1,6 +1,7 @@
 package rootSettings.users;
 
 import mainpack.MyClass;
+import rootSettings.RootSettiingsScreen;
 import rootSettings.accessmodify.AccessModify;
 
 import javax.swing.*;
@@ -16,8 +17,10 @@ public class Users extends JFrame {
     private JList<String> userList;
     private JButton deleteUserButton;
     private JButton modifyAccessButton;
+    private final RootSettiingsScreen parentWindow;
 
-    public Users() {
+    public Users(RootSettiingsScreen parentWindow) {
+    this.parentWindow=parentWindow;
     }
 
     public void init() {
@@ -28,7 +31,7 @@ public class Users extends JFrame {
 
         backButton.addActionListener(e -> {
             dispose();
-            MyClass.rootSettiingsScreen.setVisible(true);
+            parentWindow.setVisible(true);
         });
 
         modifyAccessButton.addActionListener(e -> {
@@ -38,9 +41,9 @@ public class Users extends JFrame {
                 return;
             }
 
-            MyClass.accessModify = new AccessModify();
-            MyClass.accessModify.init(selectedUser);
-            MyClass.accessModify.setVisible(true);
+            AccessModify accessModify = new AccessModify(Users.this);
+            accessModify.init(selectedUser);
+            accessModify.setVisible(true);
             setVisible(false);
         });
 

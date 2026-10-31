@@ -26,7 +26,6 @@ public class LOGIN_SIGNUP extends JFrame{
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setContentPane(panel);
         setTitle(MyClass.TITLE+": login/signup");
-        LOGIN login= MyClass.login;
 
         QUITButton.addActionListener(new ActionListener() {
             @Override

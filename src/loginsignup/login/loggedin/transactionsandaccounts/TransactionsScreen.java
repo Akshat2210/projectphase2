@@ -1,7 +1,7 @@
 package loginsignup.login.loggedin.transactionsandaccounts;
 
 import loginsignup.login.loggedin.transactionsandaccounts.CashEntry.cashTransaction;
-import loginsignup.login.loggedin.transactionsandaccounts.journalEntry.journalEntry;
+import loginsignup.login.loggedin.transactionsandaccounts.journalEntry.JournalEntry;
 import loginsignup.login.loggedin.transactionsandaccounts.viewTransactions.ViewTransactions;
 import mainpack.MyClass;
 
@@ -35,10 +35,10 @@ public class TransactionsScreen extends JFrame {
         newTransactionButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                MyClass.newTransaction=new cashTransaction();
+                cashTransaction newTransaction=new cashTransaction(TransactionsScreen.this);
 
-                MyClass.newTransaction.init();
-                MyClass.newTransaction.setVisible(true);
+                newTransaction.init();
+                newTransaction.setVisible(true);
                 setVisible(false);
 
             }
@@ -47,17 +47,17 @@ public class TransactionsScreen extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 setVisible(false);
-                MyClass.viewTransactions=new ViewTransactions();
-                MyClass.viewTransactions.init();
-                MyClass.viewTransactions.setVisible(true);
+                ViewTransactions viewTransactions =new ViewTransactions(TransactionsScreen.this);
+                viewTransactions.init();
+                viewTransactions.setVisible(true);
             }
         });
         journalEntryButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                MyClass.journalEntry = new journalEntry();
-                MyClass.journalEntry.init();
-                MyClass.journalEntry.setVisible(true);
+                JournalEntry journalEntry = new JournalEntry(TransactionsScreen.this);
+                journalEntry.init();
+                journalEntry.setVisible(true);
                 setVisible(false);
             }
         });

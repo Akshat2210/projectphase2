@@ -50,9 +50,9 @@ public class OrderScreen extends JFrame {
         viewOrdersButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                MyClass.viewOrders=new ViewOrders();
-                MyClass.viewOrders.setVisible(true);
-                MyClass.viewOrders.init();
+                ViewOrders viewOrders=new ViewOrders();
+                viewOrders.setVisible(true);
+                viewOrders.init();
                 setVisible(false);
             }
         });

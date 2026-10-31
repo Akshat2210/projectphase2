@@ -104,17 +104,17 @@ public class AALScreen extends JFrame {
 
     private void openCustomer(String selectedCustomer) {
         setVisible(false);
-        MyClass.ledgerWindow = new LedgerWindow();
-        MyClass.ledgerWindow.init(selectedCustomer, LedgerWindow.GENERAL_ACCOUNT_MODE);
-        MyClass.ledgerWindow.setVisible(true);
+        LedgerWindow ledgerWindow = new LedgerWindow(AALScreen.this);
+        ledgerWindow.init(selectedCustomer, LedgerWindow.GENERAL_ACCOUNT_MODE);
+        ledgerWindow.setVisible(true);
     }
 
     private void openItem(String selectedItem) {
         setVisible(false);
         String designID = selectedItem.split("->", 2)[0].trim();
-        MyClass.ledgerWindow = new LedgerWindow();
-        MyClass.ledgerWindow.init(customerList.getSelectedValue() == null ? designID : "", LedgerWindow.ITEM_MODE);
-        MyClass.ledgerWindow.setVisible(true);
+        LedgerWindow ledgerWindow = new LedgerWindow(AALScreen.this);
+        ledgerWindow.init(customerList.getSelectedValue() == null ? designID : "", LedgerWindow.ITEM_MODE);
+        ledgerWindow.setVisible(true);
 
     }
 

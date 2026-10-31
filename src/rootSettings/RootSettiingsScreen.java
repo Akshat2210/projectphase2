@@ -22,16 +22,16 @@ public class RootSettiingsScreen extends JFrame {
         pack();
 
         usersAndDatabaseButton.addActionListener(e -> {
-            MyClass.users = new Users();
-            MyClass.users.init();
-            MyClass.users.setVisible(true);
+            Users users = new Users(RootSettiingsScreen.this);
+            users.init();
+            users.setVisible(true);
             setVisible(false);
         });
 
         dataManagerButton.addActionListener(e -> {
-            MyClass.dataManager = new DataManager();
-            MyClass.dataManager.init();
-            MyClass.dataManager.setVisible(true);
+            DataManager dataManager = new DataManager(RootSettiingsScreen.this);
+            dataManager.init();
+            dataManager.setVisible(true);
             setVisible(false);
         });
 

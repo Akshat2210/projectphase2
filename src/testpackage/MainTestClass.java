@@ -57,9 +57,9 @@ public class MainTestClass {
         List<String> randomNames = new ArrayList<>(Arrays.asList(CUSTOMER_NAME_DOMAIN));
         Collections.shuffle(randomNames);
         for (int index = 1; index <= 10; index++) {
-            MyClass.addParty.setCustomerName(randomNames.get(index - 1));
-            MyClass.addParty.setOpeningBalance("0");
-            MyClass.addParty.clickAddButton();
+//            addParty.setCustomerName(randomNames.get(index - 1));
+//            addParty.setOpeningBalance("0");
+//            addParty.clickAddButton();
         }
     }
     static void orderSlip(int noOfSlips) {
