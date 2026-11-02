@@ -45,6 +45,7 @@ public class Send extends JFrame {
     private JButton submitButton;
     private JTable itemTable;
     private JButton addPacketButton;
+    private JButton deletePacketButton;
     private DefaultTableModel sourceItemTableModel;
     private JPanel packetListPanel;
     private final List<PacketPanel> packetPanels = new ArrayList<>();
@@ -68,6 +69,12 @@ public class Send extends JFrame {
 
     public Send(ProcessingManagementScreen processingManagementScreen) {
         this.processingManagementScreen = processingManagementScreen;
+        deletePacketButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                deleteSelectedPacket();
+            }
+        });
     }
 
     public void init() {
@@ -87,7 +94,18 @@ public class Send extends JFrame {
                 processingManagementScreen.setVisible(true);
             }
         });
-
+        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0), "deleteSelectedPacket");
+        getRootPane().getActionMap().put("deleteSelectedPacket", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                java.awt.Component focus = java.awt.KeyboardFocusManager
+                        .getCurrentKeyboardFocusManager().getFocusOwner();
+                if (focus instanceof javax.swing.text.JTextComponent
+                        || (focus instanceof JTable && ((JTable) focus).isEditing())) return;
+                deleteSelectedPacket();
+            }
+        });
         UtilityMethods.generateAndAddDates(dateComboBox,false);
         submitButton.addActionListener(event -> submitSend());
         addPacketButton.addActionListener(event -> addPacket());
@@ -233,6 +251,31 @@ public class Send extends JFrame {
         });
     }
 
+    private void deleteSelectedPacket() {
+        if (saving || selectedPacket == null) return;
+        PacketPanel packet = selectedPacket;
+        int index = packetPanels.indexOf(packet);
+        if (index < 0) return;
+
+        packetPanels.remove(index);
+        remarkComboBoxes.remove(packet.remarkComboBox);
+        packetItemScrollPanes.removeIf(scroll -> SwingUtilities.isDescendingFrom(scroll, packet.panel));
+        packetListPanel.remove(packet.panel);
+        selectedPacket = null;
+        selectedPacketCustomer = "";
+
+        for (int number = 0; number < packetPanels.size(); number++) {
+            packetPanels.get(number).panel.setBorder(
+                    BorderFactory.createTitledBorder("Packet " + (number + 1)));
+        }
+        if (packetPanels.isEmpty()) {
+            addPacket();
+        } else {
+            selectPacket(packetPanels.get(Math.min(index, packetPanels.size() - 1)));
+        }
+        packetListPanel.revalidate();
+        packetListPanel.repaint();
+    }
     private PacketPanel buildPacketPanel(int packetNumber) {
         JPanel packetPanel = new JPanel(new BorderLayout(8, 8));
         packetPanel.setAlignmentX(0.0f);
