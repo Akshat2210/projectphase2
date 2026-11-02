@@ -514,6 +514,7 @@ public class NewBill extends JFrame {
                 } catch (SQLException ex) {
                     JOptionPane.showMessageDialog(NewBill.this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
+                if(searchResultWindow!=null)searchResultWindow.dispose();
                 dispose();
                 NewBill newBill = new NewBill();
                 newBill.init();
@@ -690,7 +691,7 @@ public class NewBill extends JFrame {
 
                 }
 
-                if (col == designIdIndex && !searchResultWindow.isSearchFlag()) {
+                if (col == designIdIndex && searchResultWindow!=null && !searchResultWindow.isSearchFlag()) {
                     String designID = tableModel.getValueAt(row, designIdIndex) == null ? "" : tableModel.getValueAt(row, designIdIndex).toString().trim();
                     tableModel.setValueAt(designID, row, designIdIndex);
 
@@ -1187,7 +1188,7 @@ public class NewBill extends JFrame {
 
 
             stmt.executeUpdate();
-            if (searchResultWindow.isVisible()) searchResultWindow.fetchOrderSlip(searchResultWindow.getTableModel());
+            if (searchResultWindow!=null && searchResultWindow.isVisible()) searchResultWindow.fetchOrderSlip(searchResultWindow.getTableModel());
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
