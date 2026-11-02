@@ -493,6 +493,7 @@ public class NewBill extends JFrame {
                         ex.printStackTrace();
                     }
                 }
+              if (searchResultWindow != null) searchResultWindow.dispose();  
                 dispose();
                 NewBill newBill = new NewBill();
                 newBill.init();
@@ -690,8 +691,8 @@ public class NewBill extends JFrame {
                     tableModel.setValueAt("", row, col);
 
                 }
-
-                if (col == designIdIndex && searchResultWindow!=null && !searchResultWindow.isSearchFlag()) {
+if (col == designIdIndex &&
+    (searchResultWindow == null || !searchResultWindow.isSearchFlag())) {
                     String designID = tableModel.getValueAt(row, designIdIndex) == null ? "" : tableModel.getValueAt(row, designIdIndex).toString().trim();
                     tableModel.setValueAt(designID, row, designIdIndex);
 
