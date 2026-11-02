@@ -147,6 +147,13 @@ public class LOGIN extends JFrame {
                     nullLoginParameters();
                     return;
                 }
+                try {
+                    clearDataFolder();
+                } catch (java.io.IOException | SecurityException ex) {
+                    JOptionPane.showMessageDialog(LOGIN.this,
+                            "Login succeeded, but the data folder could not be completely cleared.\n" + ex.getMessage(),
+                            "Data folder cleanup", JOptionPane.WARNING_MESSAGE);
+                }
                 if(!database.isEmpty()) {
                     MyClass.mainScreen = new MainScreen();
                     MyClass.mainScreen.init();
@@ -162,6 +169,44 @@ public class LOGIN extends JFrame {
 
     }
 
+    /** Clears generated files after successful login, retaining the data folder itself. */
+    public static void clearDataFolder() throws java.io.IOException {
+        java.nio.file.Path directory = java.nio.file.Paths.get("data").toAbsolutePath().normalize();
+        if (!java.nio.file.Files.exists(directory, java.nio.file.LinkOption.NOFOLLOW_LINKS)) return;
+        // Refuse a redirected root so cleanup cannot reach outside the intended data directory.
+        if (java.nio.file.Files.isSymbolicLink(directory)
+                || !java.nio.file.Files.isDirectory(directory, java.nio.file.LinkOption.NOFOLLOW_LINKS)
+                || !directory.toRealPath().equals(directory)) {
+            throw new java.io.IOException("The data folder is not a regular local directory: " + directory);
+        }
+        java.nio.file.Files.walkFileTree(directory, new java.nio.file.SimpleFileVisitor<java.nio.file.Path>() {
+            @Override
+            public java.nio.file.FileVisitResult preVisitDirectory(java.nio.file.Path folder,
+                    java.nio.file.attribute.BasicFileAttributes attributes) throws java.io.IOException {
+                if (!folder.toAbsolutePath().normalize().startsWith(directory)
+                        || !folder.toRealPath().startsWith(directory)) {
+                    throw new java.io.IOException("Refusing to clear a directory outside data: " + folder);
+                }
+                return java.nio.file.FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public java.nio.file.FileVisitResult visitFile(java.nio.file.Path file,
+                    java.nio.file.attribute.BasicFileAttributes attributes) throws java.io.IOException {
+                // walkFileTree does not follow symbolic links; delete the link itself, not its target.
+                java.nio.file.Files.delete(file);
+                return java.nio.file.FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public java.nio.file.FileVisitResult postVisitDirectory(java.nio.file.Path folder,
+                    java.io.IOException error) throws java.io.IOException {
+                if (error != null) throw error;
+                if (!folder.equals(directory)) java.nio.file.Files.delete(folder);
+                return java.nio.file.FileVisitResult.CONTINUE;
+            }
+        });
+    }
     public void clickLoginButton() {
         LOGINButton.doClick();
     }
