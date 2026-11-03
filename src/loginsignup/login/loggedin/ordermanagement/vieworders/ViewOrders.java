@@ -381,8 +381,9 @@ public class ViewOrders extends JFrame {
                                 String designIDValue = designID.toString();
                                 Object quantityObject = model.getValueAt(i, QUANTITY_INDEX);
                                 String quantityString = quantityObject != null ? quantityObject.toString() : "0/0";
-                                quantityString = quantityString.substring(quantityString.indexOf('/') + 1);
-                                int quantity = Integer.parseInt(quantityString);
+                                int separator = quantityString.indexOf('/');
+                                int quantity = Integer.parseInt(quantityString.substring(separator + 1))
+                                        - Integer.parseInt(quantityString.substring(0, separator));
                                 inventoryUpdateStatement.setInt(1, quantity);
                                 inventoryUpdateStatement.setString(2, designIDValue);
                                 inventoryUpdateStatement.addBatch();
