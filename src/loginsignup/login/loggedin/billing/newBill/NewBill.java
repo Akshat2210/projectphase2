@@ -352,6 +352,8 @@ public class NewBill extends JFrame {
             scrollPane.repaint();
         } finally {
             UtilityMethods.addModelListeners(listeners, tableModel);
+                tableModel.fireTableDataChanged();
+
         }
     }
 
