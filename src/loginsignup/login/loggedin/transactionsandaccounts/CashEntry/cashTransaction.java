@@ -147,7 +147,7 @@ public class cashTransaction extends JFrame {
                         amount = Double.parseDouble(amountTextField.getText());
                     } catch (NumberFormatException exception) {
                         JOptionPane.showMessageDialog(cashTransaction.this, "invalid amount entered");
-                        throw new RuntimeException();
+                        return;
                     }
 
                     String customerName = partyNameComboBox.getSelectedItem() == null ? "" : partyNameComboBox.getSelectedItem().toString();
@@ -166,13 +166,16 @@ public class cashTransaction extends JFrame {
                     try {
                         parsed = sdf.parse(dateComboBox.getSelectedItem() == null ? "" : dateComboBox.getSelectedItem().toString());
                     } catch (ParseException ex) {
-                        throw new RuntimeException(ex);
+                        JOptionPane.showMessageDialog(cashTransaction.this, "Select a valid transaction date.",
+                                "Invalid date", JOptionPane.WARNING_MESSAGE);
+                        return;
                     }
                     if (outRadioButton.isSelected()) amount = amount * (-1);
                     java.sql.Date sqlDate = new java.sql.Date(parsed.getTime());
 
 
                     try (Connection con = MyClass.createConnection()) {
+                        boolean commitStarted = false;
                         try (
                                 PreparedStatement transactionStatement = con.prepareStatement(transactionQuery, Statement.RETURN_GENERATED_KEYS);
                                 PreparedStatement customerStatement = con.prepareStatement(customerTableQuery);
@@ -195,7 +198,9 @@ public class cashTransaction extends JFrame {
 
                             customerStatement.setDouble(1, amount);
                             customerStatement.setString(2, customerName);
-                            customerStatement.executeUpdate();
+                            if (customerStatement.executeUpdate() != 1) {
+                                throw new SQLException("Could not update the selected party's balance.");
+                            }
 
                             double journalAmount = Math.abs(amount);
 
@@ -220,16 +225,39 @@ public class cashTransaction extends JFrame {
                             journalEntryStatement.addBatch();
 
                             journalEntryStatement.executeBatch();
+                            commitStarted = true;
                             con.commit();
-                            addedTransactions.fetchData(getDate());
-                        }catch (SQLException ex){
-                            JOptionPane.showMessageDialog(cashTransaction.this, ex.getMessage());
-                            con.rollback();
+                        } catch (SQLException | RuntimeException ex) {
+                            boolean transactionUncertain = commitStarted;
+                            if (!commitStarted) {
+                                try {
+                                    con.rollback();
+                                } catch (SQLException rollbackError) {
+                                    ex.addSuppressed(rollbackError);
+                                    transactionUncertain = true;
+                                }
+                            }
+                            if (transactionUncertain) {
+                                JOptionPane.showMessageDialog(cashTransaction.this,
+                                        "The database did not confirm whether this cash entry was saved. "
+                                                + "Do not submit it again; check the transaction list first.\n"
+                                                + ex.getMessage(),
+                                        "Transaction outcome uncertain", JOptionPane.ERROR_MESSAGE);
+                            } else {
+                                JOptionPane.showMessageDialog(cashTransaction.this,
+                                        "Cash entry was not saved. All changes were rolled back.\n" + ex.getMessage(),
+                                        "Transaction failed", JOptionPane.ERROR_MESSAGE);
+                            }
+                            return;
                         }
                     } catch (SQLException ex) {
-                        JOptionPane.showMessageDialog(cashTransaction.this, ex.getMessage());
-                        throw new RuntimeException(ex);
+                        JOptionPane.showMessageDialog(cashTransaction.this,
+                                "Could not start the cash-entry transaction. Nothing was saved.\n" + ex.getMessage(),
+                                "Transaction failed", JOptionPane.ERROR_MESSAGE);
+                        return;
                     }
+
+                    addedTransactions.fetchData(getDate());
 
                 });
         dateComboBox.addActionListener(new ActionListener() {
