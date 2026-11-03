@@ -350,7 +350,8 @@ public class SendDiary extends JFrame {
                 + " src.godown_name AS source_name, sp.godown_name AS source_parent,"
                 + " dst.godown_name AS destination_name, dp.godown_name AS destination_parent,"
                 + " p.send_packet_id, p.packet_number, p.customer_name, p.packet_remark,"
-                + " i.send_item_id, i.item_name, i.sent_quantity, i.item_remark"
+                + " i.send_item_id, i.item_name, i.sent_quantity, i.item_remark,"
+                + " COALESCE(SUM(forwarded.sent_quantity), 0) AS items_forwarded"
                 + " FROM " + DBStructure.SEND_LOTS_TABLE + " l"
                 + " LEFT JOIN " + DBStructure.GODOWNS_TABLE + " src ON src.godown_id = l.default_source_godown_id"
                 + " LEFT JOIN " + DBStructure.GODOWNS_TABLE + " sp ON sp.godown_id = src.parent_godown_id"
@@ -358,7 +359,12 @@ public class SendDiary extends JFrame {
                 + " LEFT JOIN " + DBStructure.GODOWNS_TABLE + " dp ON dp.godown_id = dst.parent_godown_id"
                 + " LEFT JOIN " + DBStructure.SEND_PACKETS_TABLE + " p ON p.send_lot_id = l.send_lot_id"
                 + " LEFT JOIN " + DBStructure.SEND_ITEMS_TABLE + " i ON i.send_packet_id = p.send_packet_id"
+                + " LEFT JOIN " + DBStructure.SEND_ITEMS_TABLE + " forwarded ON forwarded.parent_send_item_id = i.send_item_id"
                 + (lotId != null ? " WHERE l.send_lot_id = ?" : " WHERE p.customer_name = ?")
+                + " GROUP BY l.send_lot_id, l.send_date, l.created_by_user, l.lot_remark,"
+                + " src.godown_name, sp.godown_name, dst.godown_name, dp.godown_name,"
+                + " p.send_packet_id, p.packet_number, p.customer_name, p.packet_remark,"
+                + " i.send_item_id, i.item_name, i.sent_quantity, i.item_remark, i.item_number"
                 + " ORDER BY l.send_lot_id DESC, p.packet_number, p.send_packet_id, i.item_number, i.send_item_id";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             if (lotId != null) statement.setLong(1, lotId);
@@ -394,7 +400,8 @@ public class SendDiary extends JFrame {
                     result.getLong("send_item_id");
                     if (!result.wasNull()) {
                         packet.rows.add(new Object[]{result.getString("item_name"),
-                                result.getInt("sent_quantity"), result.getString("item_remark")});
+                                result.getInt("sent_quantity"), result.getInt("items_forwarded"),
+                                result.getString("item_remark")});
                     }
                 }
                 return new ArrayList<>(lots.values());
@@ -452,11 +459,13 @@ public class SendDiary extends JFrame {
         details.add(valueField("Packet remark", packet.remark));
         card.add(details, BorderLayout.NORTH);
         DefaultTableModel model = new DefaultTableModel(packet.rows.toArray(new Object[0][]),
-                new String[]{"Item name", "Quantity", "Item remark"}) {
+                new String[]{"Item name", "Quantity", "Items forwarded", "Item remark"}) {
             @Override
             public boolean isCellEditable(int row, int column) { return false; }
             @Override
-            public Class<?> getColumnClass(int column) { return column == 1 ? Integer.class : String.class; }
+            public Class<?> getColumnClass(int column) {
+                return column == 1 || column == 2 ? Integer.class : String.class;
+            }
         };
         JTable table = new JTable(model);
         table.setRowHeight(26);

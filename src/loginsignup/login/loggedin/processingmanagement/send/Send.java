@@ -521,7 +521,7 @@ public class Send extends JFrame {
      */
     private SourceTableData fetchSendTableData(Integer destinationGodownId) throws SQLException {
         String[] columns = new String[]{"Lot", "Packet", "Sent from", "Customer", "Design ID", "Item name",
-                "Sent here", "Sent onward", "Available", "Item remark", "Send item ID"};
+                "Sent here", "Items forwarded", "Difference", "Item remark", "Send item ID"};
         if (destinationGodownId == null) return new SourceTableData(columns, new Object[0][columns.length]);
 
         String sql = "SELECT i.send_item_id, l.send_lot_id, p.packet_number, source.godown_name AS source_name, "
@@ -532,18 +532,15 @@ public class Send extends JFrame {
                 + "JOIN send_lots l ON l.send_lot_id = p.send_lot_id "
                 + "JOIN godowns source ON source.godown_id = i.source_godown_id "
                 + "LEFT JOIN send_items forwarded ON forwarded.parent_send_item_id = i.send_item_id "
-                + "AND forwarded.source_godown_id = ? "
                 + "WHERE i.destination_godown_id = ? "
                 + "GROUP BY i.send_item_id, l.send_lot_id, p.packet_number, source.godown_name, p.customer_name, "
                 + "i.design_id, i.item_name, i.sent_quantity, i.item_remark, i.item_number "
-                + "HAVING i.sent_quantity - COALESCE(SUM(forwarded.sent_quantity), 0) > 0 "
                 + "ORDER BY l.send_lot_id DESC, p.packet_number, i.item_number";
         List<Object[]> rows = new ArrayList<>();
         try (Connection connection = MyClass.createConnection()) {
             if (connection == null) throw new SQLException("Could not connect to the database.");
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setInt(1, destinationGodownId);
-                statement.setInt(2, destinationGodownId);
                 try (ResultSet resultSet = statement.executeQuery()) {
                     while (resultSet.next()) {
                         int sentQuantity = resultSet.getInt("sent_quantity");
@@ -704,23 +701,25 @@ public class Send extends JFrame {
         int row = itemTable.convertRowIndexToModel(viewRow);
         String designId = text(sourceItemTableModel.getValueAt(row, 4));
         String itemName = text(sourceItemTableModel.getValueAt(row, 5));
-        int availableQuantity = ((Number) sourceItemTableModel.getValueAt(row, 8)).intValue();
+        int sentHere = ((Number) sourceItemTableModel.getValueAt(row, 6)).intValue();
+        int itemsForwarded = ((Number) sourceItemTableModel.getValueAt(row, 7)).intValue();
         String itemRemark = text(sourceItemTableModel.getValueAt(row, 9));
         long parentSendItemId = ((Number) sourceItemTableModel.getValueAt(row, 10)).longValue();
         long requestNumber = sourceLoadRequestNumber;
 
         String input = JOptionPane.showInputDialog(this,
-                "Quantity to add for " + itemName + "\nAvailable at this godown: " + availableQuantity,
+                "Quantity to add for " + itemName + "\nSent here: " + sentHere
+                        + "\nItems forwarded: " + itemsForwarded,
                 "Add incoming transfer to packet", JOptionPane.QUESTION_MESSAGE);
         if (input == null) return;
 
         final int quantity;
         try {
             quantity = Integer.parseInt(input.trim());
-            if (quantity <= 0 || quantity > availableQuantity) throw new NumberFormatException();
+            if (quantity <= 0) throw new NumberFormatException();
         } catch (NumberFormatException exception) {
             JOptionPane.showMessageDialog(this,
-                    "Enter a whole number from 1 to " + availableQuantity + ".",
+                    "Enter a whole number greater than zero.",
                     "Invalid quantity", JOptionPane.ERROR_MESSAGE);
             return;
         }
