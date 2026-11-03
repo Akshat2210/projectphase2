@@ -19,6 +19,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -49,7 +50,7 @@ public class NewBill extends JFrame {
     public static final int INVENTORY_MODE = -35;
     int itemID;
     private LocalDateTime dateTime;
-    private double goldrate;
+    private BigDecimal goldrate = BigDecimal.ZERO.setScale(2);
     private String customerName;
     private  SearchResultWindow searchResultWindow;
     public JButton getSubmitButton() {
@@ -211,7 +212,7 @@ public class NewBill extends JFrame {
                 BigDecimal nag = getBigDecimalValue(model, i, NAG_SETTING_INDEX);
                 BigDecimal other = getBigDecimalValue(model, i, OTHER_BASE_INDEX);
                 BigDecimal totalBaseCost = getBigDecimalValue(model, i, PLUSGOLD);
-                BigDecimal goldRate = BigDecimal.valueOf(NewBill.this.goldrate);
+                BigDecimal goldRate = NewBill.this.goldrate;
                 BigDecimal goldPlatingWeight = getBigDecimalValue(model, i, GOLD_WEIGHT_INDEX);
                 BigDecimal totalGoldCost = getBigDecimalValue(model, i, GOLD_COST_INDEX);
                 BigDecimal totalFinalCost = getBigDecimalValue(model, i, TOTAL_COST_INDEX);
@@ -336,80 +337,66 @@ public class NewBill extends JFrame {
     }
 
     private void reCalculateValuesAndAppend() {
-        List<Integer> mathColumns = Arrays.asList(LABOUR_INDEX, RAW_INDEX, DULL_CHILLAI_INDEX, MEENA_INDEX, RHODIUM_INDEX, NAG_SETTING_INDEX, OTHER_BASE_INDEX, PLUSGOLD, GOLD_WEIGHT_INDEX, GOLD_COST_INDEX, TOTAL_COST_INDEX);
-        double plusG = 0;
-//        TableModelListener[] listeners = removeModelListener(tableModel);
-        int i = 0;
-        for (int row = 0; row < tableModel.getRowCount(); row++) {
-            int quantity = tableModel.getValueAt(row, QUANTITY_INDEX) != null && !tableModel.getValueAt(row, QUANTITY_INDEX).toString().isEmpty() ? Integer.parseInt((tableModel.getValueAt(row, QUANTITY_INDEX).toString())) : 0;
-            for (int col : mathColumns) {
-
-                Object value = tableModel.getValueAt(row, col);
-                double numericValue = 0.0;
-
-                if (value != null && !value.toString().trim().isEmpty()) {
-                    try {
-                        numericValue = Double.parseDouble(value.toString());
-                    } catch (NumberFormatException e) {
-                        Thread.dumpStack();
-                    }
-
-                }
-
-                if (i < 7) {
-                    plusG += numericValue;
-                }
-                double goldrate = this.goldrate;
-                double goldcost;
-                if (i == 8) {
-                    goldcost = goldrate * numericValue;
-                    tableModel.setValueAt(goldcost == 0 ? "" : UtilityMethods.round(goldcost, 2), row, GOLD_COST_INDEX);
-
-                    tableModel.setValueAt((goldcost + plusG * quantity) == 0 ? "" : UtilityMethods.round(goldcost + plusG * quantity, 2), row, TOTAL_COST_INDEX);
-                }
-
-                i++;
-
-            }
-            plusG = plusG * quantity;
-            tableModel.setValueAt(plusG == 0 ? "" : UtilityMethods.round(plusG, 2), row, PLUSGOLD);
-
-            plusG = 0;
-            i = 0;
-        }
-
-        for (int row = 0; row < tableModel.getRowCount() - 1; row++)
-            checkAndRemoveRow(row, tableModel, SNO_INDEX, false);
-        billTable.repaint();
-        scrollPane.repaint();
-//        addModelListeners(listeners, tableModel);
-
-    }
-
-    private void setGoldRate(double goldrate) {
-        this.goldrate = goldrate;
-    }
-
-    private double getDoubleValue(Object value) {
-        if (value == null || value.toString().trim().isEmpty()) {
-            return 0.0;
-        }
+        TableModelListener[] listeners = UtilityMethods.removeModelListener(tableModel);
         try {
-            return Double.parseDouble(value.toString().trim());
-        } catch (NumberFormatException e) {
-
-            return 0.0; // Return 0.0 if parsing fails
+            for (int row = 0; row < tableModel.getRowCount(); row++) {
+                int quantity = tableModel.getValueAt(row, QUANTITY_INDEX) != null
+                        && !tableModel.getValueAt(row, QUANTITY_INDEX).toString().isEmpty()
+                        ? Integer.parseInt(tableModel.getValueAt(row, QUANTITY_INDEX).toString()) : 0;
+                calculateRowValues(row, quantity);
+            }
+            for (int row = 0; row < tableModel.getRowCount() - 1; row++)
+                checkAndRemoveRow(row, tableModel, SNO_INDEX, false);
+            updateGrandTotalLabel();
+            billTable.repaint();
+            scrollPane.repaint();
+        } finally {
+            UtilityMethods.addModelListeners(listeners, tableModel);
         }
+    }
+
+    private void setGoldRate(BigDecimal goldrate) {
+        this.goldrate = goldrate.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal getDecimalValue(Object value) {
+        if (value == null || value.toString().trim().isEmpty()) return BigDecimal.ZERO;
+        try {
+            return new BigDecimal(value.toString().trim());
+        } catch (NumberFormatException ex) {
+            return BigDecimal.ZERO; // Preserve existing invalid-input handling for now.
+        }
+    }
+
+    private void calculateRowValues(int row, int quantity) {
+        BigDecimal perPiece = BigDecimal.ZERO;
+        int[] chargeColumns = {LABOUR_INDEX, RAW_INDEX, DULL_CHILLAI_INDEX,
+                MEENA_INDEX, RHODIUM_INDEX, NAG_SETTING_INDEX, OTHER_BASE_INDEX};
+        for (int column : chargeColumns) {
+            BigDecimal charge = getDecimalValue(tableModel.getValueAt(row, column))
+                    .setScale(2, RoundingMode.HALF_UP);
+            tableModel.setValueAt(charge.signum() == 0 ? "" : charge, row, column);
+            perPiece = perPiece.add(charge);
+        }
+        BigDecimal weight = getDecimalValue(tableModel.getValueAt(row, GOLD_WEIGHT_INDEX))
+                .setScale(3, RoundingMode.HALF_UP);
+        tableModel.setValueAt(weight.signum() == 0 ? "" : weight, row, GOLD_WEIGHT_INDEX);
+        BigDecimal plusG = perPiece.multiply(BigDecimal.valueOf(quantity)).setScale(2, RoundingMode.HALF_UP);
+        // Plating weight is the row's weight; only the base charges are multiplied by quantity.
+        BigDecimal goldCost = weight.multiply(goldrate).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal total = plusG.add(goldCost).setScale(2, RoundingMode.HALF_UP);
+        tableModel.setValueAt(total.signum() == 0 ? "" : total, row, TOTAL_COST_INDEX);
+        tableModel.setValueAt(plusG.signum() == 0 ? "" : plusG, row, PLUSGOLD);
+        tableModel.setValueAt(goldCost.signum() == 0 ? "" : goldCost, row, GOLD_COST_INDEX);
     }
 
     private void updateGrandTotalLabel() {
-        double grandTotal = 0;
+        BigDecimal grandTotal = BigDecimal.ZERO;
         for (int i = 0; i < tableModel.getRowCount(); i++) {
-            grandTotal += getDoubleValue(tableModel.getValueAt(i, TOTAL_COST_INDEX));
+            grandTotal = grandTotal.add(getDecimalValue(tableModel.getValueAt(i, TOTAL_COST_INDEX)));
         }
-        grandTotalLabel.setText("Grand total:" + UtilityMethods.round(grandTotal, 2));
+        grandTotalLabel.setText("Grand total:" + grandTotal.setScale(2, RoundingMode.HALF_UP).toPlainString());
     }
-
     public Connection getTransacTemp() {
         return transacTemp;
     }
@@ -442,9 +429,9 @@ public class NewBill extends JFrame {
             }
 
             private void textChanged() {
-                double goldrate = 0;
+                BigDecimal goldrate = BigDecimal.ZERO;
                 try {
-                    goldrate = goldRateTextField.getText().isEmpty() ? 0 : Double.parseDouble(goldRateTextField.getText());
+                    goldrate = goldRateTextField.getText().trim().isEmpty() ? BigDecimal.ZERO : new BigDecimal(goldRateTextField.getText().trim());
                 } catch (NumberFormatException e) {
                     Thread.dumpStack();
                     throw new RuntimeException();
@@ -797,34 +784,7 @@ if (col == designIdIndex &&
 
                 }
 
-                double labour = getDoubleValue(tableModel.getValueAt(row, LABOUR_INDEX));
-                tableModel.setValueAt(labour == 0 ? "" : labour, row, LABOUR_INDEX);
-                double raw = getDoubleValue(tableModel.getValueAt(row, RAW_INDEX));
-                tableModel.setValueAt(raw == 0 ? "" : raw, row, RAW_INDEX);
-                double dullChillai = getDoubleValue(tableModel.getValueAt(row, DULL_CHILLAI_INDEX));
-                tableModel.setValueAt(dullChillai == 0 ? "" : dullChillai, row, DULL_CHILLAI_INDEX);
-                double mCm = getDoubleValue(tableModel.getValueAt(row, MEENA_INDEX));
-                tableModel.setValueAt(mCm == 0 ? "" : mCm, row, MEENA_INDEX);
-                double rh = getDoubleValue(tableModel.getValueAt(row, RHODIUM_INDEX));
-                tableModel.setValueAt(rh == 0 ? "" : rh, row, RHODIUM_INDEX);
-                double nag = getDoubleValue(tableModel.getValueAt(row, NAG_SETTING_INDEX));
-                tableModel.setValueAt(nag == 0 ? "" : nag, row, NAG_SETTING_INDEX);
-                double other = getDoubleValue(tableModel.getValueAt(row, OTHER_BASE_INDEX));
-                tableModel.setValueAt(other == 0 ? "" : other, row, OTHER_BASE_INDEX);
-                double plusG;
-                double goldIngG = getDoubleValue(tableModel.getValueAt(row, GOLD_WEIGHT_INDEX));
-                tableModel.setValueAt(goldIngG == 0 ? "" : goldIngG, row, GOLD_WEIGHT_INDEX);
-                double goldCost;
-                double total;
-
-                plusG = labour + raw + dullChillai + mCm + rh + nag + other;
-                goldCost = goldIngG * goldrate;
-                plusG *= quantity;
-                total = plusG + goldCost;
-                tableModel.setValueAt(total == 0 ? "" : UtilityMethods.round(total, 2), row, TOTAL_COST_INDEX);
-                tableModel.setValueAt(plusG == 0 ? "" : UtilityMethods.round(plusG, 2), row, PLUSGOLD);
-                tableModel.setValueAt(goldCost == 0 ? "" : UtilityMethods.round(goldCost, 2), row, GOLD_COST_INDEX);
-
+                calculateRowValues(row, quantity);
 
                 if (updateThroughSlip) {
                     createBillToOrderSlipAssosciation(sno, itemID);
