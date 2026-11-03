@@ -18,6 +18,7 @@ import java.awt.font.FontRenderContext;
 import java.awt.geom.AffineTransform;
 import java.awt.print.*;
 import java.io.*;
+import java.math.BigDecimal;
 import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -330,8 +331,8 @@ public class UtilityMethods {
         }
     }
 
-    public static double[] balance(int billID) {
-        double lastbillTotal = 0;
+    public static BigDecimal[] balance(int billID) {
+        BigDecimal lastbillTotal = BigDecimal.ZERO;
         String openingBalanceQuery = "select openingaccount from customers where customer_name=(select customer_name from bills where billid=?)";
         String billQuery = "select billid from bills where customer_name=(select customer_name from bills where billid=?) and date <= (select date from bills where billid=?) and billid<?";
 //        String transactionQuery="Select *from transactions where date<=()"
@@ -348,7 +349,7 @@ public class UtilityMethods {
                 DBStructure.JOURNAL_ENTRY_BILL_ID + " < ? AND " +
                 DBStructure.JOURNAL_ENTRY_DATE + " <= (SELECT " + DBStructure.BILLS_DATE + " FROM " +
                 DBStructure.BILLS_TABLE + " WHERE " + DBStructure.BILLS_BILL_ID + " = ?)";
-        double grandTotalBill = 0;//contains total till previous bills
+        BigDecimal grandTotalBill = BigDecimal.ZERO;//contains total till previous bills
         try (Connection con = MyClass.createConnection();
              PreparedStatement billStatement = con.prepareStatement(billQuery); PreparedStatement transacStatement = con.prepareStatement(transactionQuery);
              PreparedStatement directJournalStatement = con.prepareStatement(directJournalQuery)
@@ -369,7 +370,7 @@ public class UtilityMethods {
             placeholders.append(billID);
 
             billQuery = "SELECT " +
-                    "SUM((" +
+                    "SUM(ROUND((" +
                     "(IFNULL(LabourCost, 0) + " +
                     "IFNULL(DullChillaiCost, 0) + " +
                     "IFNULL(MeenaColorMeenaCost, 0) + " +
@@ -377,7 +378,7 @@ public class UtilityMethods {
                     "IFNULL(NagSettingCost, 0) + " +
                     "IFNULL(OtherBaseCosts, 0) + " +
                     "IFNULL(RawCost, 0)) * IFNULL(quantity, 0)" +
-                    ") + (IFNULL(GoldRate, 0) * IFNULL(GoldPlatingWeight, 0))) AS total, " +
+                    "), 2) + ROUND((IFNULL(GoldRate, 0) * IFNULL(GoldPlatingWeight, 0)), 2)) AS total, " +
                     "SUM(TotalFinalCost),billid " +
                     "FROM billdetails " +
                     "WHERE billid in ( " + placeholders + ")" +
@@ -387,10 +388,12 @@ public class UtilityMethods {
                 try (PreparedStatement stmt = con.prepareStatement(billQuery);
                      ResultSet rs = stmt.executeQuery())
                 {
-                    lastbillTotal = 0;
+                    lastbillTotal = BigDecimal.ZERO;
                     while (rs.next()) {
-                        if (rs.getInt(3) == billID) lastbillTotal += rs.getDouble(1);
-                        grandTotalBill += rs.getDouble(1);
+                        BigDecimal billTotal = rs.getBigDecimal(1);
+                        if (billTotal == null) billTotal = BigDecimal.ZERO;
+                        if (rs.getInt(3) == billID) lastbillTotal = lastbillTotal.add(billTotal);
+                        grandTotalBill = grandTotalBill.add(billTotal);
                     }
                 }
                 System.out.println(grandTotalBill + " value of grand total bill");
@@ -400,34 +403,41 @@ public class UtilityMethods {
             transacStatement.setInt(2, billID);
             transacStatement.setInt(3, billID);
 
-            double transactionSum = 0;
+            BigDecimal transactionSum = BigDecimal.ZERO;
             try (ResultSet rs = transacStatement.executeQuery();) {
                 if (rs.next()) {
-                    transactionSum = rs.getDouble(1);
+                    BigDecimal value = rs.getBigDecimal(1);
+                    transactionSum = value != null ? value : BigDecimal.ZERO;
                     System.out.println("transaction sum is " + rs.getInt(1));
                 }
             }
-            double directJournalNet = 0;
+            BigDecimal directJournalNet = BigDecimal.ZERO;
             directJournalStatement.setInt(1, billID);
             directJournalStatement.setString(2, CONSTANTS.DIRECT_JOURNAL_ENUM);
             directJournalStatement.setInt(3, billID);
             directJournalStatement.setInt(4, billID);
             try (ResultSet rs = directJournalStatement.executeQuery()) {
                 if (rs.next()) {
-                    directJournalNet = rs.getDouble(1);
+                    BigDecimal value = rs.getBigDecimal(1);
+                    directJournalNet = value != null ? value : BigDecimal.ZERO;
                 }
             }
 
             System.out.println("\n\n\ntotal is " + grandTotalBill);
-            double[] result = new double[2];
+            BigDecimal[] result = new BigDecimal[2];
             try (PreparedStatement openingBalanceStatement = con.prepareStatement(openingBalanceQuery)) {
                 openingBalanceStatement.setInt(1, billID);
-                double openingBalance = 0;
+                BigDecimal openingBalance = BigDecimal.ZERO;
                 try (ResultSet rs = openingBalanceStatement.executeQuery();) {
-                    if (rs.next()) openingBalance = rs.getDouble(1);
+                    if (rs.next()) {
+                        BigDecimal value = rs.getBigDecimal(1);
+                        openingBalance = value != null ? value : BigDecimal.ZERO;
+                    }
                 }
-                result[0] = openingBalance + grandTotalBill - lastbillTotal - transactionSum + directJournalNet;
-                result[1] = openingBalance + grandTotalBill - transactionSum + directJournalNet;
+                result[0] = openingBalance.add(grandTotalBill).subtract(lastbillTotal)
+                        .subtract(transactionSum).add(directJournalNet);
+                result[1] = openingBalance.add(grandTotalBill)
+                        .subtract(transactionSum).add(directJournalNet);
 
             }
             return result;

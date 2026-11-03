@@ -232,8 +232,8 @@ public class ViewCustomerBill extends JFrame {
             billDetailsStatement.setInt(1, billID);
             DefaultTableModel model = (DefaultTableModel) table.getModel();
             model.setRowCount(0);
-            double grandtotal = 0;
-            double[] balance;
+            BigDecimal grandtotal = BigDecimal.ZERO;
+            BigDecimal[] balance;
             balance = UtilityMethods.balance(billID);
             try (ResultSet rs = billDetailsStatement.executeQuery()) {
                 while (rs.next()) {
@@ -253,15 +253,15 @@ public class ViewCustomerBill extends JFrame {
                     row.set(columnModel.getColumnIndex("Total"), rs.getString("TotalFinalCost"));
 
 
-                    grandtotal += rs.getDouble("TotalFinalCost");
-                    double value = grandtotal;
-                    BigDecimal rounded = new BigDecimal(value).setScale(2, RoundingMode.HALF_UP);
-                    grandtotal = rounded.doubleValue();
+                    BigDecimal rowTotal = rs.getBigDecimal("TotalFinalCost");
+                    if (rowTotal != null) {
+                        grandtotal = grandtotal.add(rowTotal).setScale(2, RoundingMode.HALF_UP);
+                    }
                     model.addRow(row);
                 }
                 model.setRowCount(model.getRowCount() + 1);
                 model.setValueAt("Grand Total", model.getRowCount() - 1, model.getColumnCount() - 2);
-                model.setValueAt(UtilityMethods.round(grandtotal, 2), model.getRowCount() - 1, model.getColumnCount() - 1);
+                model.setValueAt(grandtotal.setScale(2, RoundingMode.HALF_UP), model.getRowCount() - 1, model.getColumnCount() - 1);
 
                 totalLabel.setText(grandtotal + "");
                 table.setModel(model);
@@ -269,10 +269,10 @@ public class ViewCustomerBill extends JFrame {
             {
                 model.setRowCount(model.getRowCount() + 1);
                 model.setValueAt("prev:", model.getRowCount() - 1, model.getColumnCount() - 2);
-                model.setValueAt(UtilityMethods.round(balance[0], 2), model.getRowCount() - 1, model.getColumnCount() - 1);
+                model.setValueAt(balance[0].setScale(2, RoundingMode.HALF_UP), model.getRowCount() - 1, model.getColumnCount() - 1);
                 model.setRowCount(model.getRowCount() + 1);
                 model.setValueAt("total", model.getRowCount() - 1, model.getColumnCount() - 2);
-                model.setValueAt(UtilityMethods.round(balance[1], 2), model.getRowCount() - 1, model.getColumnCount() - 1);
+                model.setValueAt(balance[1].setScale(2, RoundingMode.HALF_UP), model.getRowCount() - 1, model.getColumnCount() - 1);
 
             }//showing the balances
 
@@ -288,7 +288,7 @@ public class ViewCustomerBill extends JFrame {
                 idLabel.setText("billID: " + billID+"/  Bill number: " + billNumber);
 
             }// showing the date,customername
-            double totalRecieved = 0;
+            BigDecimal totalRecieved = BigDecimal.ZERO;
             {
 
                 transactionStatement.setInt(1, billID);
@@ -298,24 +298,27 @@ public class ViewCustomerBill extends JFrame {
                         java.util.Date date = new SimpleDateFormat("yyyy-MM-dd").parse(rs.getString("date"));
                         String dateformatted = new SimpleDateFormat("dd-MM-yy").format(date);
                         model.setValueAt(rs.getString("billid") + "/" + dateformatted, model.getRowCount() - 1, model.getColumnCount() - 2);
-                        model.setValueAt(UtilityMethods.round(rs.getDouble("amount"), 2), model.getRowCount() - 1, model.getColumnCount() - 1);
-                        totalRecieved += rs.getDouble("amount");
+                        BigDecimal amount = rs.getBigDecimal("amount");
+                        if (amount == null) amount = BigDecimal.ZERO;
+                        model.setValueAt(amount.setScale(2, RoundingMode.HALF_UP), model.getRowCount() - 1, model.getColumnCount() - 1);
+                        totalRecieved = totalRecieved.add(amount);
 
                     }
                 }
                 model.setRowCount(model.getRowCount() + 1);
                 model.setValueAt("totalRecieved", model.getRowCount() - 1, model.getColumnCount() - 2);
-                model.setValueAt(UtilityMethods.round(totalRecieved, 2), model.getRowCount() - 1, model.getColumnCount() - 1);
+                model.setValueAt(totalRecieved.setScale(2, RoundingMode.HALF_UP), model.getRowCount() - 1, model.getColumnCount() - 1);
             }// showing the transactions linked
 
-            double directJournalAdjustment = 0;
+            BigDecimal directJournalAdjustment = BigDecimal.ZERO;
             {
                 directJournalStatement.setInt(1, billID);
                 directJournalStatement.setString(2, CONSTANTS.DIRECT_JOURNAL_ENUM);
                 directJournalStatement.setString(3, getCustomerName());
                 try (ResultSet rs = directJournalStatement.executeQuery()) {
                     while (rs.next()) {
-                        double adjustment = rs.getDouble("balance_adjustment");
+                        BigDecimal adjustment = rs.getBigDecimal("balance_adjustment");
+                        if (adjustment == null) adjustment = BigDecimal.ZERO;
                         String remark = rs.getString(DBStructure.JOURNAL_ENTRY_REMARK);
                         java.util.Date journalDate = new SimpleDateFormat("yyyy-MM-dd").parse(
                                 rs.getString(DBStructure.JOURNAL_ENTRY_DATE));
@@ -327,19 +330,20 @@ public class ViewCustomerBill extends JFrame {
                             label += ": " + remark;
                         }
                         model.setValueAt(label, model.getRowCount() - 1, model.getColumnCount() - 2);
-                        model.setValueAt(UtilityMethods.round(adjustment, 2), model.getRowCount() - 1, model.getColumnCount() - 1);
-                        directJournalAdjustment += adjustment;
+                        model.setValueAt(adjustment.setScale(2, RoundingMode.HALF_UP), model.getRowCount() - 1, model.getColumnCount() - 1);
+                        directJournalAdjustment = directJournalAdjustment.add(adjustment);
                     }
                 }
                 model.setRowCount(model.getRowCount() + 1);
                 model.setValueAt("Direct journal total", model.getRowCount() - 1, model.getColumnCount() - 2);
-                model.setValueAt(UtilityMethods.round(directJournalAdjustment, 2), model.getRowCount() - 1, model.getColumnCount() - 1);
+                model.setValueAt(directJournalAdjustment.setScale(2, RoundingMode.HALF_UP), model.getRowCount() - 1, model.getColumnCount() - 1);
             }// showing direct journal entries linked to this bill
 
             {
                 model.setRowCount(model.getRowCount() + 1);
                 model.setValueAt("baki", model.getRowCount() - 1, model.getColumnCount() - 2);
-                model.setValueAt(UtilityMethods.round((balance[1] - totalRecieved + directJournalAdjustment), 2), model.getRowCount() - 1, model.getColumnCount() - 1);
+                BigDecimal remainingBalance = balance[1].subtract(totalRecieved).add(directJournalAdjustment);
+                model.setValueAt(remainingBalance.setScale(2, RoundingMode.HALF_UP), model.getRowCount() - 1, model.getColumnCount() - 1);
             }//showing the balances
             setBillID(billID);
 
