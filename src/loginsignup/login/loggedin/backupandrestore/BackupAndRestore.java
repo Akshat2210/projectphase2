@@ -31,16 +31,27 @@ public class BackupAndRestore  extends JFrame {
         });
     }
 
-    public void createBackUpFile(String dbUser, String dbPassword, String dbName, String fileName) {
+    public void createBackUpFile(String dbUser, String dbPassword, String dbHost, String dbPort,
+                                 String dbName, String fileName) {
         if (fileName == null || fileName.isBlank()) return;
 
         java.nio.file.Path credentialsFile = null;
         java.nio.file.Path temporaryBackup = null;
         Process process = null;
         try {
-            if (dbUser == null || dbPassword == null || dbName == null || dbName.isBlank()
+            if (dbUser == null || dbPassword == null || dbHost == null || dbHost.isBlank()
+                    || dbPort == null || dbPort.isBlank() || dbName == null || dbName.isBlank()
                     || dbName.startsWith("-") || dbName.indexOf('\0') >= 0) {
                 throw new IllegalArgumentException("Invalid backup connection details.");
+            }
+            int port;
+            try {
+                port = Integer.parseInt(dbPort);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid MySQL port.");
+            }
+            if (port < 1 || port > 65535 || dbHost.indexOf('\0') >= 0) {
+                throw new IllegalArgumentException("Invalid backup host or port.");
             }
             java.nio.file.Path destination = java.nio.file.Path.of(fileName).toAbsolutePath();
 
@@ -74,9 +85,16 @@ public class BackupAndRestore  extends JFrame {
                     java.nio.charset.StandardCharsets.UTF_8);
             temporaryBackup = java.nio.file.Files.createTempFile(destination.getParent(), "mysql-dump-", ".sql");
 
-            // No shell, batch file, password argument, or shell output redirection.
+            // Output is redirected as raw bytes (not through PowerShell), and the
+            // dump explicitly uses utf8mb4 so Hindi text survives backup/restore.
             ProcessBuilder builder = new ProcessBuilder("mysqldump.exe",
-                    "--defaults-extra-file=" + credentialsFile, dbName);
+                    "--defaults-extra-file=" + credentialsFile,
+                    "--host=" + dbHost,
+                    "--port=" + port,
+                    "--default-character-set=utf8mb4",
+                    "--set-charset",
+                    "--single-transaction",
+                    dbName);
             builder.redirectOutput(temporaryBackup.toFile());
             // Keep diagnostics out of the SQL file and avoid logging connection secrets.
             builder.redirectError(ProcessBuilder.Redirect.DISCARD);
@@ -136,7 +154,8 @@ public class BackupAndRestore  extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String save = UtilityMethods.chooseSaveLocation();
-                createBackUpFile(MyClass.login.getLoginID(),MyClass.login.getPassword(),MyClass.login.getDatabase(),save);
+                createBackUpFile(MyClass.login.getLoginID(), MyClass.login.getPassword(),
+                        MyClass.login.getHost(), MyClass.login.getPort(), MyClass.login.getDatabase(), save);
             }
         });
         pack();

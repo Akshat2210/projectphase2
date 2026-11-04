@@ -53,6 +53,10 @@ public class LOGIN extends JFrame {
         return port;
     }
 
+    public String getHost() {
+        return host;
+    }
+
     public String getUrl() {
         return url;
     }
