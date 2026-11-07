@@ -4,6 +4,7 @@ import mainpack.MyClass;
 
 import javax.swing.*;
 import javax.swing.plaf.nimbus.State;
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -227,44 +228,50 @@ public class DBStructure {
         }
     }
 
-    public static double getSellPrice(String designID) {
+    public static BigDecimal getSellPrice(String designID) {
         String query = "select " + INVENTORY_SELL_PRICE + " from " + INVENTORY_TABLE + " WHERE " + INVENTORY_DESIGN_ID + " = ?";
         try (Connection con = MyClass.createConnection(); PreparedStatement pstmt = con.prepareStatement(query)) {
             pstmt.setString(1, designID);
             try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) return rs.getDouble(1);
-                else return NOT_FOUND;
+                if (rs.next()) {
+                    BigDecimal price = rs.getBigDecimal(1);
+                    return price != null ? price : BigDecimal.ZERO.setScale(2);
+                }
+                else return BigDecimal.valueOf(NOT_FOUND);
             }
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(null, e.getMessage() + ": error occured");
-            return SQLEXCEPTIONOCCURED;
+            return BigDecimal.valueOf(SQLEXCEPTIONOCCURED);
         }
 
 
     }
 
-    public static double getBuyPrice(String designID) {
+    public static BigDecimal getBuyPrice(String designID) {
         String query = "select " + INVENTORY_BUY_PRICE + " from " + INVENTORY_TABLE + " WHERE " + INVENTORY_DESIGN_ID + " = ?";
         try (Connection con = MyClass.createConnection(); PreparedStatement pstmt = con.prepareStatement(query)) {
             pstmt.setString(1, designID);
             try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) return rs.getDouble(1);
-                else return NOT_FOUND;
+                if (rs.next()) {
+                    BigDecimal price = rs.getBigDecimal(1);
+                    return price != null ? price : BigDecimal.ZERO.setScale(2);
+                }
+                else return BigDecimal.valueOf(NOT_FOUND);
             }
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(null, e.getMessage() + ": error occured");
-            return SQLEXCEPTIONOCCURED;
+            return BigDecimal.valueOf(SQLEXCEPTIONOCCURED);
         }
 
 
     }
 
-    public static void setBuyPrice(String designID, double price) {
+    public static void setBuyPrice(String designID, BigDecimal price) {
         String query = "update " + INVENTORY_TABLE + " set " + INVENTORY_BUY_PRICE + " = ? where " + INVENTORY_DESIGN_ID + " = ?";
         try (Connection con = MyClass.createConnection(); PreparedStatement stmt = con.prepareStatement(query);) {
-            stmt.setDouble(1, price);
+            stmt.setBigDecimal(1, price);
             stmt.setString(2, designID);
             stmt.executeUpdate();
 
