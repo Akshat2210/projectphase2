@@ -1,6 +1,7 @@
-package loginsignup.login.loggedin;
+package loginsignup.login.loggedin.partyManagement.addparty;
 
 import mainpack.MyClass;
+import loginsignup.login.loggedin.partyManagement.PartyManagementScreen;
 import utils.CONSTANTS;
 import utils.DBStructure;
 
@@ -20,8 +21,10 @@ public class AddParty extends JFrame {
     private JButton addButton;
     private JTextField openingBalanceTextField;
 
-    public AddParty() {
+    private final PartyManagementScreen parentWindow;
 
+    public AddParty(PartyManagementScreen parentWindow) {
+        this.parentWindow = parentWindow;
     }
 
     private void reset() {
@@ -49,8 +52,7 @@ public class AddParty extends JFrame {
         backButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                MyClass.mainScreen.setAddPartyButtonEnabled(true);
-                MyClass.mainScreen.setVisible(true);
+                parentWindow.setVisible(true);
                 dispose();
 
 
@@ -59,8 +61,12 @@ public class AddParty extends JFrame {
         addButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String name = customerNameField.getText().isEmpty() ? "error" : customerNameField.getText();
+                String name = customerNameField.getText().trim().isEmpty() ? "error" : customerNameField.getText().trim();
                 if (name.contentEquals("error")) return;
+                if (name.length() > 50) {
+                    JOptionPane.showMessageDialog(AddParty.this, "Party name cannot exceed 50 characters.");
+                    return;
+                }
                 String query = "insert into " + DBStructure.CUSTOMERS_TABLE + "(" + DBStructure.CUSTOMERS_CUSTOMER_NAME + "," + DBStructure.CUSTOMERS_OPENING_ACCOUNT + "," + DBStructure.CUSTOMERS_BALANCE + ") values(?,?,?)";
                 String journalQuery = "INSERT INTO " + DBStructure.JOURNAL_ENTRY_TABLE + " (" +
                         DBStructure.JOURNAL_ENTRY_TRANSACTION_TYPE + ", " +
