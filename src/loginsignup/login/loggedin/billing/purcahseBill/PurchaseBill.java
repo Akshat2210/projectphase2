@@ -15,6 +15,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -144,15 +145,15 @@ public class PurchaseBill extends JFrame {
                 designID = getDesignIdValue(i);
                 quantity = getIntegerValue(model.getValueAt(i, quantityIndex));
                 itemName = model.getValueAt(i, itemNameIndex) == null ? "" : model.getValueAt(i, itemNameIndex).toString();
-                int price = model.getValueAt(i, rawCostIndex) == null ? 0 : getIntegerValue(model.getValueAt(i, rawCostIndex));
-                int sellPrice = model.getValueAt(i, sellPriceIndex) == null ? 0 : getIntegerValue(model.getValueAt(i, sellPriceIndex));
+                BigDecimal price = getDecimalValue(model.getValueAt(i, rawCostIndex));
+                BigDecimal sellPrice = getDecimalValue(model.getValueAt(i, sellPriceIndex));
                 System.out.println(designIDexists(designID));
                 if (designIDexists(designID)) {
                     if (designID.contentEquals("")) continue;
                     updateStmt.setInt(1, quantity);
                     updateStmt.setString(2, designID);
-                    updateRawPriceStatement.setDouble(1, price);
-                    updateRawPriceStatement.setDouble(2, sellPrice);
+                    updateRawPriceStatement.setBigDecimal(1, price);
+                    updateRawPriceStatement.setBigDecimal(2, sellPrice);
                     updateRawPriceStatement.setString(3, itemName);
                     updateRawPriceStatement.setString(4, designID);
                     updateRawPriceStatement.addBatch();
@@ -163,8 +164,8 @@ public class PurchaseBill extends JFrame {
                     insertStmt.setString(1, designID);
                     insertStmt.setInt(2, quantity);
                     insertStmt.setString(3, itemName);
-                    insertStmt.setInt(4, price);
-                    insertStmt.setInt(5, sellPrice);
+                    insertStmt.setBigDecimal(4, price);
+                    insertStmt.setBigDecimal(5, sellPrice);
                     insertStmt.addBatch();
                 }
             }
@@ -346,7 +347,7 @@ public class PurchaseBill extends JFrame {
             }
             TableModelListener[] listeners = UtilityMethods.removeModelListener(model);
             double quantity = 0;
-            double rawCost = 0;
+            BigDecimal rawCost = BigDecimal.ZERO;
             //ccase of unintended calls of the model
             TableColumnModel columnModel = billTable.getColumnModel();
 
@@ -364,9 +365,9 @@ public class PurchaseBill extends JFrame {
             }
             if (col == rawCostIndex) {
                 try {
-                    rawCost = getDoubleValue(model.getValueAt(row, rawCostIndex));
+                    rawCost = getDecimalValue(model.getValueAt(row, rawCostIndex));
 
-                    if (rawCost == 0) model.setValueAt("", row, rawCostIndex);
+                    if (rawCost.signum() == 0) model.setValueAt("", row, rawCostIndex);
                 } catch (NumberFormatException ex) {
                     model.setValueAt("", row, rawCostIndex);
                 }
@@ -503,6 +504,18 @@ public class PurchaseBill extends JFrame {
                 );
                 return false;
             }
+
+            try {
+                getDecimalValue(model.getValueAt(row, rawCostIndex));
+                getDecimalValue(model.getValueAt(row, sellPriceIndex));
+            } catch (NumberFormatException exception) {
+                JOptionPane.showMessageDialog(
+                        PurchaseBill.this,
+                        "Enter non-negative buy and sell prices with no more than two decimal places in row "
+                                + (row + 1) + "."
+                );
+                return false;
+            }
         }
 
         return true;
@@ -586,10 +599,10 @@ public class PurchaseBill extends JFrame {
 
     private void updateTotal(int row) {
         int quantity = getIntegerValue(model.getValueAt(row, quantityIndex));
-        double rawCost = getDoubleValue(model.getValueAt(row, rawCostIndex));
-        double total = quantity * rawCost;
+        BigDecimal rawCost = getDecimalValue(model.getValueAt(row, rawCostIndex));
+        BigDecimal total = rawCost.multiply(BigDecimal.valueOf(quantity)).setScale(2, RoundingMode.HALF_UP);
 
-        model.setValueAt(total == 0 ? "" : total, row, totalIndex);
+        model.setValueAt(total.signum() == 0 ? "" : total, row, totalIndex);
         model.fireTableRowsUpdated(row, row);
         billTable.repaint();
     }
@@ -598,9 +611,10 @@ public class PurchaseBill extends JFrame {
         Object currentSellPrice = model.getValueAt(row, sellPriceIndex);
 
 
-        double purchasePrice = getDoubleValue(model.getValueAt(row, rawCostIndex));
-        if (purchasePrice > 0) {
-            model.setValueAt(Math.round(purchasePrice * 1.15), row, sellPriceIndex);
+        BigDecimal purchasePrice = getDecimalValue(model.getValueAt(row, rawCostIndex));
+        if (purchasePrice.signum() > 0) {
+            model.setValueAt(purchasePrice.multiply(new BigDecimal("1.15"))
+                    .setScale(2, RoundingMode.HALF_UP), row, sellPriceIndex);
         }
     }
 
@@ -608,8 +622,11 @@ public class PurchaseBill extends JFrame {
         return (value != null && !value.toString().isEmpty()) ? Integer.parseInt(value.toString()) : 0;
     }
 
-    private double getDoubleValue(Object value) {
-        return (value != null && !value.toString().isEmpty()) ? Double.parseDouble(value.toString()) : 0.0;
+    private BigDecimal getDecimalValue(Object value) {
+        if (value == null || value.toString().trim().isEmpty()) return BigDecimal.ZERO.setScale(2);
+        BigDecimal decimal = new BigDecimal(value.toString().trim());
+        if (decimal.signum() < 0 || decimal.scale() > 2) throw new NumberFormatException();
+        return decimal.setScale(2, RoundingMode.HALF_UP);
     }
 
 

@@ -7,6 +7,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -76,9 +77,9 @@ public class InventoryScreen extends JFrame {
                     String designId = rs.getString("DESIGNID");
                     int totalQuantity = rs.getInt("TotalQuantity");
                     String itemName = rs.getString("itemname");
-                    int price = rs.getInt("price");
+                    BigDecimal price = rs.getBigDecimal("price");
                     int openingStock = rs.getInt("openingstock");
-                    int sellPrice = rs.getInt("sellPrice");
+                    BigDecimal sellPrice = rs.getBigDecimal("sellPrice");
                     String supplierName = rs.getString("SupplierName");
 
                     m.addRow(new Object[]{
