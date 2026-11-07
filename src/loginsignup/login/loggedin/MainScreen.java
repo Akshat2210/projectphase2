@@ -6,6 +6,7 @@ import loginsignup.login.loggedin.billing.BillingScreen;
 import loginsignup.login.loggedin.billing.newBill.NewBill;
 import loginsignup.login.loggedin.inventorymanagement.InventoryScreen;
 import loginsignup.login.loggedin.ordermanagement.OrderScreen;
+import loginsignup.login.loggedin.partyManagement.addparty.AddParty;
 import loginsignup.login.loggedin.processingmanagement.ProcessingManagementScreen;
 import loginsignup.login.loggedin.transactionsandaccounts.TransactionsScreen;
 import loginsignup.login.loggedin.transactionsandaccounts.CashEntry.cashTransaction;
