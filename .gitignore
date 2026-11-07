@@ -45,3 +45,5 @@ manufacturing_send_receive_swing_ui_guide.pdf
 sample.sql
 sample.summary.json
 samplegenerator.py
+.idea/dataSources.local.xml
+.idea/dataSources/

@@ -63,7 +63,7 @@ CREATE TABLE `bills` (
   `BillID` int NOT NULL AUTO_INCREMENT,
   `BillNumber` int DEFAULT NULL,
   `date` datetime DEFAULT CURRENT_TIMESTAMP,
-  `customer_name` varchar(150) DEFAULT NULL,
+  `customer_name` varchar(50) DEFAULT NULL,
   `billType` enum('purchase','sale') NOT NULL,
   `drafts` tinyint DEFAULT '0',
   PRIMARY KEY (`BillID`),
@@ -82,7 +82,7 @@ DROP TABLE IF EXISTS `customers`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `customers` (
   `customer_id` int NOT NULL AUTO_INCREMENT,
-  `customer_name` varchar(255) NOT NULL,
+  `customer_name` varchar(50) NOT NULL,
   `balance` decimal(15,2) DEFAULT NULL,
   `openingaccount` decimal(15,2) DEFAULT NULL,
   PRIMARY KEY (`customer_id`),
@@ -101,9 +101,9 @@ CREATE TABLE `inventory` (
   `DESIGNID` varchar(50) NOT NULL,
   `TotalQuantity` int NOT NULL,
   `itemname` varchar(50) DEFAULT NULL,
-  `price` int DEFAULT NULL,
+  `price` decimal(15,2) DEFAULT NULL,
   `openingstock` int DEFAULT '0',
-  `sellPrice` int DEFAULT NULL,
+  `sellPrice` decimal(15,2) DEFAULT NULL,
   `SupplierName` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`DESIGNID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -118,14 +118,14 @@ DROP TABLE IF EXISTS `order_slips`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `order_slips` (
   `slip_type` varchar(50) DEFAULT NULL,
-  `customer_name` varchar(255) DEFAULT NULL,
+  `customer_name` varchar(50) DEFAULT NULL,
   `raw_material_price` decimal(10,2) DEFAULT NULL,
   `item_name` varchar(255) DEFAULT NULL,
   `quantity` int DEFAULT NULL,
   `plating_grams` decimal(10,3) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `other_details` varchar(50) DEFAULT NULL,
-  `design_id` varchar(20) DEFAULT NULL,
+  `design_id` varchar(50) DEFAULT NULL,
   `slip_id` int DEFAULT NULL,
   `item_id` bigint NOT NULL AUTO_INCREMENT,
   `sno` int DEFAULT NULL,
@@ -152,7 +152,7 @@ CREATE TABLE `order_slips_main` (
   `slip_id` int NOT NULL AUTO_INCREMENT,
   `slip_type` varchar(50) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `customer_name` varchar(255) DEFAULT NULL,
+  `customer_name` varchar(50) DEFAULT NULL,
   `STATUS` int DEFAULT NULL,
   PRIMARY KEY (`slip_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=171 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -199,7 +199,7 @@ CREATE TABLE `transactions` (
   `billid` int DEFAULT NULL,
   `amount` decimal(15,2) DEFAULT NULL,
   `date` date NOT NULL,
-  `customer_name` varchar(255) DEFAULT NULL,
+  `customer_name` varchar(50) DEFAULT NULL,
   `remark` varchar(500) DEFAULT NULL,
   PRIMARY KEY (`transaction_id`),
   KEY `fk_customer_name_transaction` (`customer_name`),
@@ -334,7 +334,7 @@ CREATE TABLE `send_packets` (
   `send_packet_id` bigint NOT NULL AUTO_INCREMENT,
   `send_lot_id` bigint NOT NULL,
   `packet_number` int NOT NULL,
-  `customer_name` varchar(255) DEFAULT NULL,
+  `customer_name` varchar(50) DEFAULT NULL,
   `packet_remark` varchar(1000) DEFAULT NULL,
   PRIMARY KEY (`send_packet_id`),
   UNIQUE KEY `uq_send_packets_lot_number` (`send_lot_id`,`packet_number`),

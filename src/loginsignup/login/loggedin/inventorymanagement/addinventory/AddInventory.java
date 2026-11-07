@@ -4,6 +4,8 @@ import mainpack.MyClass;
 import utils.UtilityMethods;
 
 import javax.swing.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -23,13 +25,13 @@ public class AddInventory extends JFrame {
             stmt.setInt(2, Integer.parseInt(openingStockField.getText()));
             stmt.setString(3, "hi   ");
             try {
-                stmt.setDouble(4, Double.parseDouble(buyPriceField.getText()));
+                stmt.setBigDecimal(4, parsePrice(buyPriceField.getText()));
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(panel, "invalid buy price entered");
                 return NUMBER_FORMAT_ERROR;
             }
             try {
-                stmt.setDouble(5, Double.parseDouble(sellPriceField.getText()));
+                stmt.setBigDecimal(5, parsePrice(sellPriceField.getText()));
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(panel, "invalid sell price entered");
                 return NUMBER_FORMAT_ERROR;
@@ -70,18 +72,27 @@ public class AddInventory extends JFrame {
                 + "WHERE " + INVENTORY_DESIGN_ID + " = ?";
 
         try (Connection con = MyClass.createConnection(); PreparedStatement inventoryUpdateStmt = con.prepareStatement(inventoryUpdateQuery)) {
-            inventoryUpdateStmt.setDouble(1, Double.parseDouble(openingStockField.getText())); // quantity increment
+            inventoryUpdateStmt.setInt(1, Integer.parseInt(openingStockField.getText())); // quantity increment
             inventoryUpdateStmt.setString(2, itemNameField.getText()); // assuming you have this field
-            inventoryUpdateStmt.setDouble(3, Double.parseDouble(buyPriceField.getText())); // buy price
-            inventoryUpdateStmt.setDouble(4, Double.parseDouble(sellPriceField.getText())); // sell price
+            inventoryUpdateStmt.setBigDecimal(3, parsePrice(buyPriceField.getText())); // buy price
+            inventoryUpdateStmt.setBigDecimal(4, parsePrice(sellPriceField.getText())); // sell price
             inventoryUpdateStmt.setString(5, supplierComboBox.getSelectedItem().toString()); // WHERE condition
             inventoryUpdateStmt.setString(6, designID.getText()); // WHERE condition
             inventoryUpdateStmt.executeUpdate();
             return SUCCESS_CODE;
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(panel, "Enter whole-number stock and prices with no more than two decimal places.");
+            return NUMBER_FORMAT_ERROR;
         } catch (SQLException e) {
             e.printStackTrace();
             return SQL_ERROR;
         }
+    }
+
+    private BigDecimal parsePrice(String text) {
+        BigDecimal price = new BigDecimal(text.trim());
+        if (price.signum() < 0 || price.scale() > 2) throw new NumberFormatException();
+        return price.setScale(2, RoundingMode.HALF_UP);
     }
 
     private void clear() {
