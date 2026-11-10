@@ -129,7 +129,9 @@ public class LOGIN extends JFrame {
                     database = loginID;
                 }
                 host = MyClass.HOST;
-                url = "jdbc:mysql://" + host + ":" + port + "/" + database;
+                url = "jdbc:mysql://" + host + ":" + port + "/" + database
+                        + "?connectTimeout=" + MyClass.TIMEOUT
+                        + "&socketTimeout=" + MyClass.TIMEOUT;
                 if (password != null) {
                     Arrays.fill(password, '\0');
                 }

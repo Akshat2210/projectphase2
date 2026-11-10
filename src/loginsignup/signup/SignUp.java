@@ -37,7 +37,10 @@ public class SignUp extends JFrame {
                 List<String> structure = SignupDatabase.splitSchema(SignupDatabase.loadSchema());
                 // Same localhost/root setup as the old batch file. No passwords in files or process arguments.
                 try (Connection connection = DriverManager.getConnection(
-                        "jdbc:mysql://"+MyClass.HOST+":"+MyClass.PORT+"/mysql?useServerPrepStmts=false&characterEncoding=UTF-8",
+                        "jdbc:mysql://" + MyClass.HOST + ":" + MyClass.PORT
+                                + "/mysql?useServerPrepStmts=false&characterEncoding=UTF-8"
+                                + "&connectTimeout=" + MyClass.TIMEOUT
+                                + "&socketTimeout=" + MyClass.TIMEOUT,
                         "root", new String(rootPasswordCharacters))) {
                     SignupDatabase.create(connection, username, new String(passwordCharacters), structure);
                 }

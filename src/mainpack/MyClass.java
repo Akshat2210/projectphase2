@@ -29,6 +29,7 @@ import static utils.CONSTANTS.*;
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class MyClass {
     public static final String HOST = "localhost";
+    public static final int TIMEOUT = 8000;
     // 1. Create the mapping once (you can do this statically or in constructor)
     public static Map<String, String> codeToItemName;
     public final static String TITLE = "GURUKRIPA JEWELLERS";
