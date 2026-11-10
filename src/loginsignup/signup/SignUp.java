@@ -17,6 +17,7 @@ public class SignUp extends JFrame {
     private JPanel panel;
     private JPasswordField rootPasswordTextField;
     private JButton backButton;
+    private JTextField adminUserNameField;
 
     public SignUp() { }
 
@@ -36,12 +37,14 @@ public class SignUp extends JFrame {
                 // Read and validate the complete import before creating anything in MySQL.
                 List<String> structure = SignupDatabase.splitSchema(SignupDatabase.loadSchema());
                 // Same localhost/root setup as the old batch file. No passwords in files or process arguments.
+                String admin=adminUserNameField.getText().trim();
+                admin=admin.isEmpty()?"q":admin;
                 try (Connection connection = DriverManager.getConnection(
                         "jdbc:mysql://" + MyClass.HOST + ":" + MyClass.PORT
                                 + "/mysql?useServerPrepStmts=false&characterEncoding=UTF-8"
                                 + "&connectTimeout=" + MyClass.TIMEOUT
                                 + "&socketTimeout=" + MyClass.TIMEOUT,
-                        "root", new String(rootPasswordCharacters))) {
+                        admin, new String(rootPasswordCharacters))) {
                     SignupDatabase.create(connection, username, new String(passwordCharacters), structure);
                 }
                 JOptionPane.showMessageDialog(this, "User created successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
