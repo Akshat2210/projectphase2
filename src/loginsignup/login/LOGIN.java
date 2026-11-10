@@ -136,6 +136,7 @@ public class LOGIN extends JFrame {
                     Arrays.fill(password, '\0');
                 }
                 password = passwordField.getPassword();
+                MyClass.closeConnectionPool();
 
                 try (Connection con = MyClass.createConnection();
                 ) {
@@ -144,6 +145,7 @@ public class LOGIN extends JFrame {
                         return;
                     }
                 } catch (SQLException ex) {
+                    MyClass.closeConnectionPool();
                     if (ex.getErrorCode() == CONSTANTS.SQL_DATABASE_ACCESS_DENIED_ERROR) {
                         JOptionPane.showMessageDialog(temp,
                                 "This user does not have access to database '" + database + "'.",

@@ -77,6 +77,16 @@ public class OrderGenerateForm extends JFrame {
         });
         setContentPane(panel);
         backButton.addActionListener(e -> {
+            try {
+                if (orderSlipConnectionObject != null
+                        && !orderSlipConnectionObject.isClosed()) {
+                    orderSlipConnectionObject.rollback();
+                    orderSlipConnectionObject.close();
+                }
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(OrderGenerateForm.this, ex.getMessage(),"error",JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
+            }
             dispose();
             MyClass.inventorySelect.dispose();
             MyClass.orderScreen.setVisible(true);
@@ -313,7 +323,7 @@ public class OrderGenerateForm extends JFrame {
         String insertMainQuery = "INSERT INTO " + ORDER_SLIPS_MAIN_TABLE + " (" + ORDER_SLIPS_MAIN_STATUS +") VALUES (?)";
         orderSlipConnectionObject = null;
         try {
-            orderSlipConnectionObject = DriverManager.getConnection(MyClass.login.getUrl(), MyClass.login.getLoginID(), MyClass.login.getPassword());
+            orderSlipConnectionObject = MyClass.createConnection();
             orderSlipConnectionObject.setAutoCommit(false);
             try (PreparedStatement stmt = orderSlipConnectionObject.prepareStatement(insertMainQuery, Statement.RETURN_GENERATED_KEYS);) {
                 stmt.setInt(1, CONSTANTS.DRAFT_STATUS_CODE);

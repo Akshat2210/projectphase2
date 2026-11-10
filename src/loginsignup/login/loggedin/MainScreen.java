@@ -50,6 +50,7 @@ public class MainScreen extends JFrame {
         logoutButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                MyClass.closeConnectionPool();
                 MyClass.login.nullLoginParameters();
                 Variables.devMode = false;
                 MyClass.login.setDevModeSelected(false);
@@ -213,7 +214,7 @@ public class MainScreen extends JFrame {
         String deleteTransactionsQuery = "delete from transactions where date<?";
         Connection con = null;
         try {
-            con = DriverManager.getConnection(MyClass.login.getUrl(), MyClass.login.getLoginID(), MyClass.login.getPassword());
+            con = MyClass.createConnection();
             con.setAutoCommit(false);
             PreparedStatement statement = con.prepareStatement(updateQuery);
             statement.setDate(1, java.sql.Date.valueOf(localDate));

@@ -1,6 +1,8 @@
 package mainpack;
 
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import loginsignup.LOGIN_SIGNUP;
 import loginsignup.login.LOGIN;
 import loginsignup.login.loggedin.MainScreen;
@@ -18,7 +20,6 @@ import utils.UtilityMethods;
 
 import javax.swing.*;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,8 +29,11 @@ import static utils.CONSTANTS.*;
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class MyClass {
-    public static final String HOST = "localhost";
-    public static final int TIMEOUT = 8000;
+    public static final String HOST = "100.111.73.120";
+    public static final int TIMEOUT = 2000;
+    public static final int CONNECTION_POOL_SIZE = 10;
+    private static final Object CONNECTION_POOL_LOCK = new Object();
+    private static HikariDataSource connectionPool;
     // 1. Create the mapping once (you can do this statically or in constructor)
     public static Map<String, String> codeToItemName;
     public final static String TITLE = "GURUKRIPA JEWELLERS";
@@ -37,6 +41,10 @@ public class MyClass {
     public static InventorySelect inventorySelect;
 
     public static void main(String[] args) {
+
+        Runtime.getRuntime().addShutdownHook(
+                new Thread(MyClass::closeConnectionPool, "DatabasePoolShutdown")
+        );
 
         {
             codeToItemName = new HashMap<>();
@@ -100,30 +108,71 @@ public class MyClass {
     public static Users users;
 
     public static Connection createConnection() throws SQLException {
-        Connection conn;
         try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            conn = DriverManager.getConnection(login.getUrl(), login.getLoginID(), login.getPassword());
-            conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-            System.out.println("✅ Database Connected Successfully to: ");
-            return conn;
-        } catch (ClassNotFoundException e) {
-            System.out.println("❌ MySQL Driver Not Found!");
-            e.printStackTrace();
-            throw new RuntimeException(e);
+            return getConnectionPool().getConnection();
         } catch (SQLException e) {
-
+            SQLException databaseError = findDatabaseError(e);
             System.out.println("❌ Database Connection Failed!");
-            if (e.getErrorCode() == SQL_INVALID_CREDENTIALS_ERROR) {
+            if (databaseError.getErrorCode() == SQL_INVALID_CREDENTIALS_ERROR) {
                 JOptionPane.showMessageDialog(null, "invalid userid/password");
-//                throw new SQLException(e);
-            } else if (e.getErrorCode() == SQL_INVALID_DATABASE_ERROR) {
-                JOptionPane.showMessageDialog(login, "database not found error " + e.getErrorCode());
-//                throw new SQLException(e);
+            } else if (databaseError.getErrorCode() == SQL_INVALID_DATABASE_ERROR) {
+                JOptionPane.showMessageDialog(login, "database not found error " + databaseError.getErrorCode());
             }
-            throw e;
+            throw databaseError;
         }
+    }
 
+    private static SQLException findDatabaseError(SQLException exception) {
+        SQLException databaseError = exception;
+        Throwable cause = exception;
+        while (cause != null) {
+            if (cause instanceof SQLException sqlException && sqlException.getErrorCode() != 0) {
+                databaseError = sqlException;
+            }
+            cause = cause.getCause();
+        }
+        return databaseError;
+    }
+
+    private static HikariDataSource getConnectionPool() throws SQLException {
+        synchronized (CONNECTION_POOL_LOCK) {
+            if (connectionPool != null && !connectionPool.isClosed()) return connectionPool;
+            if (login == null || login.getUrl() == null || login.getLoginID() == null
+                    || login.getPassword() == null) {
+                throw new SQLException("Database login details are not available.");
+            }
+
+            HikariConfig config = new HikariConfig();
+            config.setPoolName("AccountingSoftwareProPool");
+            config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+            config.setJdbcUrl(login.getUrl());
+            config.setUsername(login.getLoginID());
+            config.setPassword(login.getPassword());
+            config.setMaximumPoolSize(CONNECTION_POOL_SIZE);
+            config.setMinimumIdle(1);
+            config.setConnectionTimeout(TIMEOUT);
+            config.setValidationTimeout(Math.min(TIMEOUT, 1000));
+            config.setIdleTimeout(300_000);
+            config.setMaxLifetime(1_800_000);
+            config.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
+            config.setInitializationFailTimeout(-1);
+
+            try {
+                connectionPool = new HikariDataSource(config);
+                return connectionPool;
+            } catch (RuntimeException exception) {
+                throw new SQLException("Could not initialize the database connection pool.", exception);
+            }
+        }
+    }
+
+    public static void closeConnectionPool() {
+        synchronized (CONNECTION_POOL_LOCK) {
+            if (connectionPool != null) {
+                connectionPool.close();
+                connectionPool = null;
+            }
+        }
     }
 
 

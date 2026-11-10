@@ -296,8 +296,7 @@ public class UtilityMethods {
     }
 
     public static Connection createConnection() throws SQLException {
-
-        return DriverManager.getConnection(MyClass.login.getUrl(), MyClass.login.getLoginID(), MyClass.login.getPassword());
+        return MyClass.createConnection();
     }
 
 

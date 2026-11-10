@@ -339,7 +339,7 @@ public class ViewOrders extends JFrame {
 
                     boolean nextOrPrev;
                     try {
-                        con = DriverManager.getConnection(MyClass.login.getUrl(), MyClass.login.getLoginID(), MyClass.login.getPassword());
+                        con = MyClass.createConnection();
                         con.setAutoCommit(false);
                         String prevNextQuery;
                         prevNextQuery = "select min(slip_id) from order_slips ";
