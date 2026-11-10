@@ -47,7 +47,7 @@ public class LOGIN extends JFrame {
     private char[] password;
     private String host;
     private String database = "";
-    private String port = "3306";
+    private String port = MyClass.PORT;
 
     public String getPort() {
         return port;
@@ -128,7 +128,7 @@ public class LOGIN extends JFrame {
                 if (!"root".contentEquals(loginID) && database.isEmpty()) {
                     database = loginID;
                 }
-                host = "localhost";
+                host = MyClass.HOST;
                 url = "jdbc:mysql://" + host + ":" + port + "/" + database;
                 if (password != null) {
                     Arrays.fill(password, '\0');

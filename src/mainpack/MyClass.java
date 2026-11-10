@@ -1,5 +1,6 @@
 package mainpack;
 
+
 import loginsignup.LOGIN_SIGNUP;
 import loginsignup.login.LOGIN;
 import loginsignup.login.loggedin.MainScreen;
@@ -27,10 +28,11 @@ import static utils.CONSTANTS.*;
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class MyClass {
+    public static final String HOST = "localhost";
     // 1. Create the mapping once (you can do this statically or in constructor)
     public static Map<String, String> codeToItemName;
     public final static String TITLE = "GURUKRIPA JEWELLERS";
-    public static final String PORT = "jdbc:mysql://localhost:3306/";
+    public static final String PORT = "3306";
     public static InventorySelect inventorySelect;
 
     public static void main(String[] args) {
