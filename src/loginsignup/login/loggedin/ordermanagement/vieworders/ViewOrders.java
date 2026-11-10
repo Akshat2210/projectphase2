@@ -409,8 +409,8 @@ public class ViewOrders extends JFrame {
 
                         try {
                             if (prevNextStatement != null) prevNextStatement.close();
-                            if (orderSlipMainDeleteStatement == null) orderSlipMainDeleteStatement.close();
-                            if (inventoryUpdateStatement == null) inventoryUpdateStatement.close();
+                            if (orderSlipMainDeleteStatement != null) orderSlipMainDeleteStatement.close();
+                            if (inventoryUpdateStatement != null) inventoryUpdateStatement.close();
                             if (con != null) con.close();
 
                         } catch (SQLException ex) {
