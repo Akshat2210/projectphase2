@@ -105,7 +105,7 @@ public class PurchaseBill extends JFrame {
              PreparedStatement journalEntryStatement = con.prepareStatement(insertJournalEntryQuery);
         ) {
             con.setAutoCommit(false);
-            int billNumber = UtilityMethods.getBillNumber(con);
+            int billNumber = UtilityMethods.getBillNumber(con, CONSTANTS.PURCHASE_ENUM);
 
             billsTableStatement.setTimestamp(1, Timestamp.valueOf(UtilityMethods.getDate(dateComboBox.getSelectedItem())));
             billsTableStatement.setString(2, customerName);

@@ -67,7 +67,7 @@ CREATE TABLE `bills` (
   `billType` enum('purchase','sale') NOT NULL,
   `drafts` tinyint DEFAULT '0',
   PRIMARY KEY (`BillID`),
-  UNIQUE KEY `BillNumber` (`BillNumber`),
+  UNIQUE KEY `uq_bills_type_number` (`billType`,`BillNumber`),
   KEY `fk_bill` (`customer_name`),
   CONSTRAINT `fk_bill` FOREIGN KEY (`customer_name`) REFERENCES `customers` (`customer_name`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2934 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

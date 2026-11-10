@@ -134,7 +134,7 @@ public class NewBill extends JFrame {
         String updateCustomerTableQuery = "update " + DBStructure.CUSTOMERS_TABLE + " set " + DBStructure.CUSTOMERS_BALANCE + "=" + DBStructure.CUSTOMERS_BALANCE + "+? where " + DBStructure.CUSTOMERS_CUSTOMER_NAME + "=?";
         String updateBillsTableQuery = "update " + DBStructure.BILLS_TABLE + " set " + DBStructure.BILLS_DATE + "=?," + DBStructure.BILLS_CUSTOMER_NAME + "=?, " + DBStructure.BILLS_BILL_NUMBER + "=? where " + DBStructure.BILLS_BILL_ID + "=?";
         String insertJournalEntryQuery = "INSERT INTO " + DBStructure.JOURNAL_ENTRY_TABLE + " (" + DBStructure.JOURNAL_ENTRY_TRANSACTION_TYPE + ", " + DBStructure.JOURNAL_ENTRY_DATE + ", " + DBStructure.JOURNAL_ENTRY_ACCOUNT_NAME + ", " + DBStructure.JOURNAL_ENTRY_BILL_ID + ", " + DBStructure.JOURNAL_ENTRY_TRANSACTION_ID + ", " + DBStructure.JOURNAL_ENTRY_CREDIT + ", " + DBStructure.JOURNAL_ENTRY_DEBIT + ") VALUES (?, ?, ?, ?, ?, ?, ?)";
-        int billNumber = UtilityMethods.getBillNumber(getTransacTemp());
+        int billNumber = UtilityMethods.getBillNumber(getTransacTemp(), CONSTANTS.SALE_ENUM);
         try {
             try {
                 savepoint = conn.setSavepoint();

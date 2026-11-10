@@ -293,6 +293,7 @@ class GetData {
 
         String movementQuery =
                 "SELECT bd." + BILLDETAILS_BILL_ID + " AS billId, " +
+                        "b." + BILLS_BILL_NUMBER + " AS billNumber, " +
                         "b." + BILLS_DATE + " AS billDate, " +
                         "bd." + BILLDETAILS_QUANTITY + " AS quantity " +
                         "FROM " + BILLDETAILS_TABLE + " bd " +
@@ -336,7 +337,7 @@ class GetData {
                         java.sql.Date billDate = rs.getDate("billDate");
 
                         String[] row = new String[columnNames.length];
-                        row[ID_COLUMN_INDEX] = "Bill#" + rs.getInt("billId");
+                        row[ID_COLUMN_INDEX] = "Bill#" + rs.getInt("billId") + "/" + rs.getInt("billNumber");
                         row[DATE_COLUMN_INDEX] = billDate == null
                                 ? ""
                                 : UtilityMethods.parseDateString(billDate);
