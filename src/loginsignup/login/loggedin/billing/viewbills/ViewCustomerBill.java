@@ -99,10 +99,12 @@ public class ViewCustomerBill extends JFrame {
         billTable.setModel(tableModel);
         loadBillData(billTable, getMinBillID());
 
-        customerNameComboBox.addActionListener(e -> {
+        javax.swing.Timer customerSelectionDelay = new javax.swing.Timer(200, e -> {
             int billid = getMinBillID();
             loadBillData(billTable, billid);
         });
+        customerSelectionDelay.setRepeats(false);
+        customerNameComboBox.addActionListener(e -> customerSelectionDelay.restart());
 
         nextButton.addActionListener(e -> {
             int currentBillID = getBillID();  // Function to get the current BillID

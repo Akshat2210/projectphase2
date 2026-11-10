@@ -260,15 +260,14 @@ public class cashTransaction extends JFrame {
                     addedTransactions.fetchData(getDate());
 
                 });
-        dateComboBox.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                setDate(dateComboBox.getSelectedItem());
-                if (addedTransactions != null && getDate() != null)
-                    addedTransactions.fetchData(getDate());
-
-
-            }
+        javax.swing.Timer dateSelectionDelay = new javax.swing.Timer(200, e -> {
+            if (addedTransactions != null && getDate() != null)
+                addedTransactions.fetchData(getDate());
+        });
+        dateSelectionDelay.setRepeats(false);
+        dateComboBox.addActionListener(e -> {
+            setDate(dateComboBox.getSelectedItem());
+            dateSelectionDelay.restart();
         });
         remarkTextField.addActionListener(new ActionListener() {
             @Override

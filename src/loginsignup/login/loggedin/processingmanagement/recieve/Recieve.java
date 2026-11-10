@@ -44,7 +44,9 @@ public class Recieve extends JFrame {
         scrollPane.getVerticalScrollBar().setUnitIncrement(20);
         loadDates();
         loadLotNumbers();
-        lotNumber.addActionListener(event -> loadSelectedLot());
+        javax.swing.Timer lotSelectionDelay = new javax.swing.Timer(200, event -> loadSelectedLot());
+        lotSelectionDelay.setRepeats(false);
+        lotNumber.addActionListener(event -> lotSelectionDelay.restart());
         loadSelectedLot();
         submitButton.addActionListener(event -> insertData());
         pack();

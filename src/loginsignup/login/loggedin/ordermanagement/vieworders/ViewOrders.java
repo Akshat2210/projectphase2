@@ -114,7 +114,7 @@ public class ViewOrders extends JFrame {
 
         setContentPane(panel);
         pack();
-        customerComboBox.addActionListener(e -> {
+        javax.swing.Timer filterSelectionDelay = new javax.swing.Timer(200, e -> {
             id = 1;
             try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
                 String query;
@@ -152,39 +152,9 @@ public class ViewOrders extends JFrame {
             } catch (NullPointerException ignored) {
             }
         });
-        panaTypeComboBox.addActionListener(e -> {
-            id = 1;
-            try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
-                String query = "SELECT MIN(slip_id) FROM order_slips ";
-                if (!(customerComboBox.getSelectedIndex() == 0)) {
-                    query += "WHERE customer_name = \"" + (customerComboBox.getSelectedItem() != null ? customerComboBox.getSelectedItem().toString() : "") + "\" ";
-                    if (!(panaTypeComboBox.getSelectedIndex() == 0)) {
-                        query += "AND slip_type = \"" + (panaTypeComboBox.getSelectedItem() != null ? panaTypeComboBox.getSelectedItem().toString() : "") + "\";";
-                    } else {
-                        query += ";";
-                    }
-                } else if (!(panaTypeComboBox.getSelectedIndex() == 0)) {
-                    query += "WHERE slip_type =\"" + Objects.requireNonNull(panaTypeComboBox.getSelectedItem()) + "\";";
-
-                } else query += ";";
-
-                try (ResultSet rs = stmt.executeQuery(query);) {
-                    if (rs.next()) {
-                        if (rs.getObject(1) != null)
-                            id = rs.getInt(1);
-                        else {
-                            setCurrentBill(-1);
-                            return;
-                        }
-                    }
-                }
-                System.out.println("id is " + id);
-                setCurrentBill(id);
-                billIDLabel.setText("Bill id: " + id);
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
-            }
-        });
+        filterSelectionDelay.setRepeats(false);
+        customerComboBox.addActionListener(e -> filterSelectionDelay.restart());
+        panaTypeComboBox.addActionListener(e -> filterSelectionDelay.restart());
         backButton.addActionListener(e -> {
             panaTypeComboBox.getActionListeners();
             setVisible(false);

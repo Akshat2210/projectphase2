@@ -52,7 +52,8 @@ public class NewBill extends JFrame {
     private LocalDateTime dateTime;
     private BigDecimal goldrate = BigDecimal.ZERO.setScale(2);
     private String customerName;
-    private  SearchResultWindow searchResultWindow;
+    private SearchResultWindow searchResultWindow;
+
     public JButton getSubmitButton() {
         return submitButton;
     }
@@ -352,7 +353,7 @@ public class NewBill extends JFrame {
             scrollPane.repaint();
         } finally {
             UtilityMethods.addModelListeners(listeners, tableModel);
-                tableModel.fireTableDataChanged();
+            tableModel.fireTableDataChanged();
 
         }
     }
@@ -399,6 +400,7 @@ public class NewBill extends JFrame {
         }
         grandTotalLabel.setText("Grand total:" + grandTotal.setScale(2, RoundingMode.HALF_UP).toPlainString());
     }
+
     public Connection getTransacTemp() {
         return transacTemp;
     }
@@ -482,7 +484,7 @@ public class NewBill extends JFrame {
                         ex.printStackTrace();
                     }
                 }
-              if (searchResultWindow != null) searchResultWindow.dispose();  
+                if (searchResultWindow != null) searchResultWindow.dispose();
                 dispose();
                 NewBill newBill = new NewBill();
                 newBill.init();
@@ -504,7 +506,7 @@ public class NewBill extends JFrame {
                 } catch (SQLException ex) {
                     JOptionPane.showMessageDialog(NewBill.this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
-                if(searchResultWindow!=null)searchResultWindow.dispose();
+                if (searchResultWindow != null) searchResultWindow.dispose();
                 dispose();
                 NewBill newBill = new NewBill();
                 newBill.init();
@@ -549,8 +551,8 @@ public class NewBill extends JFrame {
             transacTemp = createConnection();
             transacTemp.setAutoCommit(false);
         } catch (SQLException e) {
-            Thread.dumpStack();
-            throw new RuntimeException();
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(NewBill.this, e.getMessage(),"error",JOptionPane.ERROR_MESSAGE);
         }
         Connection conn = getTransacTemp();
 
@@ -680,8 +682,8 @@ public class NewBill extends JFrame {
                     tableModel.setValueAt("", row, col);
 
                 }
-if (col == designIdIndex &&
-    (searchResultWindow == null || !searchResultWindow.isSearchFlag())) {
+                if (col == designIdIndex &&
+                        (searchResultWindow == null || !searchResultWindow.isSearchFlag())) {
                     String designID = tableModel.getValueAt(row, designIdIndex) == null ? "" : tableModel.getValueAt(row, designIdIndex).toString().trim();
                     tableModel.setValueAt(designID, row, designIdIndex);
 
@@ -823,7 +825,7 @@ if (col == designIdIndex &&
         }
         UtilityMethods.generateAndAddNames(customerComboBox);
         UtilityMethods.generateAndAddDates(dateComboBox, false);
-        customerComboBox.addActionListener(e -> {
+        javax.swing.Timer customerSelectionDelay = new javax.swing.Timer(200, e -> {
             if (customerComboBox.getSelectedIndex() == 0) {
                 if (searchResultWindow != null) {
                     searchResultWindow.dispose();
@@ -834,7 +836,7 @@ if (col == designIdIndex &&
             }
             setCustomerName(customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString());
             if (searchResultWindow == null || !searchResultWindow.isVisible()) {
-                searchResultWindow = new SearchResultWindow(INVENTORY_MODE,NewBill.this);
+                searchResultWindow = new SearchResultWindow(INVENTORY_MODE, NewBill.this);
                 searchResultWindow.setAutoRequestFocus(false);
                 searchResultWindow.setVisible(true);
             }
@@ -842,6 +844,8 @@ if (col == designIdIndex &&
             searchResultWindow.setInventorySelected();
             UtilityMethods.splitFrame(temp, searchResultWindow, UtilityMethods.HORIZONTAL_SPLIT);
         });
+        customerSelectionDelay.setRepeats(false);
+        customerComboBox.addActionListener(e -> customerSelectionDelay.restart());
 
     }
 
@@ -1151,7 +1155,8 @@ if (col == designIdIndex &&
 
 
             stmt.executeUpdate();
-            if (searchResultWindow!=null && searchResultWindow.isVisible()) searchResultWindow.fetchOrderSlip(searchResultWindow.getTableModel());
+            if (searchResultWindow != null && searchResultWindow.isVisible())
+                searchResultWindow.fetchOrderSlip(searchResultWindow.getTableModel());
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

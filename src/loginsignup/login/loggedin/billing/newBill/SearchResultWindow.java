@@ -67,20 +67,19 @@ public class SearchResultWindow extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setTitle("CREATE BILL");
         setContentPane(panel1);
-        selectionComboBox.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String selection = UtilityMethods.parseString((selectionComboBox.getSelectedItem()));
-                if (selection.equals("Inventory")) {
-                    mode="inventory";
-                    fetchInventory((DefaultTableModel) dataTable.getModel());
-                } else {
-                    mode="orderslip";
-                    SearchResultWindow.this.orderSlipID = UtilityMethods.parseInt(selectionComboBox.getSelectedItem());
-                    fetchOrderSlip((DefaultTableModel) dataTable.getModel());
-                }
+        javax.swing.Timer selectionDelay = new javax.swing.Timer(200, e -> {
+            String selection = UtilityMethods.parseString((selectionComboBox.getSelectedItem()));
+            if (selection.equals("Inventory")) {
+                mode="inventory";
+                fetchInventory((DefaultTableModel) dataTable.getModel());
+            } else {
+                mode="orderslip";
+                SearchResultWindow.this.orderSlipID = UtilityMethods.parseInt(selectionComboBox.getSelectedItem());
+                fetchOrderSlip((DefaultTableModel) dataTable.getModel());
             }
         });
+        selectionDelay.setRepeats(false);
+        selectionComboBox.addActionListener(e -> selectionDelay.restart());
         backButton.addActionListener(e -> {
             parent.setExtendedState(JFrame.MAXIMIZED_BOTH);
             parent.getBackButton().setEnabled(true);

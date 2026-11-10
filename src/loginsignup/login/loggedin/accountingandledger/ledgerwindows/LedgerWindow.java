@@ -28,6 +28,7 @@ public class LedgerWindow extends JFrame {
     public static final int CUSTOMER_MODE = 65 * 1;
     public static final int ITEM_MODE = 65 * 2;
     public static final int GENERAL_ACCOUNT_MODE = 65 * 3;
+    public static final int CASHBOOK_MODE = 65 * 4;
     private JButton backButton;
     private JTable ledgerTable;
     private JPanel panel;
@@ -59,6 +60,8 @@ public class LedgerWindow extends JFrame {
 
         } else if (mode == GENERAL_ACCOUNT_MODE) {
             columnNames = new String[]{"id", "date", "debit", "credit", "balance"};
+        } else if (mode == CASHBOOK_MODE) {
+            columnNames = new String[]{"id", "date", "account", "debit", "credit", "balance"};
         }
         DefaultTableModel defaultTableModel = new DefaultTableModel(columnNames, 0) {
             @Override
@@ -81,6 +84,12 @@ public class LedgerWindow extends JFrame {
             }
         } else if (mode == GENERAL_ACCOUNT_MODE) {
             DefaultTableModel model = GetData.fetchGeneralAccountLedger(customerName, this);
+
+            if (model != null) {
+                ledgerTable.setModel(model);
+            }
+        } else if (mode == CASHBOOK_MODE) {
+            DefaultTableModel model = GetData.fetchCashbook(this);
 
             if (model != null) {
                 ledgerTable.setModel(model);
@@ -266,6 +275,73 @@ class GetData {
             return tableModel;
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(ledgerWindow, "Could not fetch account ledger: " + e.getMessage());
+            return null;
+        }
+    }
+
+    static DefaultTableModel fetchCashbook(LedgerWindow ledgerWindow) {
+        String[] columnNames = {ID_COLUMN, DATE_COLUMN, "account", DEBIT_COLUMN, CREDIT_COLUMN, BALANCE_COLUMN};
+        DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        String query = "SELECT cash." + JOURNAL_ENTRY_ID + ", cash." + JOURNAL_ENTRY_TRANSACTION_TYPE + ", " +
+                "cash." + JOURNAL_ENTRY_BILL_ID + ", cash." + JOURNAL_ENTRY_TRANSACTION_ID + ", " +
+                "cash." + JOURNAL_ENTRY_DATE + ", " +
+                "COALESCE(cash." + JOURNAL_ENTRY_DEBIT + ", 0) AS debit, " +
+                "COALESCE(cash." + JOURNAL_ENTRY_CREDIT + ", 0) AS credit, " +
+                "COALESCE(counterpart." + JOURNAL_ENTRY_ACCOUNT_NAME + ", '') AS corresponding_account " +
+                "FROM " + JOURNAL_ENTRY_TABLE + " cash " +
+                "LEFT JOIN " + JOURNAL_ENTRY_TABLE + " counterpart ON cash." + JOURNAL_ENTRY_TRANSACTION_ID +
+                " = counterpart." + JOURNAL_ENTRY_TRANSACTION_ID +
+                " AND counterpart." + JOURNAL_ENTRY_ID + " <> cash." + JOURNAL_ENTRY_ID + " " +
+                "WHERE cash." + JOURNAL_ENTRY_ACCOUNT_NAME + " = ? " +
+                "ORDER BY cash." + JOURNAL_ENTRY_DATE + ", cash." + JOURNAL_ENTRY_ID;
+
+        try (Connection con = MyClass.createConnection();
+             PreparedStatement statement = con.prepareStatement(query)) {
+            statement.setString(1, "Cash");
+
+            try (ResultSet rs = statement.executeQuery()) {
+                BigDecimal balance = BigDecimal.ZERO;
+                while (rs.next()) {
+                    BigDecimal debit = rs.getBigDecimal("debit");
+                    BigDecimal credit = rs.getBigDecimal("credit");
+                    java.sql.Date date = rs.getDate(JOURNAL_ENTRY_DATE);
+                    Object billId = rs.getObject(JOURNAL_ENTRY_BILL_ID);
+                    Object transactionId = rs.getObject(JOURNAL_ENTRY_TRANSACTION_ID);
+                    Object sourceId = billId == null ? transactionId : billId;
+                    String entryLabel = "JE#" + rs.getInt(JOURNAL_ENTRY_ID) + "_" +
+                            rs.getString(JOURNAL_ENTRY_TRANSACTION_TYPE) + "_" +
+                            (sourceId == null ? "N/A" : sourceId);
+
+                    balance = balance.add(debit).subtract(credit);
+                    tableModel.addRow(new String[]{
+                            entryLabel,
+                            date == null ? "" : UtilityMethods.parseDateString(date),
+                            rs.getString("corresponding_account"),
+                            debit.signum() == 0 ? "" : debit.toPlainString(),
+                            credit.signum() == 0 ? "" : credit.toPlainString(),
+                            balance.toPlainString()
+                    });
+                }
+            }
+
+            tableModel.addRow(new String[]{
+                    "Closing balance",
+                    LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yy")),
+                    "",
+                    "",
+                    "",
+                    tableModel.getRowCount() == 0 ? "0" :
+                            tableModel.getValueAt(tableModel.getRowCount() - 1, 5).toString()
+            });
+            return tableModel;
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(ledgerWindow, "Could not fetch cashbook: " + e.getMessage());
             return null;
         }
     }

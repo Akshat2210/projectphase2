@@ -100,6 +100,13 @@ public class AALScreen extends JFrame {
             }
         });
 
+        cashStatementButton.addActionListener(e -> {
+            setVisible(false);
+            LedgerWindow ledgerWindow = new LedgerWindow(AALScreen.this);
+            ledgerWindow.init("Cash", LedgerWindow.CASHBOOK_MODE);
+            ledgerWindow.setVisible(true);
+        });
+
     }
 
     private void openCustomer(String selectedCustomer) {

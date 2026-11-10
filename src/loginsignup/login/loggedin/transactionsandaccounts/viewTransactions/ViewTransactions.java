@@ -32,18 +32,10 @@ public class ViewTransactions extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         UtilityMethods.generateAndAddDates(dateComboBox, true);
         UtilityMethods.generateAndAddNames(partyNameComboBox);
-        dateComboBox.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                getData();
-            }
-        });
-        partyNameComboBox.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                getData();
-            }
-        });
+        javax.swing.Timer filterSelectionDelay = new javax.swing.Timer(200, e -> getData());
+        filterSelectionDelay.setRepeats(false);
+        dateComboBox.addActionListener(e -> filterSelectionDelay.restart());
+        partyNameComboBox.addActionListener(e -> filterSelectionDelay.restart());
         backButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {

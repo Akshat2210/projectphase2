@@ -39,7 +39,9 @@ public class SearchResultWindow extends JFrame {
         dataTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         backButton.addActionListener(e -> closeSearch());
         button2.addActionListener(e -> activateSelection());
-        selectionComboBox.addActionListener(e -> refreshResults());
+        javax.swing.Timer selectionDelay = new javax.swing.Timer(200, e -> refreshResults());
+        selectionDelay.setRepeats(false);
+        selectionComboBox.addActionListener(e -> selectionDelay.restart());
         dataTable.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {

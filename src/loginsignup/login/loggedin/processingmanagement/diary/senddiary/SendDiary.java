@@ -64,8 +64,10 @@ public class SendDiary extends JFrame {
         customerFilter.setEditable(false);
         customerFilter.setModel(new DefaultComboBoxModel<>(new String[]{SELECT_CUSTOMER}));
         customerFilter.setToolTipText("Show all sent packets for one customer, grouped by lot");
+        javax.swing.Timer customerSelectionDelay = new javax.swing.Timer(200, event -> customerFilterChanged());
+        customerSelectionDelay.setRepeats(false);
         customerFilter.addActionListener(event -> {
-            if (!updatingModels) customerFilterChanged();
+            if (!updatingModels) customerSelectionDelay.restart();
         });
         godownComboBox.setToolTipText("Filter lots by their source (Sent From) godown");
         lotComboBox.setToolTipText("Select a send lot number");
@@ -86,11 +88,15 @@ public class SendDiary extends JFrame {
         // The lot list is ordered newest first, so older lots have a higher index.
         button1.addActionListener(event -> navigateLot(1));
         button2.addActionListener(event -> navigateLot(-1));
+        javax.swing.Timer godownSelectionDelay = new javax.swing.Timer(200, event -> loadLotNumbers());
+        godownSelectionDelay.setRepeats(false);
         godownComboBox.addActionListener(event -> {
-            if (!updatingModels) loadLotNumbers();
+            if (!updatingModels) godownSelectionDelay.restart();
         });
+        javax.swing.Timer lotSelectionDelay = new javax.swing.Timer(200, event -> loadSelectedLot());
+        lotSelectionDelay.setRepeats(false);
         lotComboBox.addActionListener(event -> {
-            if (!updatingModels) loadSelectedLot();
+            if (!updatingModels) lotSelectionDelay.restart();
         });
         showMessage("Loading godowns...");
         pack();

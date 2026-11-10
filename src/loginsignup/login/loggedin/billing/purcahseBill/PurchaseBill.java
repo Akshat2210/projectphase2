@@ -418,7 +418,7 @@ public class PurchaseBill extends JFrame {
         UtilityMethods.generateAndAddNames(customerComboBox);
         UtilityMethods.generateAndAddDates(dateComboBox, false);
 
-        customerComboBox.addActionListener(e -> {
+        javax.swing.Timer customerSelectionDelay = new javax.swing.Timer(200, e -> {
             if (customerComboBox.getSelectedIndex() <= 0) {
                 if (searchResultWindow != null) searchResultWindow.dispose();
                 setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -435,6 +435,8 @@ public class PurchaseBill extends JFrame {
             searchResultWindow.setExtendedState(JFrame.NORMAL);
             UtilityMethods.splitFrame(this, searchResultWindow, UtilityMethods.VERTI_SPLIT);
         });
+        customerSelectionDelay.setRepeats(false);
+        customerComboBox.addActionListener(e -> customerSelectionDelay.restart());
 
         setBillid(fetchBillId());
         billidLabel.setText("bill id:" + getBillid());

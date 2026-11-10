@@ -110,10 +110,12 @@ public class Send extends JFrame {
         submitButton.addActionListener(event -> submitSend());
         addPacketButton.addActionListener(event -> addPacket());
         configureSourceItemTable();
-        selectionComboBox.addActionListener(event -> loadSelectedSourceItems());
+        javax.swing.Timer sourceSelectionDelay = new javax.swing.Timer(200, event -> loadSelectedSourceItems());
+        sourceSelectionDelay.setRepeats(false);
+        selectionComboBox.addActionListener(event -> sourceSelectionDelay.restart());
         sendFrom.addActionListener(event -> {
             if ("Incoming transfers".equals(selectionComboBox.getSelectedItem())) {
-                loadSelectedSourceItems();
+                sourceSelectionDelay.restart();
             }
         });
         setupInitialPacketPanel();
