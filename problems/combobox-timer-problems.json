@@ -56,7 +56,9 @@
       "timer": "customerSelectionDelay",
       "problem": "The previous customer's search or order-slip results remain available for 200 ms. A very quick selection can use an order slip belonging to the previous customer.",
       "suggested_correction": "Immediately clear or disable the search window when the customer changes; delay only rebuilding its database-backed model.",
-      "status": "open"
+      "status": "completed",
+      "completed_date": "2026-11-10",
+      "resolution": "NewBill now disables its bill table, Submit button and existing search-results window while customerSelectionDelay is pending, then restores them in a finally block after the selected customer's results are loaded."
     },
     {
       "id": 7,

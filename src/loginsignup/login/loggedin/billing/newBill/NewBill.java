@@ -102,6 +102,14 @@ public class NewBill extends JFrame {
         this.customerName = customerName;
     }
 
+    private void setStateWhileTimerRunning(boolean enableState) {
+        billTable.setEnabled(enableState);
+        submitButton.setEnabled(enableState);
+        if (searchResultWindow != null) {
+            searchResultWindow.setEnabled(enableState);
+        }
+    }
+
     private String getStringValue(DefaultTableModel model, int row, int columnIndex, String defaultValue) {
         Object value = model.getValueAt(row, columnIndex);
         return (value != null && !value.toString().trim().isEmpty()) ? value.toString() : defaultValue;
@@ -826,26 +834,33 @@ public class NewBill extends JFrame {
         UtilityMethods.generateAndAddNames(customerComboBox);
         UtilityMethods.generateAndAddDates(dateComboBox, false);
         javax.swing.Timer customerSelectionDelay = new javax.swing.Timer(200, e -> {
-            if (customerComboBox.getSelectedIndex() == 0) {
-                if (searchResultWindow != null) {
-                    searchResultWindow.dispose();
-                    setExtendedState(JFrame.MAXIMIZED_BOTH);
-                    searchResultWindow = null;
+            try {
+                if (customerComboBox.getSelectedIndex() == 0) {
+                    if (searchResultWindow != null) {
+                        searchResultWindow.dispose();
+                        setExtendedState(JFrame.MAXIMIZED_BOTH);
+                        searchResultWindow = null;
+                    }
+                    return;
                 }
-                return;
+                setCustomerName(customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString());
+                if (searchResultWindow == null || !searchResultWindow.isVisible()) {
+                    searchResultWindow = new SearchResultWindow(INVENTORY_MODE, NewBill.this);
+                    searchResultWindow.setAutoRequestFocus(false);
+                    searchResultWindow.setVisible(true);
+                }
+                searchResultWindow.setComboBoxModel(searchResultWindow.generateSlipListModel(getCustomerName()));
+                searchResultWindow.setInventorySelected();
+                UtilityMethods.splitFrame(temp, searchResultWindow, UtilityMethods.HORIZONTAL_SPLIT);
+            } finally {
+                setStateWhileTimerRunning(true);
             }
-            setCustomerName(customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString());
-            if (searchResultWindow == null || !searchResultWindow.isVisible()) {
-                searchResultWindow = new SearchResultWindow(INVENTORY_MODE, NewBill.this);
-                searchResultWindow.setAutoRequestFocus(false);
-                searchResultWindow.setVisible(true);
-            }
-            searchResultWindow.setComboBoxModel(searchResultWindow.generateSlipListModel(getCustomerName()));
-            searchResultWindow.setInventorySelected();
-            UtilityMethods.splitFrame(temp, searchResultWindow, UtilityMethods.HORIZONTAL_SPLIT);
         });
         customerSelectionDelay.setRepeats(false);
-        customerComboBox.addActionListener(e -> customerSelectionDelay.restart());
+        customerComboBox.addActionListener(e -> {
+            setStateWhileTimerRunning(false);
+            customerSelectionDelay.restart();
+        });
 
     }
 
