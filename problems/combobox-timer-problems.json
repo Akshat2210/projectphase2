@@ -1,0 +1,110 @@
+{
+  "title": "Remaining combo-box timer problems",
+  "date_reviewed": "2026-11-10",
+  "status": "open",
+  "notes": "The CashTransaction null-date problem was fixed separately.",
+  "issues": [
+    {
+      "id": 1,
+      "title": "NewBill search source can process stale rows",
+      "file": "src/loginsignup/login/loggedin/billing/newBill/SearchResultWindow.java",
+      "timer": "selectionDelay",
+      "problem": "After selecting Inventory or an order slip, mode, orderSlipID and the table remain on the previous selection for 200 ms. Enter or double-click remains enabled during that period and can process a row from the previous source.",
+      "suggested_correction": "Update mode immediately and clear or disable the table before restarting the timer, or leave this selection immediate.",
+      "status": "open"
+    },
+    {
+      "id": 2,
+      "title": "PurchaseBill search can add a stale row",
+      "file": "src/loginsignup/login/loggedin/billing/purcahseBill/SearchResultWindow.java",
+      "timer": "selectionDelay",
+      "problem": "The old table remains actionable for 200 ms after the selection changes. Add Item, Enter and double-click can add a row from the previous result set.",
+      "suggested_correction": "Clear or disable the table immediately and re-enable it after refresh, or leave this selection immediate.",
+      "status": "open"
+    },
+    {
+      "id": 3,
+      "title": "Send source remains ready during the delay",
+      "file": "src/loginsignup/login/loggedin/processingmanagement/send/Send.java",
+      "timer": "sourceSelectionDelay",
+      "problem": "sourceItemsReady can remain true and the previous source table stays visible until the timer fires. The user can attempt to push an item from the previous source while the combo box shows the new source.",
+      "suggested_correction": "Immediately set sourceItemsReady to false, increment or invalidate the active request and clear the table; delay only loadSelectedSourceItems().",
+      "status": "open"
+    },
+    {
+      "id": 4,
+      "title": "ViewOrders actions remain available for the old order",
+      "file": "src/loginsignup/login/loggedin/ordermanagement/vieworders/ViewOrders.java",
+      "timer": "filterSelectionDelay",
+      "problem": "Customer and type filters change immediately, but the previous order stays active for 200 ms. Print, Delete, Next and Previous can operate while the filter and displayed order are inconsistent.",
+      "suggested_correction": "Disable order actions immediately and re-enable them after the filtered order loads, or keep these filters immediate.",
+      "status": "open"
+    },
+    {
+      "id": 5,
+      "title": "ViewCustomerBill can print the previous bill",
+      "file": "src/loginsignup/login/loggedin/billing/viewbills/ViewCustomerBill.java",
+      "timer": "customerSelectionDelay",
+      "problem": "The previous customer's bill remains displayed and printable for 200 ms after selecting another customer.",
+      "suggested_correction": "Disable Print and navigation immediately until loadBillData() finishes, or keep the customer filter immediate.",
+      "status": "open"
+    },
+    {
+      "id": 6,
+      "title": "NewBill customer change leaves the previous search results active",
+      "file": "src/loginsignup/login/loggedin/billing/newBill/NewBill.java",
+      "timer": "customerSelectionDelay",
+      "problem": "The previous customer's search or order-slip results remain available for 200 ms. A very quick selection can use an order slip belonging to the previous customer.",
+      "suggested_correction": "Immediately clear or disable the search window when the customer changes; delay only rebuilding its database-backed model.",
+      "status": "open"
+    },
+    {
+      "id": 7,
+      "title": "PurchaseBill customer label is temporarily stale",
+      "file": "src/loginsignup/login/loggedin/billing/purcahseBill/PurchaseBill.java",
+      "timer": "customerSelectionDelay",
+      "problem": "The existing search window can retain the previous customer's label for 200 ms. Inventory is not customer-specific, so the data risk is lower, but the UI is temporarily inconsistent.",
+      "suggested_correction": "Update the label or disable the search window immediately, then delay only the heavier work.",
+      "status": "open"
+    },
+    {
+      "id": 8,
+      "title": "Receive temporarily shows a different lot than the selected lot",
+      "file": "src/loginsignup/login/loggedin/processingmanagement/recieve/Recieve.java",
+      "timer": "lotSelectionDelay",
+      "problem": "The previous lot remains displayed for 200 ms after the combo selection changes. Saving is protected by the displayedLotId comparison, so a wrong-lot save is rejected, but the user can receive a confusing error.",
+      "suggested_correction": "Immediately disable Submit and clear or mark the old lot as loading before restarting the timer.",
+      "status": "open"
+    },
+    {
+      "id": 9,
+      "title": "Pending timers can fire after their window closes",
+      "affected_screens": [
+        "NewBill",
+        "NewBill SearchResultWindow",
+        "PurchaseBill",
+        "PurchaseBill SearchResultWindow",
+        "ViewCustomerBill",
+        "ViewOrders",
+        "ViewTransactions",
+        "Receive",
+        "Send",
+        "CashTransaction",
+        "SendDiary"
+      ],
+      "problem": "A combo change followed immediately by Back or Close can leave a pending timer that fires against a hidden or disposed window. This can cause unnecessary database queries and, on billing screens, can recreate or update child windows after the parent closes.",
+      "suggested_correction": "Store timers as fields and stop them during window cleanup, or begin each callback with an appropriate closed or displayability check.",
+      "status": "open"
+    }
+  ],
+  "currently_low_risk": [
+    {
+      "screen": "ViewTransactions",
+      "reason": "The delayed result is read-only. It still shares the pending-timer-after-close cleanup issue."
+    },
+    {
+      "screen": "SendDiary",
+      "reason": "The delayed result is read-only and its background requests are versioned. It still shares the pending-timer-after-close cleanup issue."
+    }
+  ]
+}
