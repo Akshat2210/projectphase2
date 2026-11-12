@@ -19,8 +19,7 @@ final class SignupDatabase {
         }
     }
 
-    static String loadSchema() throws IOException {
-        Path path = Path.of("src", "resources", "structure.sql");
+    static String loadSchema(Path path) throws IOException {
         if (Files.isRegularFile(path)) return Files.readString(path, StandardCharsets.UTF_8);
         InputStream resource = SignupDatabase.class.getResourceAsStream("/resources/structure.sql");
         if (resource == null) resource = SignupDatabase.class.getResourceAsStream("/structure.sql");

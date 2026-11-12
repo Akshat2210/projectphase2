@@ -1,6 +1,7 @@
 package loginsignup;
 
 import loginsignup.login.LOGIN;
+import loginsignup.portconfig.PortConfig;
 import loginsignup.signup.SignUp;
 import mainpack.MyClass;
 
@@ -18,9 +19,18 @@ public class LOGIN_SIGNUP extends JFrame{
     private JPanel panel;
     private JButton SIGNUPButton;
     private JButton QUITButton;
+    private JButton SETPORTCONFIGButton;
 
     public LOGIN_SIGNUP() {
 
+        SETPORTCONFIGButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                PortConfig portConfig=new PortConfig(LOGIN_SIGNUP.this, false);
+                portConfig.setVisible(true);
+                setVisible(false);
+            }
+        });
     }
     public void init(){
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

@@ -14,22 +14,32 @@ import loginsignup.login.loggedin.ordermanagement.OrderScreen;
 import loginsignup.login.loggedin.ordermanagement.generateorder.InventorySelect;
 import loginsignup.login.loggedin.ordermanagement.generateorder.OrderGenerateForm;
 import loginsignup.login.loggedin.transactionsandaccounts.TransactionsScreen;
+import loginsignup.portconfig.PortConfig;
 import loginsignup.signup.SignUp;
 import rootSettings.users.Users;
 import utils.UtilityMethods;
 
 import javax.swing.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static utils.CONSTANTS.*;
 
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class MyClass {
-    public static final String HOST = "100.111.73.120";
+    private static  DatabaseEndpoint DATABASE_ENDPOINT;
+    public static  String HOST ;
+    public static  String PORT ;
     public static final int TIMEOUT = 2000;
     public static final int CONNECTION_POOL_SIZE = 10;
     private static final Object CONNECTION_POOL_LOCK = new Object();
@@ -37,14 +47,82 @@ public class MyClass {
     // 1. Create the mapping once (you can do this statically or in constructor)
     public static Map<String, String> codeToItemName;
     public final static String TITLE = "GURUKRIPA JEWELLERS";
-    public static final String PORT = "3306";
     public static InventorySelect inventorySelect;
+
+     private static DatabaseEndpoint loadDatabaseEndpoint() {
+        try {
+            String json;
+            Path sourcePath = Path.of("src", "resources", "PORT.json");
+            if (Files.isRegularFile(sourcePath)) {
+                json = Files.readString(sourcePath, StandardCharsets.UTF_8);
+            } else {
+                InputStream resource = MyClass.class.getResourceAsStream("/resources/PORT.json");
+                if (resource == null) resource = MyClass.class.getResourceAsStream("/PORT.json");
+                if (resource == null) {
+                        new PortConfig(null,true).setVisible(true);
+                        return null;
+                }
+                try (InputStream input = resource) {
+                    json = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+                }
+            }
+
+            String host = readJsonString(json, "HOST").trim();
+            String port = readJsonString(json, "PORT").trim();
+            if (host.isEmpty()) throw new IllegalArgumentException("HOST cannot be empty.");
+
+            int portNumber;
+            try {
+                portNumber = Integer.parseInt(port);
+            } catch (NumberFormatException exception) {
+                throw new IllegalArgumentException("PORT must be a number.", exception);
+            }
+            if (portNumber < 1 || portNumber > 65535) {
+                throw new IllegalArgumentException("PORT must be between 1 and 65535.");
+            }
+            return new DatabaseEndpoint(host, String.valueOf(portNumber));
+        } catch (IOException | IllegalArgumentException exception) {
+            throw new ExceptionInInitializerError(
+                    "Could not load database endpoint from PORT.json: " + exception.getMessage());
+        }
+    }
+    public static void loadConfiguration(boolean startApp) {
+        DATABASE_ENDPOINT = loadDatabaseEndpoint();
+
+        if (DATABASE_ENDPOINT == null) {
+            return;
+        }
+
+        HOST = DATABASE_ENDPOINT.host;
+        PORT = DATABASE_ENDPOINT.port;
+        if(startApp)
+            startApp();
+    }
+    private static String readJsonString(String json, String key) {
+        Pattern pattern = Pattern.compile("\\\"" + Pattern.quote(key) + "\\\"\\s*:\\s*\\\"([^\\\"]*)\\\"");
+        Matcher matcher = pattern.matcher(json);
+        if (!matcher.find()) {
+            throw new IllegalArgumentException("Missing JSON value: " + key);
+        }
+        return matcher.group(1);
+    }
+
+    private static final class DatabaseEndpoint {
+        private final String host;
+        private final String port;
+
+        private DatabaseEndpoint(String host, String port) {
+            this.host = host;
+            this.port = port;
+        }
+    }
 
     public static void main(String[] args) {
 
         Runtime.getRuntime().addShutdownHook(
                 new Thread(MyClass::closeConnectionPool, "DatabasePoolShutdown")
         );
+
 
         {
             codeToItemName = new HashMap<>();
@@ -100,11 +178,19 @@ public class MyClass {
         UtilityMethods.printStartUp();
         UtilityMethods.printingThread.setDaemon(true);  // optional: will not block app from closing
         UtilityMethods.printingThread.start();
+        DATABASE_ENDPOINT= loadDatabaseEndpoint();
+        if(DATABASE_ENDPOINT!=null) {
+            HOST = DATABASE_ENDPOINT.host;
+            PORT = DATABASE_ENDPOINT.port;
+            startApp();
+        }
+
+    }
+    public static void startApp(){
         login_signup = new LOGIN_SIGNUP();
         login_signup.init();
         login_signup.setVisible(true);
     }
-
     public static Users users;
 
     public static Connection createConnection() throws SQLException {
@@ -113,6 +199,7 @@ public class MyClass {
         } catch (SQLException e) {
             SQLException databaseError = findDatabaseError(e);
             System.out.println("❌ Database Connection Failed!");
+            JOptionPane.showMessageDialog(null, e.getMessage(),"ERROR",JOptionPane.ERROR_MESSAGE);
             if (databaseError.getErrorCode() == SQL_INVALID_CREDENTIALS_ERROR) {
                 JOptionPane.showMessageDialog(null, "invalid userid/password");
             } else if (databaseError.getErrorCode() == SQL_INVALID_DATABASE_ERROR) {
