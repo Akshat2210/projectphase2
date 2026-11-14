@@ -28,6 +28,32 @@ public class ViewOrders extends JFrame {
     public ViewOrders() {
     }
 
+    // direction: 0 = first match, 1 = next, -1 = previous.
+    private void loadFilteredSlip(int direction) {
+        boolean customerSelected = customerComboBox.getSelectedIndex() > 0;
+        boolean typeSelected = panaTypeComboBox.getSelectedIndex() > 0;
+        String query = "SELECT slip_id FROM order_slips WHERE slip_id IS NOT NULL";
+        if (direction != 0) query += direction > 0 ? " AND slip_id > ?" : " AND slip_id < ?";
+        if (customerSelected) query += " AND customer_name = ?";
+        if (typeSelected) query += " AND slip_type = ?";
+        query += direction < 0 ? " ORDER BY slip_id DESC LIMIT 1" : " ORDER BY slip_id ASC LIMIT 1";
+        Integer selectedId = null;
+        try (Connection con = MyClass.createConnection(); PreparedStatement stmt = con.prepareStatement(query)) {
+            int parameter = 1;
+            if (direction != 0) stmt.setInt(parameter++, getCurrentBillID());
+            if (customerSelected) stmt.setString(parameter++, utils.TextNormalization.trimToEmpty(customerComboBox.getSelectedItem()));
+            if (typeSelected) stmt.setString(parameter, utils.TextNormalization.trimToEmpty(panaTypeComboBox.getSelectedItem()));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) selectedId = rs.getInt(1);
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Could not load order slip: " + ex.getMessage());
+            return;
+        }
+        if (selectedId != null) setCurrentBill(selectedId);
+        else if (direction == 0) setCurrentBill(-1);
+    }
+
     int id;
 
     public int getCurrentBillID() {
@@ -72,12 +98,12 @@ public class ViewOrders extends JFrame {
             try (ResultSet rs = stmt1.executeQuery(query)) {
                 while (rs.next()) {
                     count++;
-                    customerName = rs.getString("customer_name");
+                    customerName = utils.TextNormalization.trimNullable(rs.getString("customer_name"));
                     slipId = rs.getInt("slip_id");
-                    panaType = rs.getString("slip_type");
+                    panaType = utils.TextNormalization.trimNullable(rs.getString("slip_type"));
                     totalPlating = totalPlating.add(BigDecimal.valueOf(Double.parseDouble(rs.getString("plating_grams"))));
                     totalPlatingField.setText("total plating: " + totalPlating.setScale(3, RoundingMode.HALF_UP));
-                    model.addRow(new Object[]{rs.getString("design_id"), rs.getString("item_name"), rs.getInt("billed_quantity") + "/" + rs.getInt("quantity"), rs.getBigDecimal("plating_grams"), rs.getBigDecimal("raw_material_price"), rs.getString("other_details")});
+                    model.addRow(new Object[]{utils.TextNormalization.trimNullable(rs.getString("design_id")), utils.TextNormalization.trimNullable(rs.getString("item_name")), rs.getInt("billed_quantity") + "/" + rs.getInt("quantity"), rs.getBigDecimal("plating_grams"), rs.getBigDecimal("raw_material_price"), utils.TextNormalization.stripTrailingNullable(rs.getString("other_details"))});
                 }
             }
             if (count == 0) {
@@ -115,42 +141,7 @@ public class ViewOrders extends JFrame {
         setContentPane(panel);
         pack();
         javax.swing.Timer filterSelectionDelay = new javax.swing.Timer(200, e -> {
-            id = 1;
-            try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
-                String query;
-                query = "SELECT MIN(slip_id) FROM order_slips ";
-                if (!(customerComboBox.getSelectedIndex() == 0)) {
-                    query += "WHERE customer_name = \"" + Objects.requireNonNull(customerComboBox.getSelectedItem()) + "\" ";
-                    if (!(panaTypeComboBox.getSelectedIndex() == 0)) {
-                        query += "AND slip_type = \"" + Objects.requireNonNull(panaTypeComboBox.getSelectedItem()) + "\";";
-                    } else {
-                        query += ";";
-                    }
-                } else if (!(panaTypeComboBox.getSelectedIndex() == 0)) {
-                    query += "WHERE slip_type =\"" + Objects.requireNonNull(panaTypeComboBox.getSelectedItem()) + "\";";
-
-                } else query += ";";
-
-
-                try (ResultSet rs = stmt.executeQuery(query)) {
-                    if (rs.next()) {
-                        if (null != rs.getObject(1)) {
-                            System.out.println(id + " from if block");
-                            id = rs.getInt(1);
-                        } else {
-                            setCurrentBill(-1);
-                            return;
-                        }
-                    }
-                }
-
-                System.out.println(id + " is the new id");
-                setCurrentBill(id);
-                billIDLabel.setText("Bill id: " + id);
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
-            } catch (NullPointerException ignored) {
-            }
+            loadFilteredSlip(0);
         });
         filterSelectionDelay.setRepeats(false);
         customerComboBox.addActionListener(e -> filterSelectionDelay.restart());
@@ -161,72 +152,8 @@ public class ViewOrders extends JFrame {
             MyClass.orderScreen.setVisible(true);
         });
 
-        nextButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                int id = getCurrentBillID();
-                try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
-                    String query = getNextQuery(id);
-                    System.out.println("Generated Query: " + query);
-                    try (ResultSet resultSet = stmt.executeQuery(query)) {
-                        if (resultSet.next()) {
-                            setCurrentBill(Integer.parseInt(resultSet.getString("slip_id")));
-                        }
-                    }
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-
-
-            }
-
-            private String getNextQuery(int id) {
-                String query = "SELECT * FROM order_slips WHERE slip_id > " + id;
-
-                // Check if a customer is selected
-                if (customerComboBox.getSelectedIndex() != 0) {
-                    query += " AND customer_name = '" + Objects.toString(customerComboBox.getSelectedItem(), "") + "'";
-                }
-
-                // Check if a slip type is selected
-                if (panaTypeComboBox.getSelectedIndex() != 0) {
-                    query += " AND slip_type = '" + Objects.toString(panaTypeComboBox.getSelectedItem(), "") + "'";
-                }
-
-                query += " ORDER BY slip_id ASC LIMIT 1;"; // Ensuring we get the next slip_id
-                return query;
-            }
-        });
-        prevButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                int id = getCurrentBillID();
-                try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
-
-                    String query = "SELECT * FROM order_slips WHERE slip_id < " + id; // Get previous slips
-
-                    // Check if a customer is selected
-                    if (customerComboBox.getSelectedIndex() != 0) {
-                        query += " AND customer_name = '" + customerComboBox.getSelectedItem().toString() + "'";
-                    }
-
-                    // Check if a slip type is selected
-                    if (panaTypeComboBox.getSelectedIndex() != 0) {
-                        query += " AND slip_type = '" + panaTypeComboBox.getSelectedItem().toString() + "'";
-                    }
-
-                    query += " ORDER BY slip_id DESC LIMIT 1;"; // Ensuring we get the previous slip_id
-                    try (ResultSet resultSet = stmt.executeQuery(query)) {
-                        if (resultSet.next()) {
-                            setCurrentBill(Integer.parseInt(resultSet.getString("slip_id"))); // Set previous slip_id
-                        }
-                    }
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-
-            }
-        });
+        nextButton.addActionListener(e -> loadFilteredSlip(1));
+        prevButton.addActionListener(e -> loadFilteredSlip(-1));
         searchField.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -355,7 +282,7 @@ public class ViewOrders extends JFrame {
                                 int quantity = Integer.parseInt(quantityString.substring(separator + 1))
                                         - Integer.parseInt(quantityString.substring(0, separator));
                                 inventoryUpdateStatement.setInt(1, quantity);
-                                inventoryUpdateStatement.setString(2, designIDValue);
+                                inventoryUpdateStatement.setString(2, utils.TextNormalization.trimNullable(designIDValue));
                                 inventoryUpdateStatement.addBatch();
                                 System.out.println(designIDValue + " quantity is updated by increasing by " + quantity);
                             }
@@ -413,12 +340,12 @@ public class ViewOrders extends JFrame {
 
             try (ResultSet rs1 = stmt1.executeQuery("select type_name from ordertype;");) {
                 while (rs1.next()) {
-                    panaTypeComboBox.addItem(rs1.getString("type_name"));
+                    panaTypeComboBox.addItem(utils.TextNormalization.trimNullable(rs1.getString("type_name")));
                 }
             }
             try (ResultSet rs2 = stmt2.executeQuery("select customer_name from customers;");) {
                 while (rs2.next()) {
-                    customerComboBox.addItem(rs2.getString("customer_name"));
+                    customerComboBox.addItem(utils.TextNormalization.trimNullable(rs2.getString("customer_name")));
                 }
             }
 

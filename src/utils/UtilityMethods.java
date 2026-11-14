@@ -43,6 +43,12 @@ public class UtilityMethods {
     public static String parseString(Object object) {
         return Objects.toString(object, "");
     }
+    public static String trimToEmpty(Object object) {
+        return TextNormalization.trimToEmpty(object);
+    }
+    public static String stripTrailingToEmpty(Object object) {
+        return TextNormalization.stripTrailingToEmpty(object);
+    }
     public static String chooseFile() {
         JFileChooser chooser = new JFileChooser();
 
@@ -688,7 +694,7 @@ public class UtilityMethods {
         comboBox.addItem("Select Customer");
         try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
             try (ResultSet rs = stmt.executeQuery("SELECT customer_name FROM customers");) {
-                while (rs.next()) comboBox.addItem(rs.getString(1));
+                while (rs.next()) comboBox.addItem(utils.TextNormalization.trimNullable(rs.getString(1)));
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -902,7 +908,7 @@ public class UtilityMethods {
         try (PreparedStatement billNumberStatement =
                      con.prepareStatement(billNumberQuery)) {
 
-            billNumberStatement.setString(1, billType);
+            billNumberStatement.setString(1, utils.TextNormalization.trimNullable(billType));
 
             try (ResultSet resultSet = billNumberStatement.executeQuery()) {
 

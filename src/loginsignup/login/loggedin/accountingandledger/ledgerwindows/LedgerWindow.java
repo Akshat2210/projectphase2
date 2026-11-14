@@ -141,10 +141,10 @@ class GetData {
                         "order by coalesce (date,'')";
 
         try (Connection con = UtilityMethods.createConnection(); PreparedStatement pstmt = con.prepareStatement(query)) {
-            pstmt.setString(1, customerName);
-            pstmt.setString(2, customerName);
+            pstmt.setString(1, utils.TextNormalization.trimNullable(customerName));
+            pstmt.setString(2, utils.TextNormalization.trimNullable(customerName));
             pstmt.setBoolean(3, false);
-            pstmt.setString(4, customerName);
+            pstmt.setString(4, utils.TextNormalization.trimNullable(customerName));
             try (ResultSet rs = pstmt.executeQuery()) {
                 BigDecimal balance = BigDecimal.ZERO;
                 while (rs.next()) {
@@ -239,7 +239,7 @@ class GetData {
 
         try (Connection con = MyClass.createConnection();
              PreparedStatement statement = con.prepareStatement(query)) {
-            statement.setString(1, accountName);
+            statement.setString(1, utils.TextNormalization.trimNullable(accountName));
 
             try (ResultSet rs = statement.executeQuery()) {
                 BigDecimal balance = BigDecimal.ZERO;
@@ -251,7 +251,7 @@ class GetData {
                     Object transactionId = rs.getObject(JOURNAL_ENTRY_TRANSACTION_ID);
                     Object sourceId = billId == null ? transactionId : billId;
                     String entryLabel = "JE#" + rs.getInt(JOURNAL_ENTRY_ID) + "_" +
-                            rs.getString(JOURNAL_ENTRY_TRANSACTION_TYPE) + "_" +
+                            utils.TextNormalization.trimNullable(rs.getString(JOURNAL_ENTRY_TRANSACTION_TYPE)) + "_" +
                             (sourceId == null ? "N/A" : sourceId);
 
                     balance = balance.add(debit).subtract(credit);
@@ -315,14 +315,14 @@ class GetData {
                     Object transactionId = rs.getObject(JOURNAL_ENTRY_TRANSACTION_ID);
                     Object sourceId = billId == null ? transactionId : billId;
                     String entryLabel = "JE#" + rs.getInt(JOURNAL_ENTRY_ID) + "_" +
-                            rs.getString(JOURNAL_ENTRY_TRANSACTION_TYPE) + "_" +
+                            utils.TextNormalization.trimNullable(rs.getString(JOURNAL_ENTRY_TRANSACTION_TYPE)) + "_" +
                             (sourceId == null ? "N/A" : sourceId);
 
                     balance = balance.add(debit).subtract(credit);
                     tableModel.addRow(new String[]{
                             entryLabel,
                             date == null ? "" : UtilityMethods.parseDateString(date),
-                            rs.getString("corresponding_account"),
+                            utils.TextNormalization.trimNullable(rs.getString("corresponding_account")),
                             debit.signum() == 0 ? "" : debit.toPlainString(),
                             credit.signum() == 0 ? "" : credit.toPlainString(),
                             balance.toPlainString()
@@ -385,7 +385,7 @@ class GetData {
 
             // Opening stock row
             try (PreparedStatement openingStatement = con.prepareStatement(openingStockQuery)) {
-                openingStatement.setString(1, designID);
+                openingStatement.setString(1, utils.TextNormalization.trimNullable(designID));
 
                 try (ResultSet rs = openingStatement.executeQuery()) {
                     if (rs.next()) {
@@ -404,7 +404,7 @@ class GetData {
 
             // Bill and purchase movements
             try (PreparedStatement movementStatement = con.prepareStatement(movementQuery)) {
-                movementStatement.setString(1, designID);
+                movementStatement.setString(1, utils.TextNormalization.trimNullable(designID));
                 movementStatement.setBoolean(2, false);
 
                 try (ResultSet rs = movementStatement.executeQuery()) {

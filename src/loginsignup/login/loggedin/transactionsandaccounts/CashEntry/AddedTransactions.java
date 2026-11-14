@@ -36,7 +36,7 @@ public class AddedTransactions extends JFrame {
                 while (rs.next()) {
                     int id = rs.getInt("transaction_id");
                     java.sql.Date sqlDate = rs.getDate("date");
-                    String party = rs.getString("customer_name");
+                    String party = utils.TextNormalization.trimNullable(rs.getString("customer_name"));
                     double amount = rs.getDouble("amount");
 
                     // Depending on whether it's incoming or outgoing

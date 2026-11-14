@@ -1,7 +1,7 @@
 {
   "title": "Untrimmed database text issues",
-  "date_reviewed": "2026-11-11",
-  "status": "open",
+  "date_reviewed": "2026-11-14",
+  "status": "completed",
   "scope": "Java strings written to MySQL without normalization and database strings fetched without removing accidental surrounding spaces.",
   "policy": {
     "identity_fields": "Trim both leading and trailing whitespace for party names, design IDs, account names, order types, godown names and usernames before validation, lookup and storage.",
@@ -16,12 +16,24 @@
       "priority": "high",
       "direction": "write",
       "file": "src/loginsignup/login/loggedin/inventorymanagement/addinventory/AddInventory.java",
-      "methods": ["addData", "updateData"],
-      "lines_reviewed": [24, 26, 39, 76, 79, 80],
+      "methods": [
+        "addData",
+        "updateData"
+      ],
+      "lines_reviewed": [
+        24,
+        26,
+        39,
+        76,
+        79,
+        80
+      ],
       "details": "Design ID and item name are validated with trim(), but the original untrimmed text is written. Supplier selection is also written without normalization. The insert path additionally stores the literal supplier value 'hi   ' with trailing spaces.",
       "risk": "Design IDs can look identical while behaving inconsistently in Java maps and comparisons. Item and supplier names can display unwanted spaces.",
       "suggested_fix": "Create trimmed local values once before validation and use those same values for every INSERT, UPDATE and WHERE parameter. Remove or normalize the hard-coded supplier placeholder.",
-      "status": "open"
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged."
     },
     {
       "id": "TRIM-002",
@@ -29,12 +41,19 @@
       "priority": "high",
       "direction": "shared boundary",
       "file": "src/utils/UtilityMethods.java",
-      "methods": ["parseString"],
-      "lines_reviewed": [43, 44],
+      "methods": [
+        "parseString"
+      ],
+      "lines_reviewed": [
+        43,
+        44
+      ],
       "details": "parseString currently returns Objects.toString(object, \"\") without trimming. Multiple order, billing and lookup paths use this helper as if it returned normalized input.",
       "risk": "One shared helper propagates untrimmed customer names, design IDs, order types, item names and notes into database operations.",
       "suggested_fix": "Do not silently change parseString until all callers are reviewed. Add explicit helpers such as trimToEmpty(Object) and stripTrailingToEmpty(Object), then migrate identity-field callers first.",
-      "status": "open"
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Kept parseString raw for authentication/free-form compatibility. Added explicit trimToEmpty/stripTrailingToEmpty helpers and migrated affected order callers."
     },
     {
       "id": "TRIM-003",
@@ -42,12 +61,32 @@
       "priority": "high",
       "direction": "write and lookup",
       "file": "src/loginsignup/login/loggedin/billing/newBill/NewBill.java",
-      "methods": ["insertData", "init"],
-      "lines_reviewed": [137, 158, 195, 209, 237, 239, 253, 262, 283, 291, 298, 709, 823, 846],
+      "methods": [
+        "insertData",
+        "init"
+      ],
+      "lines_reviewed": [
+        137,
+        158,
+        195,
+        209,
+        237,
+        239,
+        253,
+        262,
+        283,
+        291,
+        298,
+        709,
+        823,
+        846
+      ],
       "details": "The selected customer, item name, order type and other-details text are not consistently normalized before bill, journal, customer-balance and transaction-link operations. Design ID is trimmed, but the related item and order text is not. Customer and order-type values fetched into combo boxes are also left unchanged.",
       "risk": "Customer balance or journal updates can miss a party when values contain spaces, and bill lines can retain inconsistent item/order text.",
       "suggested_fix": "Normalize the selected customer when setCustomerName is called, trim identity fields before preparing statements, and normalize fetched combo-box strings at load time. Use trailing-only normalization for free-form other details if desired.",
-      "status": "open"
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged."
     },
     {
       "id": "TRIM-004",
@@ -55,12 +94,25 @@
       "priority": "high",
       "direction": "write",
       "file": "src/loginsignup/login/loggedin/billing/purcahseBill/PurchaseBill.java",
-      "methods": ["insertData"],
-      "lines_reviewed": [83, 111, 123, 132, 157, 166, 185, 193],
+      "methods": [
+        "insertData"
+      ],
+      "lines_reviewed": [
+        83,
+        111,
+        123,
+        132,
+        157,
+        166,
+        185,
+        193
+      ],
       "details": "Design IDs are trimmed, but the selected supplier/customer and item names taken from the table are written without trimming to bills, billdetails, inventory, journalentry and customer balance lookups.",
       "risk": "The same purchase can update inventory correctly by design ID while creating mismatched party or item text elsewhere.",
       "suggested_fix": "Create normalized customerName and itemName values before any statement parameters are populated and reuse them throughout the transaction.",
-      "status": "open"
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged."
     },
     {
       "id": "TRIM-005",
@@ -68,12 +120,31 @@
       "priority": "high",
       "direction": "write",
       "file": "src/loginsignup/login/loggedin/ordermanagement/generateorder/OrderGenerateForm.java",
-      "methods": ["updateInventory", "pushSlipData"],
-      "lines_reviewed": [360, 389, 390, 397, 398, 404, 408, 409, 412, 413, 415, 416, 420],
+      "methods": [
+        "updateInventory",
+        "pushSlipData"
+      ],
+      "lines_reviewed": [
+        360,
+        389,
+        390,
+        397,
+        398,
+        404,
+        408,
+        409,
+        412,
+        413,
+        415,
+        416,
+        420
+      ],
       "details": "parseString does not trim. Customer name, order-slip type, design ID, item name and other details can therefore be stored with surrounding spaces in order_slips_main and order_slips. The inventory update also uses an untrimmed design ID.",
       "risk": "Order-slip customer filtering and later inventory or billing associations can become inconsistent.",
       "suggested_fix": "Use normalized local values for customer, order type, design ID and item name. Use stripTrailing for free-form other details if leading spaces must be retained.",
-      "status": "open"
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged."
     },
     {
       "id": "TRIM-006",
@@ -81,12 +152,26 @@
       "priority": "high",
       "direction": "write and lookup",
       "file": "src/loginsignup/login/loggedin/transactionsandaccounts/CashEntry/cashTransaction.java",
-      "methods": ["init"],
-      "lines_reviewed": [70, 145, 153, 185, 188, 200, 210, 282, 289],
+      "methods": [
+        "init"
+      ],
+      "lines_reviewed": [
+        70,
+        145,
+        153,
+        185,
+        188,
+        200,
+        210,
+        282,
+        289
+      ],
       "details": "Customer names loaded into and read from the party combo box are not normalized. The remark field is stored exactly as entered. The clear-account lookup checks customerName.trim().isEmpty() but sends the original value to SQL.",
       "risk": "Cash transactions and journal entries may use a spaced account name, and customer balance lookups can fail or target inconsistent records.",
       "suggested_fix": "Trim the selected customer immediately and reuse it for all statements. Apply stripTrailing or trim to the remark before storage and normalize customer names when loading the combo box.",
-      "status": "open"
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged."
     },
     {
       "id": "TRIM-007",
@@ -94,12 +179,19 @@
       "priority": "high",
       "direction": "fetch",
       "file": "src/utils/UtilityMethods.java",
-      "methods": ["generateAndAddNames"],
-      "lines_reviewed": [685, 691],
+      "methods": [
+        "generateAndAddNames"
+      ],
+      "lines_reviewed": [
+        685,
+        691
+      ],
       "details": "Customer names are added directly from ResultSet.getString(1). This method supplies customer selectors across billing and transaction screens.",
       "risk": "A legacy customer name with trailing spaces spreads into many later INSERT, UPDATE and WHERE parameters.",
       "suggested_fix": "Normalize each non-null customer name before adding it to the combo box. Long term, clean existing customer rows and enforce normalized writes at party creation and rename boundaries.",
-      "status": "open"
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged."
     },
     {
       "id": "TRIM-008",
@@ -107,12 +199,29 @@
       "priority": "high",
       "direction": "fetch, lookup and write",
       "file": "src/utils/DBStructure.java",
-      "methods": ["getStock", "getInventoryItemName", "getSellPrice", "getBuyPrice", "setBuyPrice", "getInventoryDesignIDs"],
-      "lines_reviewed": [205, 219, 221, 234, 254, 275, 291],
+      "methods": [
+        "getStock",
+        "getInventoryItemName",
+        "getSellPrice",
+        "getBuyPrice",
+        "setBuyPrice",
+        "getInventoryDesignIDs"
+      ],
+      "lines_reviewed": [
+        205,
+        219,
+        221,
+        234,
+        254,
+        275,
+        291
+      ],
       "details": "Design IDs supplied to helper queries are not trimmed, fetched item names are returned raw, and the design-ID list preserves database whitespace.",
       "risk": "Central inventory lookups can report not found for an otherwise valid identifier, while fetched spaced IDs can contaminate tables and selectors.",
       "suggested_fix": "Normalize incoming design IDs at the beginning of every public helper and normalize textual ResultSet values before returning them.",
-      "status": "open"
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged."
     },
     {
       "id": "TRIM-009",
@@ -128,7 +237,9 @@
       "details": "Design IDs, item names and supplier names are copied directly from ResultSet values into tables or list models without normalization.",
       "risk": "Trailing spaces remain visible or become part of selections later copied back into bills and orders.",
       "suggested_fix": "Normalize identifier and display-name columns immediately after ResultSet retrieval, preferably through a shared null-safe helper.",
-      "status": "open"
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged."
     },
     {
       "id": "TRIM-010",
@@ -136,12 +247,34 @@
       "priority": "high",
       "direction": "fetch and lookup",
       "file": "src/loginsignup/login/loggedin/ordermanagement/vieworders/ViewOrders.java",
-      "methods": ["setCurrentBill", "init", "filter and navigation listeners"],
-      "lines_reviewed": [75, 77, 80, 123, 125, 130, 188, 193, 210, 215, 416, 421, 438, 440, 445],
+      "methods": [
+        "setCurrentBill",
+        "init",
+        "filter and navigation listeners"
+      ],
+      "lines_reviewed": [
+        75,
+        77,
+        80,
+        123,
+        125,
+        130,
+        188,
+        193,
+        210,
+        215,
+        416,
+        421,
+        438,
+        440,
+        445
+      ],
       "details": "Customer and slip-type values are loaded and reused without trimming. Filter and navigation SQL also concatenates the selected raw values directly into SQL text.",
       "risk": "Spaced values can cause filters to miss records. Direct concatenation is also a separate SQL-injection and quoting concern.",
       "suggested_fix": "Normalize values when loading and selecting them, and replace concatenated filter text with PreparedStatement parameters.",
-      "status": "open"
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Normalized fetched filter names and replaced first/next/previous filter SQL concatenation with normalized PreparedStatement parameters."
     },
     {
       "id": "TRIM-011",
@@ -149,12 +282,34 @@
       "priority": "medium",
       "direction": "fetch and write",
       "file": "src/loginsignup/login/loggedin/processingmanagement/send/Send.java",
-      "methods": ["loadPresetRemarks", "savePresetRemark", "snapshotLot", "persistLot"],
-      "lines_reviewed": [505, 506, 553, 554, 555, 556, 560, 598, 599, 601, 1010, 1042, 1227, 1261],
+      "methods": [
+        "loadPresetRemarks",
+        "savePresetRemark",
+        "snapshotLot",
+        "persistLot"
+      ],
+      "lines_reviewed": [
+        505,
+        506,
+        553,
+        554,
+        555,
+        556,
+        560,
+        598,
+        599,
+        601,
+        1010,
+        1042,
+        1227,
+        1261
+      ],
       "details": "Most editable packet text is normalized through text(), but source design IDs copied into PacketItemSource and preset remarks fetched or saved directly can preserve spaces. nullableString also assumes its caller already normalized the value.",
       "risk": "Quick remarks can be duplicated by whitespace and forwarded item identifiers can retain legacy spaces.",
       "suggested_fix": "Normalize preset remarks at dialog acceptance and ResultSet retrieval. Normalize source identity fields when PacketItemSource is created, while keeping persistLot focused on already-validated snapshots.",
-      "status": "open"
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged."
     },
     {
       "id": "TRIM-012",
@@ -168,7 +323,9 @@
       "details": "Customer, packet remark, item name, item remark, godown name and user values are placed directly into fields, report models and diary objects from ResultSet strings.",
       "risk": "This is mainly a display and PDF formatting problem, but fetched values may later be reused in filters.",
       "suggested_fix": "Use null-safe normalization on fetched identity/display fields. Use trailing-only normalization for remarks if intentional leading spaces are supported.",
-      "status": "open"
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged."
     },
     {
       "id": "TRIM-013",
@@ -185,7 +342,9 @@
       "details": "Party names, remarks, account names and transaction-type text are displayed or reused directly from ResultSet values without consistent normalization.",
       "risk": "Trailing spaces can appear in tables, printed bills and account labels even after write-side fixes are introduced.",
       "suggested_fix": "Normalize textual identity and presentation values at ResultSet boundaries while leaving numeric and date strings unchanged.",
-      "status": "open"
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged."
     }
   ],
   "already_normalized_examples": [
@@ -213,5 +372,10 @@
       "file": "src/loginsignup/login/loggedin/transactionsandaccounts/journalEntry/JournalEntry.java",
       "details": "Amount and remark text are trimmed, and customer names fetched into the account set are trimmed."
     }
-  ]
+  ],
+  "validation": {
+    "source_compilation": "All Java sources compile with JDK 25 and configured libraries.",
+    "live_database": "Not performed; existing stored names have not been rewritten.",
+    "normalization_tests": "Null, blank, identifier trimming and descriptive leading-space preservation checked."
+  }
 }

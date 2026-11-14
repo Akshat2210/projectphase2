@@ -80,12 +80,12 @@ public class RecieveDiary extends JFrame {
                     try (PreparedStatement s = c.prepareStatement("SELECT g.godown_id,g.godown_name,p.godown_name FROM "
                             + DBStructure.GODOWNS_TABLE + " g LEFT JOIN " + DBStructure.GODOWNS_TABLE
                             + " p ON p.godown_id=g.parent_godown_id ORDER BY g.godown_name"); ResultSet r = s.executeQuery()) {
-                        while (r.next()) filters.godowns.add(new Option(r.getLong(1), godownName(r.getString(3), r.getString(2))));
+                        while (r.next()) filters.godowns.add(new Option(r.getLong(1), godownName(utils.TextNormalization.trimNullable(r.getString(3)), utils.TextNormalization.trimNullable(r.getString(2)))));
                     }
                     try (PreparedStatement s = c.prepareStatement("SELECT customer_name FROM " + DBStructure.CUSTOMERS_TABLE
                             + " WHERE customer_name IS NOT NULL AND TRIM(customer_name)<>'' UNION SELECT customer_name FROM "
                             + DBStructure.SEND_PACKETS_TABLE + " WHERE customer_name IS NOT NULL AND TRIM(customer_name)<>'' ORDER BY customer_name");
-                         ResultSet r = s.executeQuery()) { while (r.next()) filters.customers.add(r.getString(1)); }
+                         ResultSet r = s.executeQuery()) { while (r.next()) filters.customers.add(utils.TextNormalization.trimNullable(r.getString(1))); }
                 }
                 return filters;
             }
@@ -118,7 +118,7 @@ public class RecieveDiary extends JFrame {
                 else if (godown != null && godown.id != null) sql += " AND a.receiving_godown_id=?";
                 sql += " ORDER BY a.receive_action_id DESC";
                 try (Connection c = openConnection(); PreparedStatement s = c.prepareStatement(sql)) {
-                    if (customer != null) s.setString(1, customer);
+                    if (customer != null) s.setString(1, utils.TextNormalization.trimNullable(customer));
                     else if (godown != null && godown.id != null) s.setLong(1, godown.id);
                     try (ResultSet r = s.executeQuery()) {
                         while (r.next()) entries.add(new Option(r.getLong(1), "Receive " + r.getLong(1) + " / Lot " + r.getLong(2)));
@@ -171,25 +171,25 @@ public class RecieveDiary extends JFrame {
                         + " ORDER BY a.receive_action_id DESC,p.packet_number,p.send_packet_id,i.item_number,r.receive_item_id";
                 Map<Long, Entry> entries = new LinkedHashMap<>();
                 try (Connection c = openConnection(); PreparedStatement s = c.prepareStatement(sql)) {
-                    if (actionId != null) s.setLong(1, actionId); else s.setString(1, customer);
+                    if (actionId != null) s.setLong(1, actionId); else s.setString(1, utils.TextNormalization.trimNullable(customer));
                     try (ResultSet r = s.executeQuery()) {
                         while (r.next()) {
                             long id = r.getLong("receive_action_id"); Entry entry = entries.get(id);
                             if (entry == null) {
                                 entry = new Entry(); entry.id = id; entry.lot = r.getLong("send_lot_id");
-                                entry.date = r.getString("receive_date"); entry.user = r.getString("received_by_user");
-                                entry.remark = r.getString("receive_lot_remark");
-                                entry.godown = godownName(r.getString("parent_name"), r.getString("godown_name")); entries.put(id, entry);
+                                entry.date = r.getString("receive_date"); entry.user = utils.TextNormalization.trimNullable(r.getString("received_by_user"));
+                                entry.remark = utils.TextNormalization.stripTrailingNullable(r.getString("receive_lot_remark"));
+                                entry.godown = godownName(utils.TextNormalization.trimNullable(r.getString("parent_name")), utils.TextNormalization.trimNullable(r.getString("godown_name"))); entries.put(id, entry);
                             }
                             long packetId = r.getLong("send_packet_id"); if (r.wasNull()) continue;
                             Packet packet = entry.packets.get(packetId);
                             if (packet == null) {
                                 packet = new Packet(); packet.number = r.getInt("packet_number");
-                                packet.customer = r.getString("customer_name"); packet.remark = r.getString("packet_remark");
+                                packet.customer = utils.TextNormalization.trimNullable(r.getString("customer_name")); packet.remark = utils.TextNormalization.stripTrailingNullable(r.getString("packet_remark"));
                                 entry.packets.put(packetId, packet);
                             }
-                            packet.rows.add(new Object[]{r.getString("item_name"),r.getInt("sent_quantity"),r.getInt("received_quantity"),
-                                    r.getString("item_remark"),r.getString("receive_item_remark")});
+                            packet.rows.add(new Object[]{utils.TextNormalization.trimNullable(r.getString("item_name")),r.getInt("sent_quantity"),r.getInt("received_quantity"),
+                                    utils.TextNormalization.stripTrailingNullable(r.getString("item_remark")),utils.TextNormalization.stripTrailingNullable(r.getString("receive_item_remark"))});
                         }
                     }
                 }

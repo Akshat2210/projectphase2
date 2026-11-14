@@ -131,7 +131,7 @@ public class AALScreen extends JFrame {
         try(Connection con=MyClass.createConnection(); Statement statement=con.createStatement()) {
           try (ResultSet rs = statement.executeQuery(query)){
                 while (rs.next()) {
-                    model.addElement(rs.getString("DesignID") + "->" + rs.getString("itemname"));
+                    model.addElement(utils.TextNormalization.trimNullable(rs.getString("DesignID")) + "->" + utils.TextNormalization.trimNullable(rs.getString("itemname")));
                 }
             }itemList.setModel(model);
 
@@ -154,7 +154,7 @@ public class AALScreen extends JFrame {
             try(ResultSet rs = statement.executeQuery(query))
             {
                 while (rs.next()) {
-                    accounts.add(rs.getString(1).trim());
+                    accounts.add(utils.TextNormalization.trimToEmpty(rs.getString(1)));
                 }
             }
             for (String account : accounts) {

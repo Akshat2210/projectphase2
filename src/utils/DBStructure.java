@@ -202,7 +202,7 @@ public class DBStructure {
         String query = "select " + INVENTORY_TOTAL_QUANTITY + "+" + INVENTORY_OPENING_STOCK + " FROM " + INVENTORY_TABLE + " WHERE " + INVENTORY_DESIGN_ID + " = ?";
 
         try (Connection con = MyClass.createConnection(); PreparedStatement preparedStatement = con.prepareStatement(query)) {
-            preparedStatement.setString(1, designID);
+            preparedStatement.setString(1, utils.TextNormalization.trimNullable(designID));
             try (ResultSet rs = preparedStatement.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
                 else return NOT_FOUND;
@@ -216,9 +216,9 @@ public class DBStructure {
     public static String getInventoryItemName(String designID) {
         String query = "select " + INVENTORY_ITEM_NAME + " from " + INVENTORY_TABLE + " where " + INVENTORY_DESIGN_ID + " = ?";
         try (Connection con = MyClass.createConnection(); PreparedStatement pstmt = con.prepareStatement(query)) {
-            pstmt.setString(1, designID);
+            pstmt.setString(1, utils.TextNormalization.trimNullable(designID));
             try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) return rs.getString(1);
+                if (rs.next()) return utils.TextNormalization.trimNullable(rs.getString(1));
                 else return String.valueOf(NOT_FOUND);
             }
         } catch (SQLException e) {
@@ -231,7 +231,7 @@ public class DBStructure {
     public static BigDecimal getSellPrice(String designID) {
         String query = "select " + INVENTORY_SELL_PRICE + " from " + INVENTORY_TABLE + " WHERE " + INVENTORY_DESIGN_ID + " = ?";
         try (Connection con = MyClass.createConnection(); PreparedStatement pstmt = con.prepareStatement(query)) {
-            pstmt.setString(1, designID);
+            pstmt.setString(1, utils.TextNormalization.trimNullable(designID));
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     BigDecimal price = rs.getBigDecimal(1);
@@ -251,7 +251,7 @@ public class DBStructure {
     public static BigDecimal getBuyPrice(String designID) {
         String query = "select " + INVENTORY_BUY_PRICE + " from " + INVENTORY_TABLE + " WHERE " + INVENTORY_DESIGN_ID + " = ?";
         try (Connection con = MyClass.createConnection(); PreparedStatement pstmt = con.prepareStatement(query)) {
-            pstmt.setString(1, designID);
+            pstmt.setString(1, utils.TextNormalization.trimNullable(designID));
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     BigDecimal price = rs.getBigDecimal(1);
@@ -272,7 +272,7 @@ public class DBStructure {
         String query = "update " + INVENTORY_TABLE + " set " + INVENTORY_BUY_PRICE + " = ? where " + INVENTORY_DESIGN_ID + " = ?";
         try (Connection con = MyClass.createConnection(); PreparedStatement stmt = con.prepareStatement(query);) {
             stmt.setBigDecimal(1, price);
-            stmt.setString(2, designID);
+            stmt.setString(2, utils.TextNormalization.trimNullable(designID));
             stmt.executeUpdate();
 
         } catch (SQLException e) {
@@ -288,7 +288,7 @@ public class DBStructure {
         try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
             try (ResultSet rs = stmt.executeQuery(query)) {
                 while (rs.next()) {
-                    designIDs.add(rs.getString(INVENTORY_DESIGN_ID));
+                    designIDs.add(utils.TextNormalization.trimNullable(rs.getString(INVENTORY_DESIGN_ID)));
                 }
             }
             return designIDs;

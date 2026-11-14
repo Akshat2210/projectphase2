@@ -37,14 +37,14 @@ public final class OrderSlipPdf {
                         data.id = result.getInt("slip_id");
                         Timestamp date = result.getTimestamp("created_at");
                         data.date = date == null ? "" : date.toLocalDateTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
-                        data.customer = result.getString("customer_name");
-                        data.type = result.getString("slip_type");
+                        data.customer = utils.TextNormalization.trimNullable(result.getString("customer_name"));
+                        data.type = utils.TextNormalization.trimNullable(result.getString("slip_type"));
                     }
                     result.getLong("item_id");
                     if (!result.wasNull()) {
-                        data.rows.add(new String[]{result.getString("design_id"), result.getString("item_name"),
+                        data.rows.add(new String[]{utils.TextNormalization.trimNullable(result.getString("design_id")), utils.TextNormalization.trimNullable(result.getString("item_name")),
                                 result.getString("quantity"), result.getString("plating_grams"),
-                                result.getString("raw_material_price"), result.getString("other_details")});
+                                result.getString("raw_material_price"), utils.TextNormalization.stripTrailingNullable(result.getString("other_details"))});
                     }
                 }
             }

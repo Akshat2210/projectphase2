@@ -88,11 +88,11 @@ public class SearchResultWindow extends JFrame {
              PreparedStatement statement = connection.prepareStatement(query);
              ResultSet rows = statement.executeQuery()) {
             while (rows.next()) {
-                String designId = rows.getString(INVENTORY_DESIGN_ID);
+                String designId = utils.TextNormalization.trimNullable(rows.getString(INVENTORY_DESIGN_ID));
                 designId = designId == null ? "" : designId.trim();
                 int displayedQuantity = rows.getInt(INVENTORY_TOTAL_QUANTITY)
                         + pendingPurchases.getOrDefault(designId, 0);
-                model.addRow(new Object[]{designId, rows.getString(INVENTORY_ITEM_NAME),
+                model.addRow(new Object[]{designId, utils.TextNormalization.trimNullable(rows.getString(INVENTORY_ITEM_NAME)),
                         displayedQuantity, rows.getBigDecimal(INVENTORY_BUY_PRICE),
                         rows.getBigDecimal(INVENTORY_SELL_PRICE)});
             }

@@ -73,7 +73,7 @@ public class OrderGenerateForm extends JFrame {
             } catch (NumberFormatException e) {
                 oldQuantity = 0;
             }
-            oldDesignID = parseString(model.getValueAt(row, DESIGN_ID_INDEX));
+            oldDesignID = utils.TextNormalization.trimToEmpty(model.getValueAt(row, DESIGN_ID_INDEX));
         });
         setContentPane(panel);
         backButton.addActionListener(e -> {
@@ -237,7 +237,7 @@ public class OrderGenerateForm extends JFrame {
                 }
                 String cellContent;
                 try {
-                    cellContent = parseString(model.getValueAt(row, column));
+                    cellContent = utils.TextNormalization.trimToEmpty(model.getValueAt(row, column));
                 } catch (ArrayIndexOutOfBoundsException ex) {
                     ex.printStackTrace();
                     addModelListeners(listeners, model);
@@ -293,7 +293,7 @@ public class OrderGenerateForm extends JFrame {
                     refreshListOfDisabledCells();
                 }
                 orderSlipTable.repaint();
-                String designID = parseString(model.getValueAt(row, DESIGN_ID_INDEX));
+                String designID = utils.TextNormalization.trimToEmpty(model.getValueAt(row, DESIGN_ID_INDEX));
                 System.out.println();
                 if (oldDesignID.toUpperCase().contentEquals(designID.toUpperCase())) {
                     System.out.println("design id is not changed");
@@ -312,7 +312,7 @@ public class OrderGenerateForm extends JFrame {
         Vector<String> orderSlipType = new Vector<>();
         try (Connection con = MyClass.createConnection(); Statement statement = con.createStatement()) {
             try (ResultSet rs = statement.executeQuery("select " + ORDERTYPE_TYPE_NAME + " from " + ORDERTYPE_TABLE + ";")) {
-                while (rs.next()) orderSlipType.add(rs.getString("type_name"));
+                while (rs.next()) orderSlipType.add(utils.TextNormalization.trimNullable(rs.getString("type_name")));
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -357,7 +357,7 @@ public class OrderGenerateForm extends JFrame {
         try (PreparedStatement updateInventoryStatement = orderSlipConnectionObject.prepareStatement(query)) {
             for (int i = 0; i < orderSlipTable.getRowCount() - 1; i++) {
                 updateInventoryStatement.setInt(1, parseInt(orderSlipTable.getValueAt(i, QUANTITY_INDEX)));
-                updateInventoryStatement.setString(2, parseString(orderSlipTable.getValueAt(i, DESIGN_ID_INDEX)));
+                updateInventoryStatement.setString(2, utils.TextNormalization.trimToEmpty(orderSlipTable.getValueAt(i, DESIGN_ID_INDEX)));
                 updateInventoryStatement.addBatch();
             }
             updateInventoryStatement.executeBatch();
@@ -384,40 +384,40 @@ public class OrderGenerateForm extends JFrame {
                 JOptionPane.showMessageDialog(this, "Invalid Slip Data!", "Error", JOptionPane.ERROR_MESSAGE);
                 return CONSTANTS.FAIL_CODE;
             }
-            java.sql.Timestamp timestamp = java.sql.Timestamp.valueOf(LocalDateTime.parse(parseString(dateComboBox.getSelectedItem()) + " 00:00:00", DateTimeFormatter.ofPattern("dd-MM-yy HH:mm:ss")));
+            java.sql.Timestamp timestamp = java.sql.Timestamp.valueOf(LocalDateTime.parse(utils.TextNormalization.trimToEmpty(dateComboBox.getSelectedItem()) + " 00:00:00", DateTimeFormatter.ofPattern("dd-MM-yy HH:mm:ss")));
             updateOrderSlipsMainTableStatement.setTimestamp(1, timestamp);
-            updateOrderSlipsMainTableStatement.setString(2, parseString(orderSlipTypeComboBox.getSelectedItem()));
-            updateOrderSlipsMainTableStatement.setString(3, parseString(customerNameComboBox.getSelectedItem()));
+            updateOrderSlipsMainTableStatement.setString(2, utils.TextNormalization.trimToEmpty(orderSlipTypeComboBox.getSelectedItem()));
+            updateOrderSlipsMainTableStatement.setString(3, utils.TextNormalization.trimToEmpty(customerNameComboBox.getSelectedItem()));
             updateOrderSlipsMainTableStatement.setInt(4, getSlipID());
             updateOrderSlipsMainTableStatement.executeUpdate();
 
             for (int i = 0; i < rowCount - 1; i++) {
-                if (parseString(model.getValueAt(i, ITEM_NAME_INDEX)).trim().contentEquals(""))
+                if (utils.TextNormalization.trimToEmpty(model.getValueAt(i, ITEM_NAME_INDEX)).trim().contentEquals(""))
                     break;
-                String designId = parseString(model.getValueAt(i, DESIGN_ID_INDEX));
+                String designId = utils.TextNormalization.trimToEmpty(model.getValueAt(i, DESIGN_ID_INDEX));
                 String itemName = (String) model.getValueAt(i, ITEM_NAME_INDEX);
                 int quantity = parseInt((model.getValueAt(i, QUANTITY_INDEX)));
                 double platingGrams = parseDouble(model.getValueAt(i, PLATING_INDEX));
                 double rawMaterialCost = parseDouble((model.getValueAt(i, RAW_MATERIAL_COST_INDEX)));
                 String otherDetails;
                 try {
-                    otherDetails = parseString(model.getValueAt(i, OTHER_DETAILS_INDEX));
+                    otherDetails = utils.TextNormalization.stripTrailingToEmpty(model.getValueAt(i, OTHER_DETAILS_INDEX));
                 } catch (NullPointerException ex) {
                     otherDetails = "";
                 }
-                String customerName = parseString(customerNameComboBox.getSelectedItem());
-                String orderSlipType = parseString(orderSlipTypeComboBox.getSelectedItem());
+                String customerName = utils.TextNormalization.trimToEmpty(customerNameComboBox.getSelectedItem());
+                String orderSlipType = utils.TextNormalization.trimToEmpty(orderSlipTypeComboBox.getSelectedItem());
                 int sno = i + 1;
                 // Insert Query
-                slipDataStatement.setString(1, orderSlipType);
-                slipDataStatement.setString(2, customerName);
+                slipDataStatement.setString(1, utils.TextNormalization.trimNullable(orderSlipType));
+                slipDataStatement.setString(2, utils.TextNormalization.trimNullable(customerName));
                 slipDataStatement.setInt(3, getSlipID());
-                slipDataStatement.setString(4, designId);
-                slipDataStatement.setString(5, itemName);
+                slipDataStatement.setString(4, utils.TextNormalization.trimNullable(designId));
+                slipDataStatement.setString(5, utils.TextNormalization.trimNullable(itemName));
                 slipDataStatement.setInt(6, quantity);
                 slipDataStatement.setDouble(7, platingGrams);
                 slipDataStatement.setDouble(8, rawMaterialCost);
-                slipDataStatement.setString(9, otherDetails);
+                slipDataStatement.setString(9, utils.TextNormalization.stripTrailingNullable(otherDetails));
                 slipDataStatement.setInt(10, sno);
                 slipDataStatement.setTimestamp(11, timestamp);
                 slipDataStatement.addBatch();
@@ -439,7 +439,7 @@ public class OrderGenerateForm extends JFrame {
     private boolean isSlipValid() {
         int numberOfRows = orderSlipTable.getRowCount();
         for (int i = 0; i < numberOfRows - 1; i++) {
-            if (parseString(model.getValueAt(i, ITEM_NAME_INDEX)).trim().contentEquals("") || parseString(model.getValueAt(i, QUANTITY_INDEX)).trim().contentEquals(""))
+            if (utils.TextNormalization.trimToEmpty(model.getValueAt(i, ITEM_NAME_INDEX)).trim().contentEquals("") || utils.TextNormalization.trimToEmpty(model.getValueAt(i, QUANTITY_INDEX)).trim().contentEquals(""))
                 return false;
         }
         return true;
@@ -452,7 +452,7 @@ public class OrderGenerateForm extends JFrame {
     private void refreshListOfDisabledCells() {
         listOfDisabledCells.clear();
         for (int i = 0; i < model.getRowCount(); i++) {
-            String value = parseString(model.getValueAt(i, DESIGN_ID_INDEX));
+            String value = utils.TextNormalization.trimToEmpty(model.getValueAt(i, DESIGN_ID_INDEX));
             if (!value.isEmpty()) {
                 listOfDisabledCells.add(new Integer[]{i, ITEM_NAME_INDEX});
             }
@@ -476,7 +476,7 @@ public class OrderGenerateForm extends JFrame {
 
     private boolean isRowEmpty(int row) {
         for (int i = 0; i < model.getColumnCount(); i++) {
-            String value = parseString(model.getValueAt(row, i));
+            String value = utils.TextNormalization.trimToEmpty(model.getValueAt(row, i));
             if (!value.isEmpty()) return false;
         }
         return true;

@@ -146,7 +146,7 @@ public class InventorySelect extends JFrame {
 //        String inventoryUpdateQuery = "update " + INVENTORY_TABLE + " set " + INVENTORY_TOTAL_QUANTITY + " = " + INVENTORY_TOTAL_QUANTITY + "-? where " + INVENTORY_DESIGN_ID + " = ?";
 //        try (PreparedStatement preparedStatement = orderGenerateForm.getOrderSlipConnectionObject().prepareStatement(inventoryUpdateQuery)) {
 //            preparedStatement.setInt(1, quantity);
-//            preparedStatement.setString(2, designID);
+//            preparedStatement.setString(2, utils.TextNormalization.trimNullable(designID));
 //            return SUCCESS_CODE;
 //
 //        } catch (SQLException e) {
@@ -192,8 +192,8 @@ public class InventorySelect extends JFrame {
                 rowDesignIdMap.clear();
                int row=0;
                 while (rs.next()) {
-                    model.addRow(new String[]{rs.getString(INVENTORY_DESIGN_ID), rs.getString(INVENTORY_ITEM_NAME), rs.getString(INVENTORY_TOTAL_QUANTITY)});
-                    rowDesignIdMap.put(rs.getString(INVENTORY_DESIGN_ID).toUpperCase(), row++);
+                    model.addRow(new String[]{utils.TextNormalization.trimNullable(rs.getString(INVENTORY_DESIGN_ID)), utils.TextNormalization.trimNullable(rs.getString(INVENTORY_ITEM_NAME)), rs.getString(INVENTORY_TOTAL_QUANTITY)});
+                    rowDesignIdMap.put(utils.TextNormalization.trimNullable(rs.getString(INVENTORY_DESIGN_ID)).toUpperCase(), row++);
                 }
             }
         } catch (SQLException e) {

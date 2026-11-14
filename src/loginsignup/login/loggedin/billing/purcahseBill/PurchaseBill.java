@@ -73,7 +73,7 @@ public class PurchaseBill extends JFrame {
         designID = designID == null ? "" : designID.trim();
         String query = "SELECT 1 FROM " + INVENTORY_TABLE + " WHERE TRIM(" + INVENTORY_DESIGN_ID + ") = ? LIMIT 1";
         try (PreparedStatement stmt = con.prepareStatement(query)) {
-            stmt.setString(1, designID);
+            stmt.setString(1, utils.TextNormalization.trimNullable(designID));
             try (ResultSet rs = stmt.executeQuery()) {
                 return rs.next(); // true if at least one row is found
             }
@@ -86,7 +86,7 @@ public class PurchaseBill extends JFrame {
 
     boolean insertData() {
 
-        String customerName = customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString();
+        String customerName = utils.TextNormalization.trimToEmpty(customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString());
         String billDetailsTableQuery = "INSERT INTO " + BILLDETAILS_TABLE + " (" + BILLDETAILS_BILL_ID + ", " + BILLDETAILS_SNO + ", " + BILLDETAILS_DESIGN_ID + ", " + BILLDETAILS_ITEM_NAME + ", " + BILLDETAILS_QUANTITY + ", " + BILLDETAILS_RAW_COST + ", " + BILLDETAILS_TOTAL_FINAL_COST + ", " + "" + BILLDETAILS_ORDER_TYPE + ", " + BILLDETAILS_LABOUR_COST + ", " + BILLDETAILS_TOTAL_BASE_COSTING + ", " + BILLDETAILS_GOLD_RATE + ", " + BILLDETAILS_GOLD_PLATING_WEIGHT + ", " + BILLDETAILS_TOTAL_GOLD_COST + ") " + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         String billsTableQuery = "UPDATE " + BILLS_TABLE + " SET " + BILLS_DATE + " = ?, " + BILLS_CUSTOMER_NAME + " = ?, " + BILLS_BILL_NUMBER + " = ? " + "WHERE " + BILLS_BILL_ID + " = ?";
         String updateInventoryQuery = "UPDATE " + INVENTORY_TABLE + " SET " + INVENTORY_TOTAL_QUANTITY + " = " + INVENTORY_TOTAL_QUANTITY + " + ? WHERE TRIM(" + INVENTORY_DESIGN_ID + ") = ?";
@@ -108,7 +108,7 @@ public class PurchaseBill extends JFrame {
             int billNumber = UtilityMethods.getBillNumber(con, CONSTANTS.PURCHASE_ENUM);
 
             billsTableStatement.setTimestamp(1, Timestamp.valueOf(UtilityMethods.getDate(dateComboBox.getSelectedItem())));
-            billsTableStatement.setString(2, customerName);
+            billsTableStatement.setString(2, utils.TextNormalization.trimNullable(customerName));
             billsTableStatement.setInt(3, billNumber);
             billsTableStatement.setInt(4, billid);
             BigDecimal grandTotal = BigDecimal.ZERO;
@@ -121,15 +121,15 @@ public class PurchaseBill extends JFrame {
                 Object totalCostObj = model.getValueAt(i, totalIndex);
                 int sno = snoObj == null ? 0 : Integer.parseInt(snoObj.toString());
                 String designID = designIDObj == null ? "" : designIDObj.toString().trim();
-                String itemName = itemNameObj == null ? "" : itemNameObj.toString();
+                String itemName = utils.TextNormalization.trimToEmpty(itemNameObj);
                 int quantity = quantityObj == null || quantityObj.toString().isEmpty() ? 0 : Integer.parseInt(quantityObj.toString());
                 BigDecimal rawCost = rawCostObj == null ? BigDecimal.ZERO : new BigDecimal(rawCostObj.toString());
                 BigDecimal totalCost = totalCostObj == null || totalCostObj.toString().isEmpty() ? BigDecimal.ZERO : new BigDecimal(totalCostObj.toString());
                 
                 billStmt.setInt(1, getBillid());
                 billStmt.setInt(2, sno);
-                billStmt.setString(3, designID);
-                billStmt.setString(4, itemName);
+                billStmt.setString(3, utils.TextNormalization.trimNullable(designID));
+                billStmt.setString(4, utils.TextNormalization.trimNullable(itemName));
                 billStmt.setInt(5, -quantity);
                 billStmt.setBigDecimal(6, rawCost);
                 billStmt.setBigDecimal(7, totalCost.negate());
@@ -151,19 +151,19 @@ public class PurchaseBill extends JFrame {
                 if (designIDexists(designID)) {
                     if (designID.contentEquals("")) continue;
                     updateStmt.setInt(1, quantity);
-                    updateStmt.setString(2, designID);
+                    updateStmt.setString(2, utils.TextNormalization.trimNullable(designID));
                     updateRawPriceStatement.setBigDecimal(1, price);
                     updateRawPriceStatement.setBigDecimal(2, sellPrice);
-                    updateRawPriceStatement.setString(3, itemName);
-                    updateRawPriceStatement.setString(4, designID);
+                    updateRawPriceStatement.setString(3, utils.TextNormalization.trimNullable(itemName));
+                    updateRawPriceStatement.setString(4, utils.TextNormalization.trimNullable(designID));
                     updateRawPriceStatement.addBatch();
                     updateStmt.addBatch();
 
                 } else {
                     if (designID.contentEquals("")) continue;
-                    insertStmt.setString(1, designID);
+                    insertStmt.setString(1, utils.TextNormalization.trimNullable(designID));
                     insertStmt.setInt(2, quantity);
-                    insertStmt.setString(3, itemName);
+                    insertStmt.setString(3, utils.TextNormalization.trimNullable(itemName));
                     insertStmt.setBigDecimal(4, price);
                     insertStmt.setBigDecimal(5, sellPrice);
                     insertStmt.addBatch();
@@ -182,7 +182,7 @@ public class PurchaseBill extends JFrame {
 
             journalEntryStatement.setString(1, CONSTANTS.PURCHASE_ENUM);
             journalEntryStatement.setDate(2, java.sql.Date.valueOf(UtilityMethods.getDate(dateComboBox.getSelectedItem()).toLocalDate()));
-            journalEntryStatement.setString(3, customerName);
+            journalEntryStatement.setString(3, utils.TextNormalization.trimNullable(customerName));
             journalEntryStatement.setInt(4, getBillid());
             journalEntryStatement.setNull(5, Types.INTEGER);
             journalEntryStatement.setBigDecimal(6, grandTotal);
@@ -190,7 +190,7 @@ public class PurchaseBill extends JFrame {
             journalEntryStatement.addBatch();
 
             customersTableStatement.setBigDecimal(1, grandTotal);
-            customersTableStatement.setString(2, customerName);
+            customersTableStatement.setString(2, utils.TextNormalization.trimNullable(customerName));
             customersTableStatement.executeUpdate();
             billsTableStatement.executeUpdate();
             billStmt.executeBatch();
@@ -532,10 +532,10 @@ public class PurchaseBill extends JFrame {
         designID = designID == null ? "" : designID.trim();
         String query = "select * from " + INVENTORY_TABLE + " where TRIM(" + INVENTORY_DESIGN_ID + ")=?";
         try (PreparedStatement preparedStatement = con.prepareStatement(query)) {
-            preparedStatement.setString(1, designID);
+            preparedStatement.setString(1, utils.TextNormalization.trimNullable(designID));
             ResultSet rs = preparedStatement.executeQuery();
             if (rs.next()) {
-                model.setValueAt(rs.getString(INVENTORY_ITEM_NAME), row, itemNameIndex);
+                model.setValueAt(utils.TextNormalization.trimNullable(rs.getString(INVENTORY_ITEM_NAME)), row, itemNameIndex);
                 model.setValueAt(rs.getString(INVENTORY_BUY_PRICE), row, rawCostIndex);
                 setDefaultSellPrice(row);
             }

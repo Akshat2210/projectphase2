@@ -67,7 +67,7 @@ public class cashTransaction extends JFrame {
         try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
             try (ResultSet rs = stmt.executeQuery(Query);) {
                 while (rs.next()) {
-                    comboBox.addItem(rs.getString(1));
+                    comboBox.addItem(utils.TextNormalization.trimNullable(rs.getString(1)));
                 }
             }
         } catch (SQLException e) {
@@ -150,7 +150,7 @@ public class cashTransaction extends JFrame {
                         return;
                     }
 
-                    String customerName = partyNameComboBox.getSelectedItem() == null ? "" : partyNameComboBox.getSelectedItem().toString();
+                    String customerName = utils.TextNormalization.trimToEmpty(partyNameComboBox.getSelectedItem() == null ? "" : partyNameComboBox.getSelectedItem().toString());
                     if (customerName.isEmpty() || partyNameComboBox.getSelectedIndex() == 0) {
                         JOptionPane.showMessageDialog(cashTransaction.this, "select valid party name");
                         return;
@@ -182,10 +182,10 @@ public class cashTransaction extends JFrame {
                                 PreparedStatement journalEntryStatement = con.prepareStatement(journalEntryQuery);
                         ) {
                             con.setAutoCommit(false);
-                            transactionStatement.setString(1, customerName);
+                            transactionStatement.setString(1, utils.TextNormalization.trimNullable(customerName));
                             transactionStatement.setDouble(2, amount);
                             transactionStatement.setDate(3, sqlDate);
-                            transactionStatement.setString(4, remark);
+                            transactionStatement.setString(4, utils.TextNormalization.stripTrailingNullable(remark));
                             transactionStatement.executeUpdate();
 
                             int transactionId;
@@ -197,7 +197,7 @@ public class cashTransaction extends JFrame {
                             }
 
                             customerStatement.setDouble(1, amount);
-                            customerStatement.setString(2, customerName);
+                            customerStatement.setString(2, utils.TextNormalization.trimNullable(customerName));
                             if (customerStatement.executeUpdate() != 1) {
                                 throw new SQLException("Could not update the selected party's balance.");
                             }
@@ -207,7 +207,7 @@ public class cashTransaction extends JFrame {
                             // The party account is credited for cash received and debited for cash paid.
                             journalEntryStatement.setString(1, "payments");
                             journalEntryStatement.setDate(2, sqlDate);
-                            journalEntryStatement.setString(3, customerName);
+                            journalEntryStatement.setString(3, utils.TextNormalization.trimNullable(customerName));
                             journalEntryStatement.setNull(4, Types.INTEGER);
                             journalEntryStatement.setInt(5, transactionId);
                             journalEntryStatement.setDouble(6, inRadioButton.isSelected() ? journalAmount : 0);
@@ -279,14 +279,14 @@ public class cashTransaction extends JFrame {
         clearAccountButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String customerName = partyNameComboBox.getSelectedItem() != null ? partyNameComboBox.getSelectedItem().toString() : "";
+                String customerName = utils.TextNormalization.trimToEmpty(partyNameComboBox.getSelectedItem() != null ? partyNameComboBox.getSelectedItem().toString() : "");
                 if (partyNameComboBox.getSelectedIndex() <= 0 || customerName.trim().isEmpty()) {
                     JOptionPane.showMessageDialog(cashTransaction.this, "Select a valid party first.");
                     return;
                 }
                 try (Connection con = MyClass.createConnection();
                      PreparedStatement statement = con.prepareStatement(CLEAR_ACCOUNT_BALANCE_QUERY)) {
-                    statement.setString(1, customerName);
+                    statement.setString(1, utils.TextNormalization.trimNullable(customerName));
                     BigDecimal balance;
                     try (ResultSet rs = statement.executeQuery()) {
                         if (!rs.next()) {

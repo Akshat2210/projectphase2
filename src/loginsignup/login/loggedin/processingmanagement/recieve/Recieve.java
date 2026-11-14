@@ -137,7 +137,7 @@ public class Recieve extends JFrame {
                         constraints.gridx = 1;
                         constraints.weightx = 1;
                         constraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-                        JTextField customer = new JTextField(results.getString("customer_name"));
+                        JTextField customer = new JTextField(utils.TextNormalization.trimNullable(results.getString("customer_name")));
                         customer.setEditable(false);
                         details.add(customer, constraints);
                         constraints.gridx = 0;
@@ -148,7 +148,7 @@ public class Recieve extends JFrame {
                         constraints.gridx = 1;
                         constraints.weightx = 1;
                         constraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-                        JTextField remark = new JTextField(results.getString("packet_remark"));
+                        JTextField remark = new JTextField(utils.TextNormalization.stripTrailingNullable(results.getString("packet_remark")));
                         remark.setEditable(false);
                         details.add(remark, constraints);
                         packet.add(details, java.awt.BorderLayout.NORTH);
@@ -183,8 +183,8 @@ public class Recieve extends JFrame {
                     }
                     long itemId = results.getLong("send_item_id");
                     if (!results.wasNull()) {
-                        items.addRow(new Object[]{results.getString("item_name"),
-                                results.getInt("sent_quantity"), results.getString("item_remark"), 0});
+                        items.addRow(new Object[]{utils.TextNormalization.trimNullable(results.getString("item_name")),
+                                results.getInt("sent_quantity"), utils.TextNormalization.stripTrailingNullable(results.getString("item_remark")), 0});
                         JPanel packet = (JPanel) packets.getComponent(packets.getComponentCount() - 2);
                         JTable table = (JTable) packet.getClientProperty("itemTable");
                         @SuppressWarnings("unchecked")
@@ -297,7 +297,7 @@ public class Recieve extends JFrame {
                     action.setLong(1, displayedLotId);
                     action.setDate(2, java.sql.Date.valueOf(receiveDate));
                     action.setInt(3, group.getKey());
-                    action.setString(4, MyClass.login.getLoginID());
+                    action.setString(4, utils.TextNormalization.trimNullable(MyClass.login.getLoginID()));
                     action.setNull(5, java.sql.Types.VARCHAR);
                     action.executeUpdate();
                     long actionId;
@@ -396,11 +396,11 @@ public class Recieve extends JFrame {
             try (ResultSet result = statement.executeQuery()) {
                 while (result.next()) rows.add(new ReceivePrintRow(
                         result.getLong("receive_action_id"), result.getLong("send_lot_id"),
-                        result.getDate("receive_date").toLocalDate(), result.getString("received_by_user"),
-                        result.getString("godown_name"), result.getLong("send_packet_id"),
-                        result.getInt("packet_number"), result.getString("customer_name"),
-                        result.getString("packet_remark"), result.getString("item_name"),
-                        result.getInt("sent_quantity"), result.getString("item_remark"),
+                        result.getDate("receive_date").toLocalDate(), utils.TextNormalization.trimNullable(result.getString("received_by_user")),
+                        utils.TextNormalization.trimNullable(result.getString("godown_name")), result.getLong("send_packet_id"),
+                        result.getInt("packet_number"), utils.TextNormalization.trimNullable(result.getString("customer_name")),
+                        utils.TextNormalization.stripTrailingNullable(result.getString("packet_remark")), utils.TextNormalization.trimNullable(result.getString("item_name")),
+                        result.getInt("sent_quantity"), utils.TextNormalization.stripTrailingNullable(result.getString("item_remark")),
                         result.getInt("received_quantity")));
             }
         }

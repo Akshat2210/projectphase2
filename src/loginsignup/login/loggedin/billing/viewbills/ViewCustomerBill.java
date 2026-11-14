@@ -188,7 +188,7 @@ public class ViewCustomerBill extends JFrame {
         try (Connection con = MyClass.createConnection(); PreparedStatement stmt = con.prepareStatement(query)) {
             if (customerNameComboBox.getSelectedIndex() != 0) {
                 customerName = customerNameComboBox.getSelectedItem() == null ? "" : customerNameComboBox.getSelectedItem().toString();
-                stmt.setString(1, customerName);
+                stmt.setString(1, utils.TextNormalization.trimNullable(customerName));
             }
             try (ResultSet rs = stmt.executeQuery();
             ) {
@@ -207,7 +207,7 @@ public class ViewCustomerBill extends JFrame {
         try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
             ResultSet rs = stmt.executeQuery(query);
             customerNameComboBox.addItem("Select Customer");
-            while (rs.next()) customerNameComboBox.addItem(rs.getString(1));
+            while (rs.next()) customerNameComboBox.addItem(utils.TextNormalization.trimNullable(rs.getString(1)));
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -247,7 +247,7 @@ public class ViewCustomerBill extends JFrame {
                     TableColumnModel columnModel = table.getColumnModel();
 
                     row.set(columnModel.getColumnIndex("S.No"), rs.getString("SNo"));
-                    row.set(columnModel.getColumnIndex("item"), rs.getString("ItemName"));
+                    row.set(columnModel.getColumnIndex("item"), utils.TextNormalization.trimNullable(rs.getString("ItemName")));
                     row.set(columnModel.getColumnIndex("Quantity"), rs.getString("Quantity"));
                     row.set(columnModel.getColumnIndex("Gold (g)"), rs.getString("GoldPlatingWeight"));
                     row.set(columnModel.getColumnIndex("Plus G"), rs.getString("TotalBaseCosting"));
@@ -283,7 +283,7 @@ public class ViewCustomerBill extends JFrame {
                 try (ResultSet rs = billsStatement.executeQuery()) {
                     if (rs.next()) {
                         setDateTime(rs.getTimestamp("date"));
-                        setCustomerName(rs.getString("customer_name"));
+                        setCustomerName(utils.TextNormalization.trimNullable(rs.getString("customer_name")));
                         billNumber=rs.getInt(DBStructure.BILLS_BILL_NUMBER);
                     }
                 }
@@ -316,12 +316,12 @@ public class ViewCustomerBill extends JFrame {
             {
                 directJournalStatement.setInt(1, billID);
                 directJournalStatement.setString(2, CONSTANTS.DIRECT_JOURNAL_ENUM);
-                directJournalStatement.setString(3, getCustomerName());
+                directJournalStatement.setString(3, utils.TextNormalization.trimNullable(getCustomerName()));
                 try (ResultSet rs = directJournalStatement.executeQuery()) {
                     while (rs.next()) {
                         BigDecimal adjustment = rs.getBigDecimal("balance_adjustment");
                         if (adjustment == null) adjustment = BigDecimal.ZERO;
-                        String remark = rs.getString(DBStructure.JOURNAL_ENTRY_REMARK);
+                        String remark = utils.TextNormalization.stripTrailingNullable(rs.getString(DBStructure.JOURNAL_ENTRY_REMARK));
                         java.util.Date journalDate = new SimpleDateFormat("yyyy-MM-dd").parse(
                                 rs.getString(DBStructure.JOURNAL_ENTRY_DATE));
                         String dateFormatted = new SimpleDateFormat("dd-MM-yy").format(journalDate);

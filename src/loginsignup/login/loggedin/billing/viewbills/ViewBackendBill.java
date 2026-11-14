@@ -93,11 +93,11 @@ public class ViewBackendBill extends JFrame {
                 stmt.setInt(1, curBillID);
                 int paramIndex = 2;
                 if (customerComboBox.getSelectedIndex() != 0) {
-                    stmt.setString(paramIndex++, customerComboBox.getSelectedItem().toString());
+                    stmt.setString(paramIndex++, utils.TextNormalization.trimNullable(customerComboBox.getSelectedItem().toString()));
                 }
 
                 if (dateComboBox.getSelectedIndex() != 0) {
-                    stmt.setString(paramIndex, dateComboBox.getSelectedItem().toString());
+                    stmt.setString(paramIndex, utils.TextNormalization.trimNullable(dateComboBox.getSelectedItem().toString()));
                 }
 
                 try (ResultSet rs = stmt.executeQuery();
@@ -130,11 +130,11 @@ public class ViewBackendBill extends JFrame {
                 stmt.setInt(1, curBillID);
                 int paramIndex = 2;
                 if (customerComboBox.getSelectedIndex() != 0) {
-                    stmt.setString(paramIndex++, customerComboBox.getSelectedItem().toString());
+                    stmt.setString(paramIndex++, utils.TextNormalization.trimNullable(customerComboBox.getSelectedItem().toString()));
                 }
 
                 if (dateComboBox.getSelectedIndex() != 0) {
-                    stmt.setString(paramIndex, dateComboBox.getSelectedItem().toString());
+                    stmt.setString(paramIndex, utils.TextNormalization.trimNullable(dateComboBox.getSelectedItem().toString()));
                 }
 
                 try(ResultSet rs = stmt.executeQuery();){
@@ -202,9 +202,9 @@ public class ViewBackendBill extends JFrame {
                     Vector<String> row = new Vector<>();
                     row.add(rs.getString("SNo") == null ? "" : rs.getString("SNo")); // SNo
                     row.add(rs.getString("OrderSlipNumber") == null ? "" : rs.getString("OrderSlipNumber")); // OrderSlip/quantity
-                    row.add(rs.getString("ItemName") == null ? "" : rs.getString("ItemName")); // ItemName
+                    row.add(utils.TextNormalization.trimNullable(rs.getString("ItemName")) == null ? "" : utils.TextNormalization.trimNullable(rs.getString("ItemName"))); // ItemName
                     row.add(rs.getString("Quantity") == null ? "0" : rs.getString("Quantity")); // Quantity
-                    row.add(rs.getString("DesignID") == null ? "" : rs.getString("DesignID")); // DesignID
+                    row.add(utils.TextNormalization.trimNullable(rs.getString("DesignID")) == null ? "" : utils.TextNormalization.trimNullable(rs.getString("DesignID"))); // DesignID
                     row.add(rs.getString("LabourCost") == null ? "0" : rs.getString("LabourCost")); // L
                     row.add(rs.getString("RawCost") == null ? "0" : rs.getString("RawCost")); // Raw
                     row.add(rs.getString("DullChillaiCost") == null ? "0" : rs.getString("DullChillaiCost")); // DC
@@ -212,7 +212,7 @@ public class ViewBackendBill extends JFrame {
                     row.add(rs.getString("RhodiumCost") == null ? "0" : rs.getString("RhodiumCost")); // Rh
                     row.add(rs.getString("NagSettingCost") == null ? "0" : rs.getString("NagSettingCost")); // Nag
                     row.add(rs.getString("OtherBaseCosts") == null ? "0" : rs.getString("OtherBaseCosts")); // Other
-                    row.add(rs.getString("OtherBaseCostNotes") == null ? "" : rs.getString("OtherBaseCostNotes")); // OtherDetails
+                    row.add(utils.TextNormalization.stripTrailingNullable(rs.getString("OtherBaseCostNotes")) == null ? "" : utils.TextNormalization.stripTrailingNullable(rs.getString("OtherBaseCostNotes"))); // OtherDetails
                     row.add(rs.getString("TotalBaseCosting") == null ? "0" : rs.getString("TotalBaseCosting")); // +G
                     row.add(rs.getString("GoldPlatingWeight") == null ? "0" : rs.getString("GoldPlatingWeight")); // Gold(g)
                     row.add(rs.getString("GoldRate") == null ? "0" : rs.getString("GoldRate")); // Gold Rate
@@ -225,7 +225,7 @@ public class ViewBackendBill extends JFrame {
             stmt2.setInt(1, billid);
             try(ResultSet rs = stmt2.executeQuery()) {
                 if (rs.next()) {
-                    customer_name = rs.getString(1);
+                    customer_name = utils.TextNormalization.trimNullable(rs.getString(1));
                     dateLabel.setText(UtilityMethods.parseDateString(rs.getDate(2)));
                 }
                 billIDLabel.setText("bill id:" + billid);

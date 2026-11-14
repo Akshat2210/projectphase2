@@ -99,7 +99,7 @@ public class NewBill extends JFrame {
     }
 
     public void setCustomerName(String customerName) {
-        this.customerName = customerName;
+        this.customerName = utils.TextNormalization.trimToEmpty(customerName);
     }
 
     private void setStateWhileTimerRunning(boolean enableState) {
@@ -134,7 +134,7 @@ public class NewBill extends JFrame {
         PreparedStatement linkTransactionsStatement = null;
         PreparedStatement journalEntryStatement = null;
         PreparedStatement linkDirectJournalEntriesStatement = null;
-        String customerName = customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString();
+        String customerName = utils.TextNormalization.trimToEmpty(customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString());
 
         if (customerComboBox.getSelectedIndex() == 0) {
             JOptionPane.showMessageDialog(NewBill.this, "select customer please");
@@ -155,7 +155,7 @@ public class NewBill extends JFrame {
             PreparedStatement billsTableStatement = conn.prepareStatement(updateBillsTableQuery);
 
             billsTableStatement.setTimestamp(1, Timestamp.valueOf(getDateTime()));
-            billsTableStatement.setString(2, getCustomerName());
+            billsTableStatement.setString(2, utils.TextNormalization.trimNullable(getCustomerName()));
             billsTableStatement.setInt(3, billNumber);
             System.out.println(billNumber + " is billnumber");
             billsTableStatement.setInt(4, getCurBillID());
@@ -184,7 +184,7 @@ public class NewBill extends JFrame {
             BigDecimal grandTotal = BigDecimal.ZERO;
             for (int i = 0; i < rowCount - 1; i++) {
                 int serialNo = Integer.parseInt(getStringValue(model, i, SNO_INDEX, "0"));
-                String itemName = getStringValue(model, i, ITEM_NAME_INDEX, "");
+                String itemName = utils.TextNormalization.trimToEmpty(getStringValue(model, i, ITEM_NAME_INDEX, ""));
                 if (itemName.isEmpty()) {
                     JOptionPane.showMessageDialog(NewBill.this, "please do not leave item name empty");
                     throw new RuntimeException();
@@ -206,7 +206,7 @@ public class NewBill extends JFrame {
 
                     orderType = slipTypeComboBox.getSelectedItem().toString();
                     if (rs.next()) {
-                        orderType = rs.getString("slip_type"); // Override with DB value
+                        orderType = utils.TextNormalization.trimNullable(rs.getString("slip_type")); // Override with DB value
                     }
                     rs.close();
                     pstmt.close();
@@ -229,14 +229,14 @@ public class NewBill extends JFrame {
                 int orderSlipNumber = snoToItemIdMap.getOrDefault(serialNo, 0);
                 if ((model.getValueAt(i, ORDER_SLIP_QUANTITY_INDEX) == null || model.getValueAt(i, ORDER_SLIP_QUANTITY_INDEX).toString().trim().isEmpty()) && !designID.contentEquals("NoID")) {
                     inventoryStatement.setInt(1, quantity);
-                    inventoryStatement.setString(2, designID);
+                    inventoryStatement.setString(2, utils.TextNormalization.trimNullable(designID));
                     inventoryStatement.addBatch();
                 }
                 billDetailsStatement.setInt(1, getCurBillID()); // Replace with actual BillID
                 billDetailsStatement.setInt(2, serialNo);
-                billDetailsStatement.setString(3, itemName);
-                billDetailsStatement.setString(4, designID);
-                billDetailsStatement.setString(5, orderType);
+                billDetailsStatement.setString(3, utils.TextNormalization.trimNullable(itemName));
+                billDetailsStatement.setString(4, utils.TextNormalization.trimNullable(designID));
+                billDetailsStatement.setString(5, utils.TextNormalization.trimNullable(orderType));
                 billDetailsStatement.setBigDecimal(6, raw);
                 billDetailsStatement.setBigDecimal(7, labour);
                 billDetailsStatement.setBigDecimal(8, dullChillai);
@@ -250,7 +250,7 @@ public class NewBill extends JFrame {
                 billDetailsStatement.setBigDecimal(16, totalGoldCost);
                 billDetailsStatement.setBigDecimal(17, totalFinalCost);
                 billDetailsStatement.setLong(18, orderSlipNumber);
-                billDetailsStatement.setString(19, otherDetails);
+                billDetailsStatement.setString(19, utils.TextNormalization.stripTrailingNullable(otherDetails));
                 billDetailsStatement.setInt(20, quantity);
                 billDetailsStatement.addBatch();
                 grandTotal = grandTotal.add(totalFinalCost);
@@ -259,7 +259,7 @@ public class NewBill extends JFrame {
             // Debit the customer's receivable and credit sales for this bill.
             journalEntryStatement.setString(1, CONSTANTS.SALE_ENUM);
             journalEntryStatement.setDate(2, java.sql.Date.valueOf(getDateTime().toLocalDate()));
-            journalEntryStatement.setString(3, customerName);
+            journalEntryStatement.setString(3, utils.TextNormalization.trimNullable(customerName));
             journalEntryStatement.setInt(4, getCurBillID());
             journalEntryStatement.setNull(5, Types.INTEGER);
             journalEntryStatement.setBigDecimal(6, BigDecimal.ZERO);
@@ -280,7 +280,7 @@ public class NewBill extends JFrame {
 
             // Attach only this customer's earlier, unlinked direct journal lines to this bill.
             linkDirectJournalEntriesStatement.setInt(1, getCurBillID());
-            linkDirectJournalEntriesStatement.setString(2, customerName);
+            linkDirectJournalEntriesStatement.setString(2, utils.TextNormalization.trimNullable(customerName));
             linkDirectJournalEntriesStatement.setString(3, CONSTANTS.DIRECT_JOURNAL_ENUM);
             linkDirectJournalEntriesStatement.setDate(4, java.sql.Date.valueOf(getDateTime().toLocalDate()));
             linkDirectJournalEntriesStatement.executeUpdate();
@@ -288,14 +288,14 @@ public class NewBill extends JFrame {
             customerTableStatement = conn.prepareStatement(updateCustomerTableQuery);
 
             customerTableStatement.setBigDecimal(1, grandTotal);
-            customerTableStatement.setString(2, customerName);
+            customerTableStatement.setString(2, utils.TextNormalization.trimNullable(customerName));
             customerTableStatement.executeUpdate();
             System.out.println(billID + " is the billid");
 
             String linkQuery = "UPDATE " + DBStructure.TRANSACTIONS_TABLE + " SET " + DBStructure.TRANSACTIONS_BILLID + " = ? WHERE " + DBStructure.TRANSACTIONS_CUSTOMER_NAME + " = ? AND " + DBStructure.TRANSACTIONS_BILLID + " IS NULL";
             linkTransactionsStatement = conn.prepareStatement(linkQuery);
             linkTransactionsStatement.setInt(1, getCurBillID());
-            linkTransactionsStatement.setString(2, customerName);
+            linkTransactionsStatement.setString(2, utils.TextNormalization.trimNullable(customerName));
             linkTransactionsStatement.executeUpdate();
 
             conn.commit(); // Commit transaction
@@ -700,13 +700,13 @@ public class NewBill extends JFrame {
 
                         try (Connection con = MyClass.createConnection(); PreparedStatement stmt = con.prepareStatement(query)) {
 
-                            stmt.setString(1, designID);
+                            stmt.setString(1, utils.TextNormalization.trimNullable(designID));
                             ResultSet rs = stmt.executeQuery();
 
                             if (rs.next()) {
 
                                 listOfNonEditableCells.add(new Integer[]{row, ITEM_NAME_INDEX});
-                                String itemName = rs.getString("itemname");
+                                String itemName = utils.TextNormalization.trimNullable(rs.getString("itemname"));
                                 String price = rs.getString(DBStructure.INVENTORY_SELL_PRICE);
                                 tableModel.setValueAt(itemName, row, ITEM_NAME_INDEX);
                                 tableModel.setValueAt(price, row, RAW_INDEX);
@@ -746,7 +746,7 @@ public class NewBill extends JFrame {
 
                         try (Connection con = MyClass.createConnection(); PreparedStatement preparedStatement = con.prepareStatement(query)) {
 
-                            preparedStatement.setString(1, designID);
+                            preparedStatement.setString(1, utils.TextNormalization.trimNullable(designID));
 
                             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                                 if (resultSet.next()) {
@@ -820,7 +820,7 @@ public class NewBill extends JFrame {
         try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
             try (ResultSet rs = stmt.executeQuery("select " + DBStructure.ORDERTYPE_TYPE_NAME + " from " + DBStructure.ORDERTYPE_TABLE)) {
                 while (rs.next()) {
-                    slipTypeComboBox.addItem(rs.getString(1));
+                    slipTypeComboBox.addItem(utils.TextNormalization.trimNullable(rs.getString(1)));
                 }
             }
             pack();

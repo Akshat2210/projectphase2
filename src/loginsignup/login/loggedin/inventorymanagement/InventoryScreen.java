@@ -79,13 +79,13 @@ public class InventoryScreen extends JFrame {
             try (ResultSet rs = stmt.executeQuery(query)) {
                 while (rs.next()) {
 
-                    String designId = rs.getString("DESIGNID");
+                    String designId = utils.TextNormalization.trimNullable(rs.getString("DESIGNID"));
                     int totalQuantity = rs.getInt("TotalQuantity");
-                    String itemName = rs.getString("itemname");
+                    String itemName = utils.TextNormalization.trimNullable(rs.getString("itemname"));
                     BigDecimal price = rs.getBigDecimal("price");
                     int openingStock = rs.getInt("openingstock");
                     BigDecimal sellPrice = rs.getBigDecimal("sellPrice");
-                    String supplierName = rs.getString("SupplierName");
+                    String supplierName = utils.TextNormalization.trimNullable(rs.getString("SupplierName"));
 
                     m.addRow(new Object[]{
                             designId,

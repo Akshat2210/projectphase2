@@ -49,7 +49,7 @@ public class SearchResultWindow extends JFrame {
         try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
             try (ResultSet rs = stmt.executeQuery("select " + DBStructure.ORDER_SLIPS_CUSTOMER_NAME + " from " + DBStructure.ORDER_SLIPS_TABLE + " where " + DBStructure.ORDER_SLIPS_SLIP_ID + "=" + orderSlipID + ";");) {
                 if (rs.next()) {
-                    name = rs.getString(1);
+                    name = utils.TextNormalization.trimNullable(rs.getString(1));
                     return name;
                 } else {
                     JOptionPane.showMessageDialog(null, "There is no such order slip id in table");
@@ -153,7 +153,7 @@ public class SearchResultWindow extends JFrame {
                 ResultSet resultSet = statement.executeQuery()
         ) {
             while (resultSet.next()) {
-                String designId = resultSet.getString(DBStructure.INVENTORY_DESIGN_ID);
+                String designId = utils.TextNormalization.trimNullable(resultSet.getString(DBStructure.INVENTORY_DESIGN_ID));
                 designId = designId == null ? "" : designId.trim();
 
                 int databaseQuantity = resultSet.getInt(
@@ -169,7 +169,7 @@ public class SearchResultWindow extends JFrame {
                 model.setValueAt("", row, 0);
                 model.setValueAt(designId, row, 1);
                 model.setValueAt(
-                        resultSet.getString(DBStructure.INVENTORY_ITEM_NAME),
+                        utils.TextNormalization.trimNullable(resultSet.getString(DBStructure.INVENTORY_ITEM_NAME)),
                         row,
                         2
                 );
@@ -304,7 +304,7 @@ public class SearchResultWindow extends JFrame {
         try (Connection con = MyClass.createConnection(); Statement statement = con.createStatement()) {
             try (ResultSet rs = statement.executeQuery("select " + DBStructure.ORDER_SLIPS_SLIP_TYPE + " from " + DBStructure.ORDER_SLIPS_TABLE + " where " + DBStructure.ORDER_SLIPS_SLIP_ID + "=" + orderSlipID);) {
                 if (rs.next()) {
-                    return rs.getString(1);
+                    return utils.TextNormalization.trimNullable(rs.getString(1));
                 } else {
                     JOptionPane.showMessageDialog(this, "error occured panatype not found");
                     return null;
@@ -423,7 +423,7 @@ public class SearchResultWindow extends JFrame {
         String query = "select " + DBStructure.ORDER_SLIPS_MAIN_SLIP_ID + " from " + DBStructure.ORDER_SLIPS_MAIN_TABLE + " where " + DBStructure.ORDER_SLIPS_MAIN_CUSTOMER_NAME + "=?";
         comboBoxModel.addElement("Inventory");
         try (Connection con = MyClass.createConnection(); PreparedStatement pstmt = con.prepareStatement(query)) {
-            pstmt.setString(1, customerName);
+            pstmt.setString(1, utils.TextNormalization.trimNullable(customerName));
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     System.out.println("data added " + rs.getString(DBStructure.ORDER_SLIPS_MAIN_SLIP_ID));
@@ -472,9 +472,9 @@ public class SearchResultWindow extends JFrame {
                 setSearchFlag(true);
                 model.setValueAt(rs.getString("slip_id") + "." + itemId + "/" + (rs.getInt("quantity") - rs.getInt("billed_quantity")), lastrow, columnModel.getColumnIndex("OrderSlip/quantity"));
                 model.setValueAt(String.valueOf(quantity), lastrow, columnModel.getColumnIndex("Quantity"));
-                model.setValueAt(rs.getString("item_name"), lastrow, columnModel.getColumnIndex("ItemName"));
+                model.setValueAt(utils.TextNormalization.trimNullable(rs.getString("item_name")), lastrow, columnModel.getColumnIndex("ItemName"));
                 model.setValueAt(rs.getString("raw_material_price"), lastrow, columnModel.getColumnIndex("Raw"));
-                model.setValueAt(rs.getString("design_id"), lastrow, columnModel.getColumnIndex("DesignID"));
+                model.setValueAt(utils.TextNormalization.trimNullable(rs.getString("design_id")), lastrow, columnModel.getColumnIndex("DesignID"));
                 model.fireTableDataChanged();
                 setSearchFlag(false);
             } else {
@@ -525,7 +525,7 @@ public class SearchResultWindow extends JFrame {
 
                 snoToItemIdMap.put(sno, itemId); //
                 model.addRow(new Object[]{
-                        rs.getString("sno"), rs.getString("design_id"), rs.getString("item_name"), (rs.getInt("quantity") - rs.getInt("billed_quantity")), rs.getBigDecimal("plating_grams"), rs.getBigDecimal("raw_material_price"), rs.getString("other_details")});// now this
+                        rs.getString("sno"), utils.TextNormalization.trimNullable(rs.getString("design_id")), utils.TextNormalization.trimNullable(rs.getString("item_name")), (rs.getInt("quantity") - rs.getInt("billed_quantity")), rs.getBigDecimal("plating_grams"), rs.getBigDecimal("raw_material_price"), utils.TextNormalization.stripTrailingNullable(rs.getString("other_details"))});// now this
             }
         } catch (SQLException e) {
             throw new RuntimeException();

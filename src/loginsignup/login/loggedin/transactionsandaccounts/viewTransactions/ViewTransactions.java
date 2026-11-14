@@ -96,9 +96,9 @@ public class ViewTransactions extends JFrame {
                     LocalDate localDate = LocalDate.parse(date, formatter);
                     java.sql.Date sqlDate = java.sql.Date.valueOf(localDate);
                     stmt.setDate(1, sqlDate);
-                    if (nameNotZero) stmt.setString(2, customerName);
+                    if (nameNotZero) stmt.setString(2, utils.TextNormalization.trimNullable(customerName));
                 } else {
-                    stmt.setString(1, customerName);
+                    stmt.setString(1, utils.TextNormalization.trimNullable(customerName));
                 }
             }
             ResultSet rs = stmt.executeQuery();
@@ -111,8 +111,8 @@ public class ViewTransactions extends JFrame {
                 values[columnModel.getColumnIndex("amount")] = rs.getString("amount");
                 values[columnModel.getColumnIndex("transaction_id")] = rs.getString("transaction_id");
                 values[columnModel.getColumnIndex("date")] = rs.getString("date");
-                values[columnModel.getColumnIndex("remark")] = rs.getString("remark");
-                values[columnModel.getColumnIndex("party name")] = rs.getString("customer_name");
+                values[columnModel.getColumnIndex("remark")] = utils.TextNormalization.stripTrailingNullable(rs.getString("remark"));
+                values[columnModel.getColumnIndex("party name")] = utils.TextNormalization.trimNullable(rs.getString("customer_name"));
                 values[columnModel.getColumnIndex("billID")] = rs.getString("billid");
 
                 tableModel.addRow(values);

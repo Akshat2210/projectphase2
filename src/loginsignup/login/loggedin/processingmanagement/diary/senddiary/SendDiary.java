@@ -123,7 +123,7 @@ public class SendDiary extends JFrame {
                 try (Connection connection = openConnection();
                      PreparedStatement statement = connection.prepareStatement(sql);
                      ResultSet result = statement.executeQuery()) {
-                    while (result.next()) customers.add(result.getString(1));
+                    while (result.next()) customers.add(utils.TextNormalization.trimNullable(result.getString(1)));
                 }
                 return customers;
             }
@@ -204,7 +204,7 @@ public class SendDiary extends JFrame {
                      ResultSet result = statement.executeQuery()) {
                     while (result.next()) {
                         options.add(new GodownOption(result.getInt("godown_id"),
-                                godownName(result.getString("parent_name"), result.getString("godown_name"))));
+                                godownName(utils.TextNormalization.trimNullable(result.getString("parent_name")), utils.TextNormalization.trimNullable(result.getString("godown_name")))));
                     }
                 }
                 return options;
@@ -374,7 +374,7 @@ public class SendDiary extends JFrame {
                 + " ORDER BY l.send_lot_id DESC, p.packet_number, p.send_packet_id, i.item_number, i.send_item_id";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             if (lotId != null) statement.setLong(1, lotId);
-            else statement.setString(1, customer);
+            else statement.setString(1, utils.TextNormalization.trimNullable(customer));
             try (ResultSet result = statement.executeQuery()) {
                 Map<Long, LotData> lots = new LinkedHashMap<>();
                 Map<Long, PacketData> packets = new LinkedHashMap<>();
@@ -386,10 +386,10 @@ public class SendDiary extends JFrame {
                         lot.id = result.getLong("send_lot_id");
                         java.sql.Date date = result.getDate("send_date");
                         lot.date = date == null ? null : date.toLocalDate();
-                        lot.source = godownName(result.getString("source_parent"), result.getString("source_name"));
-                        lot.destination = godownName(result.getString("destination_parent"), result.getString("destination_name"));
-                        lot.user = result.getString("created_by_user");
-                        lot.remark = result.getString("lot_remark");
+                        lot.source = godownName(utils.TextNormalization.trimNullable(result.getString("source_parent")), utils.TextNormalization.trimNullable(result.getString("source_name")));
+                        lot.destination = godownName(utils.TextNormalization.trimNullable(result.getString("destination_parent")), utils.TextNormalization.trimNullable(result.getString("destination_name")));
+                        lot.user = utils.TextNormalization.trimNullable(result.getString("created_by_user"));
+                        lot.remark = utils.TextNormalization.stripTrailingNullable(result.getString("lot_remark"));
                         lots.put(lot.id, lot);
                     }
                     long packetId = result.getLong("send_packet_id");
@@ -398,16 +398,16 @@ public class SendDiary extends JFrame {
                     if (packet == null) {
                         packet = new PacketData();
                         packet.number = result.getInt("packet_number");
-                        packet.customer = result.getString("customer_name");
-                        packet.remark = result.getString("packet_remark");
+                        packet.customer = utils.TextNormalization.trimNullable(result.getString("customer_name"));
+                        packet.remark = utils.TextNormalization.stripTrailingNullable(result.getString("packet_remark"));
                         packets.put(packetId, packet);
                         lot.packets.add(packet);
                     }
                     result.getLong("send_item_id");
                     if (!result.wasNull()) {
-                        packet.rows.add(new Object[]{result.getString("item_name"),
+                        packet.rows.add(new Object[]{utils.TextNormalization.trimNullable(result.getString("item_name")),
                                 result.getInt("sent_quantity"), result.getInt("items_forwarded"),
-                                result.getString("item_remark"), result.getObject("order_slip_id")});
+                                utils.TextNormalization.stripTrailingNullable(result.getString("item_remark")), result.getObject("order_slip_id")});
                     }
                 }
                 return new ArrayList<>(lots.values());

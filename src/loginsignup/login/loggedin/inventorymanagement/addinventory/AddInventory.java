@@ -21,9 +21,9 @@ public class AddInventory extends JFrame {
         String inventoryAddQuery = "INSERT INTO " + INVENTORY_TABLE + " (" + INVENTORY_DESIGN_ID + ", " + INVENTORY_TOTAL_QUANTITY + ", " + INVENTORY_SUPPLIER_NAME + "," + INVENTORY_BUY_PRICE + ", " + INVENTORY_SELL_PRICE + ", " + INVENTORY_ITEM_NAME + ") VALUES (?, ?, ?,? ,?,? )";
         try (Connection con = MyClass.createConnection();
              PreparedStatement stmt = con.prepareStatement(inventoryAddQuery)) {
-            stmt.setString(1, designID.getText());
+            stmt.setString(1, utils.TextNormalization.trimNullable(designID.getText()));
             stmt.setInt(2, Integer.parseInt(openingStockField.getText()));
-            stmt.setString(3, "hi   ");
+            stmt.setString(3, utils.TextNormalization.trimToEmpty(supplierComboBox.getSelectedItem()));
             try {
                 stmt.setBigDecimal(4, parsePrice(buyPriceField.getText()));
             } catch (NumberFormatException ex) {
@@ -36,7 +36,7 @@ public class AddInventory extends JFrame {
                 JOptionPane.showMessageDialog(panel, "invalid sell price entered");
                 return NUMBER_FORMAT_ERROR;
             }
-            stmt.setString(6, itemNameField.getText());
+            stmt.setString(6, utils.TextNormalization.trimNullable(itemNameField.getText()));
 
             int rowsAffected = stmt.executeUpdate();
             if (rowsAffected > 0) {
@@ -73,11 +73,11 @@ public class AddInventory extends JFrame {
 
         try (Connection con = MyClass.createConnection(); PreparedStatement inventoryUpdateStmt = con.prepareStatement(inventoryUpdateQuery)) {
             inventoryUpdateStmt.setInt(1, Integer.parseInt(openingStockField.getText())); // quantity increment
-            inventoryUpdateStmt.setString(2, itemNameField.getText()); // assuming you have this field
+            inventoryUpdateStmt.setString(2, utils.TextNormalization.trimNullable(itemNameField.getText())); // assuming you have this field
             inventoryUpdateStmt.setBigDecimal(3, parsePrice(buyPriceField.getText())); // buy price
             inventoryUpdateStmt.setBigDecimal(4, parsePrice(sellPriceField.getText())); // sell price
-            inventoryUpdateStmt.setString(5, supplierComboBox.getSelectedItem().toString()); // WHERE condition
-            inventoryUpdateStmt.setString(6, designID.getText()); // WHERE condition
+            inventoryUpdateStmt.setString(5, utils.TextNormalization.trimNullable(supplierComboBox.getSelectedItem().toString())); // WHERE condition
+            inventoryUpdateStmt.setString(6, utils.TextNormalization.trimNullable(designID.getText())); // WHERE condition
             inventoryUpdateStmt.executeUpdate();
             return SUCCESS_CODE;
         } catch (NumberFormatException e) {

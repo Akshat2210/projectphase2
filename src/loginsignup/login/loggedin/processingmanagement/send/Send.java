@@ -395,7 +395,7 @@ public class Send extends JFrame {
                         throw new SQLException("Could not connect to the database.");
                     }
                     try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                        statement.setString(1, customerName);
+                        statement.setString(1, utils.TextNormalization.trimNullable(customerName));
                         try (ResultSet resultSet = statement.executeQuery()) {
                             while (resultSet.next()) {
                                 model.addElement(String.valueOf(resultSet.getInt("slip_id")));
@@ -502,8 +502,8 @@ public class Send extends JFrame {
                  ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     rows.add(new Object[]{
-                            resultSet.getString("DESIGNID"),
-                            resultSet.getString("itemname"),
+                            utils.TextNormalization.trimNullable(resultSet.getString("DESIGNID")),
+                            utils.TextNormalization.trimNullable(resultSet.getString("itemname")),
                             resultSet.getInt("TotalQuantity"),
                             "Inventory"
                     });
@@ -550,14 +550,14 @@ public class Send extends JFrame {
                         rows.add(new Object[]{
                                 resultSet.getLong("send_lot_id"),
                                 resultSet.getInt("packet_number"),
-                                resultSet.getString("source_name"),
-                                resultSet.getString("customer_name"),
-                                resultSet.getString("design_id"),
-                                resultSet.getString("item_name"),
+                                utils.TextNormalization.trimNullable(resultSet.getString("source_name")),
+                                utils.TextNormalization.trimNullable(resultSet.getString("customer_name")),
+                                utils.TextNormalization.trimNullable(resultSet.getString("design_id")),
+                                utils.TextNormalization.trimNullable(resultSet.getString("item_name")),
                                 sentQuantity,
                                 sentOnward,
                                 sentQuantity - sentOnward,
-                                resultSet.getString("item_remark"),
+                                utils.TextNormalization.stripTrailingNullable(resultSet.getString("item_remark")),
                                 resultSet.getLong("send_item_id")
                         });
                     }
@@ -588,17 +588,17 @@ public class Send extends JFrame {
             }
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setInt(1, orderSlipId);
-                statement.setString(2, customerName);
+                statement.setString(2, utils.TextNormalization.trimNullable(customerName));
                 try (ResultSet resultSet = statement.executeQuery()) {
                     while (resultSet.next()) {
                         int pendingQuantity = resultSet.getInt("quantity")
                                 - resultSet.getInt("billed_quantity");
                         rows.add(new Object[]{
                                 resultSet.getInt("sno"),
-                                resultSet.getString("design_id"),
-                                resultSet.getString("item_name"),
+                                utils.TextNormalization.trimNullable(resultSet.getString("design_id")),
+                                utils.TextNormalization.trimNullable(resultSet.getString("item_name")),
                                 pendingQuantity,
-                                resultSet.getString("other_details"),
+                                utils.TextNormalization.stripTrailingNullable(resultSet.getString("other_details")),
                                 resultSet.getLong("item_id")
                         });
                     }
@@ -975,7 +975,7 @@ public class Send extends JFrame {
                 statement.setDate(1, java.sql.Date.valueOf(draft.date));
                 statement.setInt(2, draft.fromId);
                 statement.setInt(3, draft.toId);
-                statement.setString(4, draft.user);
+                statement.setString(4, utils.TextNormalization.trimNullable(draft.user));
                 statement.executeUpdate();
                 lotId = generatedId(statement);
             }
@@ -1007,7 +1007,7 @@ public class Send extends JFrame {
                         if (item.slipItemId == null) items.setNull(7, Types.BIGINT);
                         else items.setLong(7, item.slipItemId);
                         nullableString(items, 8, item.designId);
-                        items.setString(9, item.name);
+                        items.setString(9, utils.TextNormalization.trimNullable(item.name));
                         items.setInt(10, item.quantity);
                         nullableString(items, 11, item.remark);
                         items.executeUpdate();
@@ -1039,7 +1039,7 @@ public class Send extends JFrame {
 
     private static void nullableString(PreparedStatement statement, int index, String value) throws SQLException {
         if (value == null || value.isEmpty()) statement.setNull(index, Types.VARCHAR);
-        else statement.setString(index, value);
+        else statement.setString(index, utils.TextNormalization.trimNullable(value));
     }
 
     static final class CommitUncertainException extends SQLException {
@@ -1130,8 +1130,8 @@ public class Send extends JFrame {
                     try (PreparedStatement statement = connection.prepareStatement(sql);
                          ResultSet resultSet = statement.executeQuery()) {
                         while (resultSet.next()) {
-                            String parentName = resultSet.getString("parent_name");
-                            String godownName = resultSet.getString("godown_name");
+                            String parentName = utils.TextNormalization.trimNullable(resultSet.getString("parent_name"));
+                            String godownName = utils.TextNormalization.trimNullable(resultSet.getString("godown_name"));
                             String displayName = parentName == null
                                     ? godownName
                                     : parentName + " / " + godownName;
@@ -1177,8 +1177,8 @@ public class Send extends JFrame {
                 String input = JOptionPane.showInputDialog(Send.this,
                         "Enter the preset remark:", "Add preset remark", JOptionPane.PLAIN_MESSAGE);
                 if (input == null) return;
-                String remark = input.trim();
-                if (remark.isEmpty() || remark.codePointCount(0, remark.length()) > 1000) {
+                String remark = utils.TextNormalization.stripTrailingToEmpty(input);
+                if (remark.isBlank() || remark.codePointCount(0, remark.length()) > 1000) {
                     JOptionPane.showMessageDialog(Send.this,
                             "Enter a remark between 1 and 1000 characters.");
                     return;
@@ -1224,7 +1224,7 @@ public class Send extends JFrame {
                     try (PreparedStatement statement = connection.prepareStatement(sql);
                          ResultSet resultSet = statement.executeQuery()) {
                         while (resultSet.next()) {
-                            String remark = resultSet.getString(1);
+                            String remark = utils.TextNormalization.stripTrailingNullable(resultSet.getString(1));
                             if (remark != null && !remarks.contains(remark)) remarks.add(remark);
                         }
                     }
@@ -1258,7 +1258,7 @@ public class Send extends JFrame {
                 try (Connection connection = MyClass.createConnection()) {
                     if (connection == null) throw new SQLException("Could not connect to the database.");
                     try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                        statement.setString(1, remark);
+                        statement.setString(1, utils.TextNormalization.stripTrailingNullable(remark));
                         statement.executeUpdate();
                     }
                 }
