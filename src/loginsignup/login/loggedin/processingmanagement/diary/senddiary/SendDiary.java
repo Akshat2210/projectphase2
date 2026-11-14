@@ -356,7 +356,7 @@ public class SendDiary extends JFrame {
                 + " src.godown_name AS source_name, sp.godown_name AS source_parent,"
                 + " dst.godown_name AS destination_name, dp.godown_name AS destination_parent,"
                 + " p.send_packet_id, p.packet_number, p.customer_name, p.packet_remark,"
-                + " i.send_item_id, i.item_name, i.sent_quantity, i.item_remark,"
+                + " i.send_item_id, i.item_name, i.sent_quantity, i.item_remark, i.order_slip_id,"
                 + " COALESCE(SUM(forwarded.sent_quantity), 0) AS items_forwarded"
                 + " FROM " + DBStructure.SEND_LOTS_TABLE + " l"
                 + " LEFT JOIN " + DBStructure.GODOWNS_TABLE + " src ON src.godown_id = l.default_source_godown_id"
@@ -370,7 +370,7 @@ public class SendDiary extends JFrame {
                 + " GROUP BY l.send_lot_id, l.send_date, l.created_by_user, l.lot_remark,"
                 + " src.godown_name, sp.godown_name, dst.godown_name, dp.godown_name,"
                 + " p.send_packet_id, p.packet_number, p.customer_name, p.packet_remark,"
-                + " i.send_item_id, i.item_name, i.sent_quantity, i.item_remark, i.item_number"
+                + " i.send_item_id, i.item_name, i.sent_quantity, i.item_remark, i.item_number, i.order_slip_id"
                 + " ORDER BY l.send_lot_id DESC, p.packet_number, p.send_packet_id, i.item_number, i.send_item_id";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             if (lotId != null) statement.setLong(1, lotId);
@@ -407,7 +407,7 @@ public class SendDiary extends JFrame {
                     if (!result.wasNull()) {
                         packet.rows.add(new Object[]{result.getString("item_name"),
                                 result.getInt("sent_quantity"), result.getInt("items_forwarded"),
-                                result.getString("item_remark")});
+                                result.getString("item_remark"), result.getObject("order_slip_id")});
                     }
                 }
                 return new ArrayList<>(lots.values());
@@ -465,11 +465,12 @@ public class SendDiary extends JFrame {
         details.add(valueField("Packet remark", packet.remark));
         card.add(details, BorderLayout.NORTH);
         DefaultTableModel model = new DefaultTableModel(packet.rows.toArray(new Object[0][]),
-                new String[]{"Item name", "Quantity", "Items forwarded", "Item remark"}) {
+                new String[]{"Item name", "Quantity", "Items forwarded", "Item remark", "Order slip number"}) {
             @Override
             public boolean isCellEditable(int row, int column) { return false; }
             @Override
             public Class<?> getColumnClass(int column) {
+                if (column == 4) return Integer.class;
                 return column == 1 || column == 2 ? Integer.class : String.class;
             }
         };
