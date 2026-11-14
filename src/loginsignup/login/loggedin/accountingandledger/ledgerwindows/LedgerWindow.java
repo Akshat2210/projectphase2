@@ -29,10 +29,14 @@ public class LedgerWindow extends JFrame {
     public static final int ITEM_MODE = 65 * 2;
     public static final int GENERAL_ACCOUNT_MODE = 65 * 3;
     public static final int CASHBOOK_MODE = 65 * 4;
+    public static final int JOURNAL_MODE = 65 * 5;
     private JButton backButton;
     private JTable ledgerTable;
     private JPanel panel;
     private JLabel nameLabel;
+    private JComboBox<String> journalDateFilter;
+    private static final String ALL_DATES = "All dates";
+    private final Timer journalDateDelay = new Timer(200, event -> loadJournalEntries());
     private final AALScreen parentWindow;
 
     public LedgerWindow(AALScreen aalScreen) {
@@ -44,9 +48,12 @@ public class LedgerWindow extends JFrame {
         setTitle("Ledger " + customerName);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+        journalDateFilter.setVisible(mode == JOURNAL_MODE);
+        journalDateDelay.setRepeats(false);
         backButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                journalDateDelay.stop();
                 parentWindow.setVisible(true);
                 dispose();
 
@@ -62,6 +69,8 @@ public class LedgerWindow extends JFrame {
             columnNames = new String[]{"id", "date", "debit", "credit", "balance"};
         } else if (mode == CASHBOOK_MODE) {
             columnNames = new String[]{"id", "date", "account", "debit", "credit", "balance"};
+        } else if (mode == JOURNAL_MODE) {
+            columnNames = new String[0];
         }
         DefaultTableModel defaultTableModel = new DefaultTableModel(columnNames, 0) {
             @Override
@@ -94,15 +103,78 @@ public class LedgerWindow extends JFrame {
             if (model != null) {
                 ledgerTable.setModel(model);
             }
+        } else if (mode == JOURNAL_MODE) {
+            setTitle("Journal Entry");
+            nameLabel.setText("Journal Entry — filter by date:");
+            journalDateFilter.setEditable(false);
+            loadJournalDates();
+            loadJournalEntries();
+            journalDateFilter.addActionListener(event -> journalDateDelay.restart());
         }
 
 //        fetchLedgerToModel(ledgerTable);
 
 
     }
+    private void loadJournalDates() {
+        journalDateFilter.removeAllItems();
+        journalDateFilter.addItem(ALL_DATES);
+        String query = "SELECT DISTINCT " + JOURNAL_ENTRY_DATE + " FROM " + JOURNAL_ENTRY_TABLE
+                + " ORDER BY " + JOURNAL_ENTRY_DATE + " DESC";
+        try (Connection connection = MyClass.createConnection();
+             PreparedStatement statement = connection.prepareStatement(query);
+             ResultSet result = statement.executeQuery()) {
+            while (result.next()) {
+                java.sql.Date date = result.getDate(1);
+                if (date != null) journalDateFilter.addItem(date.toLocalDate().toString());
+            }
+        } catch (SQLException exception) {
+            JOptionPane.showMessageDialog(this, "Could not load journal dates: " + exception.getMessage());
+        }
+    }
+
+    private void loadJournalEntries() {
+        String selected = (String) journalDateFilter.getSelectedItem();
+        LocalDate date = selected == null || ALL_DATES.equals(selected) ? null : LocalDate.parse(selected);
+        DefaultTableModel model = GetData.fetchJournalEntries(date, this);
+        if (model != null) ledgerTable.setModel(model);
+    }
 }
 
 class GetData {
+
+    static DefaultTableModel fetchJournalEntries(LocalDate date, LedgerWindow window) {
+        String query = "SELECT * FROM " + JOURNAL_ENTRY_TABLE
+                + (date == null ? "" : " WHERE " + JOURNAL_ENTRY_DATE + " = ?")
+                + " ORDER BY " + JOURNAL_ENTRY_DATE + ", " + JOURNAL_ENTRY_ID;
+        try (Connection connection = MyClass.createConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            if (date != null) statement.setDate(1, java.sql.Date.valueOf(date));
+            try (ResultSet result = statement.executeQuery()) {
+                java.sql.ResultSetMetaData metadata = result.getMetaData();
+                String[] columns = new String[metadata.getColumnCount()];
+                for (int i = 0; i < columns.length; i++) columns[i] = metadata.getColumnLabel(i + 1);
+                DefaultTableModel model = new DefaultTableModel(columns, 0) {
+                    @Override public boolean isCellEditable(int row, int column) { return false; }
+                };
+                while (result.next()) {
+                    Object[] row = new Object[columns.length];
+                    for (int i = 0; i < columns.length; i++) {
+                        Object value = result.getObject(i + 1);
+                        if (value instanceof String) value = JOURNAL_ENTRY_REMARK.equalsIgnoreCase(columns[i])
+                                ? utils.TextNormalization.stripTrailingNullable((String) value)
+                                : utils.TextNormalization.trimNullable((String) value);
+                        row[i] = value;
+                    }
+                    model.addRow(row);
+                }
+                return model;
+            }
+        } catch (SQLException exception) {
+            JOptionPane.showMessageDialog(window, "Could not load journal entries: " + exception.getMessage());
+            return null;
+        }
+    }
 
     static final String ID_COLUMN = "id";
     static final int ID_COLUMN_INDEX = 0;
@@ -293,11 +365,16 @@ class GetData {
                 "cash." + JOURNAL_ENTRY_DATE + ", " +
                 "COALESCE(cash." + JOURNAL_ENTRY_DEBIT + ", 0) AS debit, " +
                 "COALESCE(cash." + JOURNAL_ENTRY_CREDIT + ", 0) AS credit, " +
-                "COALESCE(counterpart." + JOURNAL_ENTRY_ACCOUNT_NAME + ", '') AS corresponding_account " +
+                // A scalar aggregate keeps one output row per cash line, even for a multi-line group.
+                "COALESCE((SELECT GROUP_CONCAT(DISTINCT counterpart." + JOURNAL_ENTRY_ACCOUNT_NAME +
+                " ORDER BY counterpart." + JOURNAL_ENTRY_ACCOUNT_NAME + " SEPARATOR ', ') FROM " +
+                JOURNAL_ENTRY_TABLE + " counterpart WHERE counterpart." + JOURNAL_ENTRY_ID + " <> cash." + JOURNAL_ENTRY_ID +
+                " AND counterpart." + JOURNAL_ENTRY_ACCOUNT_NAME + " <> 'Cash' AND ((cash." + JOURNAL_ENTRY_GROUP_ID +
+                " IS NOT NULL AND counterpart." + JOURNAL_ENTRY_GROUP_ID + " = cash." + JOURNAL_ENTRY_GROUP_ID +
+                ") OR (cash." + JOURNAL_ENTRY_GROUP_ID + " IS NULL AND cash." + JOURNAL_ENTRY_TRANSACTION_ID +
+                " IS NOT NULL AND counterpart." + JOURNAL_ENTRY_TRANSACTION_ID + " = cash." + JOURNAL_ENTRY_TRANSACTION_ID +
+                "))), '') AS corresponding_account " +
                 "FROM " + JOURNAL_ENTRY_TABLE + " cash " +
-                "LEFT JOIN " + JOURNAL_ENTRY_TABLE + " counterpart ON cash." + JOURNAL_ENTRY_TRANSACTION_ID +
-                " = counterpart." + JOURNAL_ENTRY_TRANSACTION_ID +
-                " AND counterpart." + JOURNAL_ENTRY_ID + " <> cash." + JOURNAL_ENTRY_ID + " " +
                 "WHERE cash." + JOURNAL_ENTRY_ACCOUNT_NAME + " = ? " +
                 "ORDER BY cash." + JOURNAL_ENTRY_DATE + ", cash." + JOURNAL_ENTRY_ID;
 

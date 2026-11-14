@@ -20,6 +20,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 
 public class JournalEntry extends JFrame {
     private JPanel panel;
@@ -133,7 +134,8 @@ public class JournalEntry extends JFrame {
                 DBStructure.JOURNAL_ENTRY_BILL_ID + ", " +
                 DBStructure.JOURNAL_ENTRY_TRANSACTION_ID + ", " +
                 DBStructure.JOURNAL_ENTRY_CREDIT + ", " +
-                DBStructure.JOURNAL_ENTRY_DEBIT + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                DBStructure.JOURNAL_ENTRY_DEBIT + ", " +
+                DBStructure.JOURNAL_ENTRY_GROUP_ID + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         String customerBalanceQuery = "UPDATE " + DBStructure.CUSTOMERS_TABLE + " SET " +
                 DBStructure.CUSTOMERS_BALANCE + " = " + DBStructure.CUSTOMERS_BALANCE + " + ? WHERE " +
                 DBStructure.CUSTOMERS_CUSTOMER_NAME + " = ?";
@@ -145,8 +147,9 @@ public class JournalEntry extends JFrame {
             try {
                 connection.setAutoCommit(false);
 
-                addJournalLine(journalStatement, entryDate, creditAccount, remark, amount, BigDecimal.ZERO);
-                addJournalLine(journalStatement, entryDate, debitAccount, remark, BigDecimal.ZERO, amount);
+                String journalGroupId = UUID.randomUUID().toString();
+                addJournalLine(journalStatement, entryDate, creditAccount, remark, amount, BigDecimal.ZERO, journalGroupId);
+                addJournalLine(journalStatement, entryDate, debitAccount, remark, BigDecimal.ZERO, amount, journalGroupId);
                 journalStatement.executeBatch();
 
                 updateCustomerBalance(customerBalanceStatement, creditAccount, amount.negate());
@@ -171,7 +174,7 @@ public class JournalEntry extends JFrame {
     }
 
     private void addJournalLine(PreparedStatement statement, java.sql.Date entryDate, String accountName,
-                                String remark, BigDecimal credit, BigDecimal debit) throws SQLException {
+                                String remark, BigDecimal credit, BigDecimal debit, String journalGroupId) throws SQLException {
         statement.setString(1, CONSTANTS.DIRECT_JOURNAL_ENUM);
         statement.setDate(2, entryDate);
         statement.setString(3, accountName);
@@ -184,6 +187,7 @@ public class JournalEntry extends JFrame {
         statement.setNull(6, Types.INTEGER);
         statement.setBigDecimal(7, credit);
         statement.setBigDecimal(8, debit);
+        statement.setString(9, journalGroupId);
         statement.addBatch();
     }
 

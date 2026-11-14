@@ -116,6 +116,7 @@ public class DBStructure {
     public static final String JOURNAL_ENTRY_REMARK = "remark";
     public static final String JOURNAL_ENTRY_BILL_ID = "billid";
     public static final String JOURNAL_ENTRY_TRANSACTION_ID = "transaction_id";
+    public static final String JOURNAL_ENTRY_GROUP_ID = "journal_group_id";
     public static final String JOURNAL_ENTRY_CREDIT = "credit";
     public static final String JOURNAL_ENTRY_DEBIT = "debit";
 

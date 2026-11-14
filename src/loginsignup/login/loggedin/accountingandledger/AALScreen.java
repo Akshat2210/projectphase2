@@ -21,7 +21,7 @@ public class AALScreen extends JFrame {
     private JList<String> itemList;
     private JList<String> customerList;
     private JButton cashStatementButton;
-    private JButton expenseAccountButton;// component declaration
+    private JButton journalEntryButton;
     private JPanel panel;
     private JPanel subPanel;
 
@@ -105,6 +105,12 @@ public class AALScreen extends JFrame {
             LedgerWindow ledgerWindow = new LedgerWindow(AALScreen.this);
             ledgerWindow.init("Cash", LedgerWindow.CASHBOOK_MODE);
             ledgerWindow.setVisible(true);
+        });
+        journalEntryButton.addActionListener(e -> {
+            LedgerWindow ledgerWindow = new LedgerWindow(AALScreen.this);
+            ledgerWindow.init("Journal Entry", LedgerWindow.JOURNAL_MODE);
+            ledgerWindow.setVisible(true);
+            setVisible(false);
         });
 
     }

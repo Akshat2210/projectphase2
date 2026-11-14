@@ -24,12 +24,12 @@
           <text value="cash statement"/>
         </properties>
       </component>
-      <component id="96e63" class="javax.swing.JButton" binding="expenseAccountButton" default-binding="true">
+      <component id="96e63" class="javax.swing.JButton" binding="journalEntryButton" default-binding="true">
         <constraints>
           <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <text value="expense account"/>
+          <text value="Journal Entry"/>
         </properties>
       </component>
       <grid id="9e921" binding="subPanel" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
