@@ -224,11 +224,13 @@ CREATE TABLE `journalentry` (
   `remark` varchar(500) DEFAULT NULL,
   `billid` int DEFAULT NULL,
   `transaction_id` int DEFAULT NULL,
+  `journal_group_id` char(36) DEFAULT NULL,
   `credit` decimal(15,2) NOT NULL DEFAULT '0.00',
   `debit` decimal(15,2) NOT NULL DEFAULT '0.00',
   PRIMARY KEY (`id`),
   KEY `fk_journalentry_bill` (`billid`),
   KEY `fk_journalentry_transaction` (`transaction_id`),
+  KEY `idx_journalentry_group` (`journal_group_id`),
   CONSTRAINT `fk_journalentry_bill` FOREIGN KEY (`billid`) REFERENCES `bills` (`BillID`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_journalentry_transaction` FOREIGN KEY (`transaction_id`) REFERENCES `transactions` (`transaction_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

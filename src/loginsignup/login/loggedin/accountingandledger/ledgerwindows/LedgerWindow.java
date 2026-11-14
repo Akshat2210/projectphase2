@@ -293,11 +293,16 @@ class GetData {
                 "cash." + JOURNAL_ENTRY_DATE + ", " +
                 "COALESCE(cash." + JOURNAL_ENTRY_DEBIT + ", 0) AS debit, " +
                 "COALESCE(cash." + JOURNAL_ENTRY_CREDIT + ", 0) AS credit, " +
-                "COALESCE(counterpart." + JOURNAL_ENTRY_ACCOUNT_NAME + ", '') AS corresponding_account " +
+                // A scalar aggregate keeps one output row per cash line, even for a multi-line group.
+                "COALESCE((SELECT GROUP_CONCAT(DISTINCT counterpart." + JOURNAL_ENTRY_ACCOUNT_NAME +
+                " ORDER BY counterpart." + JOURNAL_ENTRY_ACCOUNT_NAME + " SEPARATOR ', ') FROM " +
+                JOURNAL_ENTRY_TABLE + " counterpart WHERE counterpart." + JOURNAL_ENTRY_ID + " <> cash." + JOURNAL_ENTRY_ID +
+                " AND counterpart." + JOURNAL_ENTRY_ACCOUNT_NAME + " <> 'Cash' AND ((cash." + JOURNAL_ENTRY_GROUP_ID +
+                " IS NOT NULL AND counterpart." + JOURNAL_ENTRY_GROUP_ID + " = cash." + JOURNAL_ENTRY_GROUP_ID +
+                ") OR (cash." + JOURNAL_ENTRY_GROUP_ID + " IS NULL AND cash." + JOURNAL_ENTRY_TRANSACTION_ID +
+                " IS NOT NULL AND counterpart." + JOURNAL_ENTRY_TRANSACTION_ID + " = cash." + JOURNAL_ENTRY_TRANSACTION_ID +
+                "))), '') AS corresponding_account " +
                 "FROM " + JOURNAL_ENTRY_TABLE + " cash " +
-                "LEFT JOIN " + JOURNAL_ENTRY_TABLE + " counterpart ON cash." + JOURNAL_ENTRY_TRANSACTION_ID +
-                " = counterpart." + JOURNAL_ENTRY_TRANSACTION_ID +
-                " AND counterpart." + JOURNAL_ENTRY_ID + " <> cash." + JOURNAL_ENTRY_ID + " " +
                 "WHERE cash." + JOURNAL_ENTRY_ACCOUNT_NAME + " = ? " +
                 "ORDER BY cash." + JOURNAL_ENTRY_DATE + ", cash." + JOURNAL_ENTRY_ID;
 
