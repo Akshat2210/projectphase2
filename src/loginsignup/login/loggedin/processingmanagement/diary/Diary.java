@@ -2,6 +2,7 @@ package loginsignup.login.loggedin.processingmanagement.diary;
 
 import loginsignup.login.loggedin.processingmanagement.ProcessingManagementScreen;
 import loginsignup.login.loggedin.processingmanagement.diary.senddiary.SendDiary;
+import loginsignup.login.loggedin.processingmanagement.diary.recievediary.RecieveDiary;
 
 import javax.swing.*;
 import java.awt.event.WindowAdapter;
@@ -11,6 +12,7 @@ public class Diary extends JFrame {
     private JPanel panel;
     private JButton backButton;
     private JButton sendDiaryButton;
+    private JButton recieveDiaryButton;
     private final ProcessingManagementScreen processingManagementScreen;
     private boolean initialized;
 
@@ -41,6 +43,12 @@ public class Diary extends JFrame {
             SendDiary sendDiary = new SendDiary(Diary.this);
             sendDiary.init();
             sendDiary.setVisible(true);
+            setVisible(false);
+        });
+        recieveDiaryButton.addActionListener(event -> {
+            RecieveDiary recieveDiary = new RecieveDiary(Diary.this);
+            recieveDiary.init();
+            recieveDiary.setVisible(true);
             setVisible(false);
         });
     }
