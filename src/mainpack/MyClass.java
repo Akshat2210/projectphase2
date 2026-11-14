@@ -20,6 +20,8 @@ import rootSettings.users.Users;
 import utils.UtilityMethods;
 
 import javax.swing.*;
+import javax.swing.plaf.FontUIResource;
+import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -48,7 +50,16 @@ public class MyClass {
     public static Map<String, String> codeToItemName;
     public final static String TITLE = "GURUKRIPA JEWELLERS";
     public static InventorySelect inventorySelect;
+    public static void setHindiUiFont() {
+        FontUIResource font = new FontUIResource("Nirmala UI", Font.PLAIN, 16);
 
+        for (Object key : UIManager.getDefaults().keySet()) {
+            Object value = UIManager.get(key);
+            if (value instanceof FontUIResource) {
+                UIManager.put(key, font);
+            }
+        }
+    }
      private static DatabaseEndpoint loadDatabaseEndpoint() {
         try {
             String json;
@@ -118,7 +129,7 @@ public class MyClass {
     }
 
     public static void main(String[] args) {
-
+    setHindiUiFont();
         Runtime.getRuntime().addShutdownHook(
                 new Thread(MyClass::closeConnectionPool, "DatabasePoolShutdown")
         );
