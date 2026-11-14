@@ -5,6 +5,7 @@ import mainpack.MyClass;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.math.BigDecimal;
@@ -12,6 +13,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 
 public class InventoryScreen extends JFrame {
     private JPanel panel;
@@ -65,6 +67,9 @@ public class InventoryScreen extends JFrame {
         };
 
         inventoryTable.setModel(m);
+        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(m);
+        sorter.setSortKeys(List.of(new RowSorter.SortKey(0, SortOrder.ASCENDING)));
+        inventoryTable.setRowSorter(sorter);
 
         try (Connection con = MyClass.createConnection();
              Statement stmt = con.createStatement()) {
@@ -98,6 +103,7 @@ public class InventoryScreen extends JFrame {
             e.printStackTrace();
         }
 
+        sorter.sort();
         pack();
     }
 }

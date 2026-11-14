@@ -5,6 +5,7 @@ import utils.UtilityMethods;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.event.*;
 import java.sql.*;
 import java.util.*;
@@ -61,6 +62,9 @@ public class InventorySelect extends JFrame {
             }
         };
         inventoryTable.setModel(model);
+        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
+        sorter.setSortKeys(List.of(new RowSorter.SortKey(COL_DESIGN_ID_INDEX, SortOrder.ASCENDING)));
+        inventoryTable.setRowSorter(sorter);
         fetchData(model);
         inventoryTable.addMouseListener(new MouseListener() {
             @Override
@@ -105,7 +109,8 @@ public class InventorySelect extends JFrame {
             JOptionPane.showMessageDialog(InventorySelect.this, "please enter valid quantity");
             return;
         }
-        String designID =Objects.toString( inventoryTable.getModel().getValueAt(inventoryTable.getSelectedRow(), COL_DESIGN_ID_INDEX),"");
+        int selectedRow = inventoryTable.convertRowIndexToModel(inventoryTable.getSelectedRow());
+        String designID = Objects.toString(inventoryTable.getModel().getValueAt(selectedRow, COL_DESIGN_ID_INDEX), "");
         pushDataToGenerator(designID, quantity, orderGenerateForm,true);
 
     }
@@ -170,7 +175,7 @@ public class InventorySelect extends JFrame {
 
     private boolean isOutOfStock(int quantity, String designID) {
         int row=rowDesignIdMap.get(designID.toUpperCase());
-        String oldQuantityObject= Objects.toString(inventoryTable.getValueAt(row, COL_TOTAL_QTY_INDEX).toString(),"");
+        String oldQuantityObject = Objects.toString(inventoryTable.getModel().getValueAt(row, COL_TOTAL_QTY_INDEX), "");
         int oldQuantity= Integer.parseInt(oldQuantityObject.trim().equals("")? "0":oldQuantityObject);
         if(oldQuantity-quantity<0){
             return true;

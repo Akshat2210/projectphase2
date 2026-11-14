@@ -7,9 +7,11 @@ import utils.UtilityMethods;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.event.*;
 import java.sql.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Vector;
 
 public class SearchResultWindow extends JFrame {
@@ -205,6 +207,7 @@ public class SearchResultWindow extends JFrame {
 
         DefaultTableModel model = (DefaultTableModel) dataTable.getModel();
         int selectedRow = dataTable.getSelectedRow();
+        selectedRow = dataTable.convertRowIndexToModel(selectedRow);
         String itemName = model.getValueAt(selectedRow, model.findColumn("Item Name")).toString();
         int maxQuantity = Integer.parseInt(model.getValueAt(selectedRow, model.findColumn("Quantity")).toString());
 
@@ -215,7 +218,7 @@ public class SearchResultWindow extends JFrame {
         try {
             Connection con = parent.getTransacTemp();
             PreparedStatement statement = con.prepareStatement(query);
-            int itemid = snoToItemIdMap.get(Integer.parseInt(dataTable.getValueAt(dataTable.getSelectedRow(), ((DefaultTableModel) dataTable.getModel()).findColumn("sno")).toString()));
+            int itemid = snoToItemIdMap.get(Integer.parseInt(model.getValueAt(selectedRow, model.findColumn("sno")).toString()));
             statement.setInt(1, selectedQuantity);
             statement.setInt(2, BID);
             statement.setInt(3, itemid);
@@ -336,6 +339,9 @@ public class SearchResultWindow extends JFrame {
             }
         };
         dataTable.setModel(model);
+        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
+        sorter.setSortKeys(List.of(new RowSorter.SortKey(DESIGN_ID_INDEX + 1, SortOrder.ASCENDING)));
+        dataTable.setRowSorter(sorter);
         dataTable.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2 && dataTable.getSelectedRow() != -1) {
@@ -377,6 +383,7 @@ public class SearchResultWindow extends JFrame {
         }
 
         DefaultTableModel inventoryModel = (DefaultTableModel) dataTable.getModel();
+        selectedRow = dataTable.convertRowIndexToModel(selectedRow);
         Object designIdValue = inventoryModel.getValueAt(selectedRow, 1);
         String designId = designIdValue == null ? "" : designIdValue.toString().trim();
         String itemName = String.valueOf(inventoryModel.getValueAt(selectedRow, 2));

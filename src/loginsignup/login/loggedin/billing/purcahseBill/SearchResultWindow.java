@@ -3,9 +3,11 @@ package loginsignup.login.loggedin.billing.purcahseBill;
 import mainpack.MyClass;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.event.*;
 import java.sql.*;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import static utils.DBStructure.*;
 
@@ -31,11 +33,15 @@ public class SearchResultWindow extends JFrame {
         selectionComboBox.setModel(new DefaultComboBoxModel<>(new String[]{"Inventory"}));
         panaTypeLabel.setText("Purchase items");
         button2.setText("Add item");
-        dataTable.setModel(new DefaultTableModel(
+        DefaultTableModel model = new DefaultTableModel(
                 new String[]{"design id", "Item Name", "Quantity", "Purchase Price", "Sell Price"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) { return false; }
-        });
+        };
+        dataTable.setModel(model);
+        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
+        sorter.setSortKeys(List.of(new RowSorter.SortKey(0, SortOrder.ASCENDING)));
+        dataTable.setRowSorter(sorter);
         dataTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         backButton.addActionListener(e -> closeSearch());
         button2.addActionListener(e -> activateSelection());
