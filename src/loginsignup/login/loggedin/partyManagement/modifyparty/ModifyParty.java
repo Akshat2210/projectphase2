@@ -166,7 +166,8 @@ public class ModifyParty extends JFrame {
                         "UPDATE order_slips_main SET customer_name = ? WHERE customer_name = ?",
                         "UPDATE transactions SET customer_name = ? WHERE customer_name = ?",
                         "UPDATE send_packets SET customer_name = ? WHERE customer_name = ?",
-                        "UPDATE journalentry SET accountname = ? WHERE accountname = ?"
+                        "UPDATE journalentry SET accountname = ? WHERE accountname = ?",
+                        "UPDATE inventory SET SupplierName = ? WHERE SupplierName = ?"
                 };
 
                 for (String sql : updates) {
