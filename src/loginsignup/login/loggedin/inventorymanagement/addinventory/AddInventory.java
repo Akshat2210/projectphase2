@@ -23,7 +23,7 @@ public class AddInventory extends JFrame {
              PreparedStatement stmt = con.prepareStatement(inventoryAddQuery)) {
             stmt.setString(1, utils.TextNormalization.trimNullable(designID.getText()));
             stmt.setInt(2, Integer.parseInt(openingStockField.getText()));
-            stmt.setString(3, utils.TextNormalization.trimToEmpty(supplierComboBox.getSelectedItem()));
+            stmt.setString(3, getSelectedSupplier());
             try {
                 stmt.setBigDecimal(4, parsePrice(buyPriceField.getText()));
             } catch (NumberFormatException ex) {
@@ -76,7 +76,7 @@ public class AddInventory extends JFrame {
             inventoryUpdateStmt.setString(2, utils.TextNormalization.trimNullable(itemNameField.getText())); // assuming you have this field
             inventoryUpdateStmt.setBigDecimal(3, parsePrice(buyPriceField.getText())); // buy price
             inventoryUpdateStmt.setBigDecimal(4, parsePrice(sellPriceField.getText())); // sell price
-            inventoryUpdateStmt.setString(5, utils.TextNormalization.trimNullable(supplierComboBox.getSelectedItem().toString())); // WHERE condition
+            inventoryUpdateStmt.setString(5, getSelectedSupplier());
             inventoryUpdateStmt.setString(6, utils.TextNormalization.trimNullable(designID.getText())); // WHERE condition
             inventoryUpdateStmt.executeUpdate();
             return SUCCESS_CODE;
@@ -87,6 +87,13 @@ public class AddInventory extends JFrame {
             e.printStackTrace();
             return SQL_ERROR;
         }
+    }
+
+    private String getSelectedSupplier() {
+        // Index zero is the shared loader's "Select Customer" placeholder.
+        if (supplierComboBox.getSelectedIndex() <= 0) return null;
+        String supplier = utils.TextNormalization.trimToEmpty(supplierComboBox.getSelectedItem());
+        return supplier.isEmpty() ? null : supplier;
     }
 
     private BigDecimal parsePrice(String text) {
