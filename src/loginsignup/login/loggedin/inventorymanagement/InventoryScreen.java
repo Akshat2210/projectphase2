@@ -104,6 +104,6 @@ public class InventoryScreen extends JFrame {
         }
 
         sorter.sort();
-        pack();
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
     }
 }

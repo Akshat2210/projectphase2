@@ -49,7 +49,7 @@ public class Recieve extends JFrame {
         lotNumber.addActionListener(event -> lotSelectionDelay.restart());
         loadSelectedLot();
         submitButton.addActionListener(event -> insertData());
-        pack();
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
 
         backButton.addActionListener(new ActionListener() {
             @Override
