@@ -14,6 +14,7 @@ import java.awt.event.ActionListener;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Locale;
 
 public class LOGIN extends JFrame {
     private JTextField userTextField;
@@ -125,35 +126,60 @@ public class LOGIN extends JFrame {
 
                 loginID = userTextField.getText().trim();
                 database = databaseField.getText().trim();
-                if (!"root".contentEquals(loginID) && database.isEmpty()) {
-                    database = loginID;
-                }
+                boolean databaseWasBlank = database.isEmpty();
+                boolean isNamedRoot = "root".contentEquals(loginID);
+                boolean needsAdminCheck = databaseWasBlank && !isNamedRoot;
                 host = MyClass.HOST;
-                url = "jdbc:mysql://" + host + ":" + port + "/" + database
-                        + "?connectTimeout=" + MyClass.TIMEOUT
-                        + "&socketTimeout=" + MyClass.TIMEOUT;
+                updateUrl();
                 if (password != null) {
                     Arrays.fill(password, '\0');
                 }
                 password = passwordField.getPassword();
                 MyClass.closeConnectionPool();
 
+                boolean openRootSettings = isNamedRoot && databaseWasBlank;
                 try (Connection con = MyClass.createConnection();
                 ) {
                     if (con == null) {
                         nullLoginParameters();
                         return;
                     }
+                    if (needsAdminCheck && hasGlobalAdministratorPrivileges(con)) {
+                        openRootSettings = JOptionPane.showConfirmDialog(
+                                temp,
+                                "This MySQL account has server-level administrator privileges.\n"
+                                        + "Open Root Settings with this account?",
+                                "Administrator login",
+                                JOptionPane.YES_NO_OPTION,
+                                JOptionPane.QUESTION_MESSAGE
+                        ) == JOptionPane.YES_OPTION;
+                    }
                 } catch (SQLException ex) {
                     MyClass.closeConnectionPool();
-                    if (ex.getErrorCode() == CONSTANTS.SQL_DATABASE_ACCESS_DENIED_ERROR) {
-                        JOptionPane.showMessageDialog(temp,
-                                "This user does not have access to database '" + database + "'.",
-                                "Access denied",
-                                JOptionPane.ERROR_MESSAGE);
-                    }
                     nullLoginParameters();
                     return;
+                }
+
+                if (needsAdminCheck && !openRootSettings) {
+                    database = loginID;
+                    updateUrl();
+                    MyClass.closeConnectionPool();
+                    try (Connection con = MyClass.createConnection()) {
+                        if (con == null) {
+                            nullLoginParameters();
+                            return;
+                        }
+                    } catch (SQLException ex) {
+                        MyClass.closeConnectionPool();
+                        if (ex.getErrorCode() == CONSTANTS.SQL_DATABASE_ACCESS_DENIED_ERROR) {
+                            JOptionPane.showMessageDialog(temp,
+                                    "This user does not have access to database '" + database + "'.",
+                                    "Access denied",
+                                    JOptionPane.ERROR_MESSAGE);
+                        }
+                        nullLoginParameters();
+                        return;
+                    }
                 }
                 try {
                     clearDataFolder();
@@ -162,7 +188,7 @@ public class LOGIN extends JFrame {
                             "Login succeeded, but the data folder could not be completely cleared.\n" + ex.getMessage(),
                             "Data folder cleanup", JOptionPane.WARNING_MESSAGE);
                 }
-                if(!database.isEmpty()) {
+                if(!openRootSettings) {
                     MyClass.mainScreen = new MainScreen();
                     MyClass.mainScreen.init();
                     MyClass.mainScreen.setVisible(true);
@@ -175,6 +201,32 @@ public class LOGIN extends JFrame {
             }
         });
 
+    }
+
+    private void updateUrl() {
+        url = "jdbc:mysql://" + host + ":" + port + "/" + database
+                + "?connectTimeout=" + MyClass.TIMEOUT
+                + "&socketTimeout=" + MyClass.TIMEOUT;
+    }
+
+    private boolean hasGlobalAdministratorPrivileges(Connection connection) throws SQLException {
+        try (java.sql.Statement statement = connection.createStatement();
+             java.sql.ResultSet grants = statement.executeQuery("SHOW GRANTS FOR CURRENT_USER()")) {
+            while (grants.next()) {
+                String grant = grants.getString(1).toUpperCase(Locale.ROOT);
+                boolean hasGlobalScope = grant.contains(" ON *.* ");
+                boolean canManageRootSettings = grant.contains("ALL PRIVILEGES")
+                        || (grant.contains("CREATE USER")
+                        && grant.contains("SHOW DATABASES")
+                        && (grant.contains(" CREATE,") || grant.contains("GRANT CREATE "))
+                        && (grant.contains(" DROP,") || grant.contains("GRANT DROP ")));
+                if (hasGlobalScope && canManageRootSettings && grant.contains("WITH GRANT OPTION")) {
+                    return true;
+                }
+                System.out.println(grant);
+            }
+        }
+        return false;
     }
 
     /** Clears generated files after successful login, retaining the data folder itself. */
