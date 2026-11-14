@@ -161,7 +161,7 @@ public class RecieveDiary extends JFrame {
             protected List<Entry> doInBackground() throws SQLException {
                 String sql = "SELECT a.receive_action_id,a.send_lot_id,a.receive_date,a.received_by_user,a.receive_lot_remark,"
                         + " g.godown_name,gp.godown_name AS parent_name,p.send_packet_id,p.packet_number,p.customer_name,p.packet_remark,"
-                        + " i.item_name,i.sent_quantity,i.item_remark,r.received_quantity,r.receive_item_remark FROM "
+                        + " i.item_name,i.sent_quantity,i.item_remark,i.order_slip_id,r.received_quantity,r.receive_item_remark FROM "
                         + DBStructure.RECEIVE_ACTIONS_TABLE + " a LEFT JOIN " + DBStructure.GODOWNS_TABLE + " g ON g.godown_id=a.receiving_godown_id"
                         + " LEFT JOIN " + DBStructure.GODOWNS_TABLE + " gp ON gp.godown_id=g.parent_godown_id LEFT JOIN "
                         + DBStructure.RECEIVE_ITEMS_TABLE + " r ON r.receive_action_id=a.receive_action_id LEFT JOIN "
@@ -189,7 +189,7 @@ public class RecieveDiary extends JFrame {
                                 entry.packets.put(packetId, packet);
                             }
                             packet.rows.add(new Object[]{utils.TextNormalization.trimNullable(r.getString("item_name")),r.getInt("sent_quantity"),r.getInt("received_quantity"),
-                                    utils.TextNormalization.stripTrailingNullable(r.getString("item_remark")),utils.TextNormalization.stripTrailingNullable(r.getString("receive_item_remark"))});
+                                    utils.TextNormalization.stripTrailingNullable(r.getString("item_remark")),utils.TextNormalization.stripTrailingNullable(r.getString("receive_item_remark")),r.getObject("order_slip_id")});
                         }
                     }
                 }
@@ -218,9 +218,9 @@ public class RecieveDiary extends JFrame {
                 details.add(valueField("Customer", packet.customer)); details.add(valueField("Packet remark", packet.remark));
                 card.add(details, BorderLayout.NORTH);
                 DefaultTableModel model = new DefaultTableModel(packet.rows.toArray(new Object[0][]),
-                        new String[]{"Item name","Sent quantity","Received quantity","Send remark","Receive remark"}) {
+                        new String[]{"Item name","Sent quantity","Received quantity","Send remark","Receive remark","Order slip number"}) {
                     public boolean isCellEditable(int row, int column) { return false; }
-                    public Class<?> getColumnClass(int column) { return column == 1 || column == 2 ? Integer.class : String.class; }
+                    public Class<?> getColumnClass(int column) { return column == 1 || column == 2 || column == 5 ? Integer.class : String.class; }
                 };
                 JTable table = new JTable(model); table.setRowHeight(26); table.setFillsViewportHeight(true);
                 table.getTableHeader().setReorderingAllowed(false);
