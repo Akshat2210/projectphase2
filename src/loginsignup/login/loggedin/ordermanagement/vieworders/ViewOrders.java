@@ -30,6 +30,10 @@ public class ViewOrders extends JFrame {
 
     // direction: 0 = first match, 1 = next, -1 = previous.
     private void loadFilteredSlip(int direction) {
+        loadFilteredSlip(direction, getCurrentBillID());
+    }
+
+    private void loadFilteredSlip(int direction, int referenceId) {
         boolean customerSelected = customerComboBox.getSelectedIndex() > 0;
         boolean typeSelected = panaTypeComboBox.getSelectedIndex() > 0;
         String query = "SELECT slip_id FROM order_slips WHERE slip_id IS NOT NULL";
@@ -40,7 +44,7 @@ public class ViewOrders extends JFrame {
         Integer selectedId = null;
         try (Connection con = MyClass.createConnection(); PreparedStatement stmt = con.prepareStatement(query)) {
             int parameter = 1;
-            if (direction != 0) stmt.setInt(parameter++, getCurrentBillID());
+            if (direction != 0) stmt.setInt(parameter++, referenceId);
             if (customerSelected) stmt.setString(parameter++, utils.TextNormalization.trimToEmpty(customerComboBox.getSelectedItem()));
             if (typeSelected) stmt.setString(parameter, utils.TextNormalization.trimToEmpty(panaTypeComboBox.getSelectedItem()));
             try (ResultSet rs = stmt.executeQuery()) {
@@ -66,6 +70,7 @@ public class ViewOrders extends JFrame {
             dateLabel.setText("");
             billIDLabel.setText("");
             nameLabel.setText("");
+            totalPlatingField.setText("");
 
             this.id = id;
             model.setRowCount(0);
@@ -224,6 +229,7 @@ public class ViewOrders extends JFrame {
         deleteButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                if (getCurrentBillID() <= 0 || orderSlipTable.getRowCount() == 0) return;
                 int deleteAction = JOptionPane.showConfirmDialog(ViewOrders.this, "Are you sure you want to delete order slip " + id, "confirm delete action", JOptionPane.OK_CANCEL_OPTION);
                 if (deleteAction == JOptionPane.CANCEL_OPTION) {
                     return;
@@ -267,7 +273,12 @@ public class ViewOrders extends JFrame {
 //                        }
                         String orderSlipMainDeleteString = "delete from order_slips_main where slip_id=" + idd;
                         orderSlipMainDeleteStatement = con.createStatement();
-                        orderSlipMainDeleteStatement.executeUpdate(orderSlipMainDeleteString);
+                        if (orderSlipMainDeleteStatement.executeUpdate(orderSlipMainDeleteString) != 1) {
+                            con.rollback();
+                            setCurrentBill(-1);
+                            JOptionPane.showMessageDialog(ViewOrders.this, "This order slip no longer exists. No stock was restored.");
+                            return;
+                        }
                         DefaultTableModel model = (DefaultTableModel) orderSlipTable.getModel();
                         String inventoryUpdateQuery = "update inventory set totalquantity=totalquantity+? where designid = ? ";
                         inventoryUpdateStatement = con.prepareStatement(inventoryUpdateQuery);
@@ -289,7 +300,6 @@ public class ViewOrders extends JFrame {
                         }
                         inventoryUpdateStatement.executeBatch();
                         con.commit();
-                        con.close();
                         System.out.println("id ->" + idd + "deleted");
                     } catch (SQLException ex) {
                         try {
@@ -316,7 +326,9 @@ public class ViewOrders extends JFrame {
                             UtilityMethods.storeLogs(ex);
                         }
                     }
-
+                    int deletedId = getCurrentBillID();
+                    setCurrentBill(-1);
+                    loadFilteredSlip(1, deletedId);
                 }
             }
 
