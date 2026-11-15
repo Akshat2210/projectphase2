@@ -102,6 +102,34 @@ public class DataManager extends JFrame {
         String database = selectedDatabase();
         if (database == null) return;
 
+        final char[] recoveryPassword;
+        try { recoveryPassword = ProtectedDeletionBackup.recoveryPassword(); }
+        catch (java.io.IOException exception) {
+            JOptionPane.showMessageDialog(this, "Could not prepare the recovery password: " + exception.getMessage(),
+                    "Deletion blocked", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        try { confirmDeleteTillDate(database, recoveryPassword); }
+        finally { java.util.Arrays.fill(recoveryPassword, '\0'); }
+    }
+
+    private void confirmDeleteTillDate(String database, char[] recoveryPassword) {
+        boolean[] copied = {false};
+        JTextField recoveryField = new JTextField(new String(recoveryPassword), 24);
+        recoveryField.setEditable(false);
+        JButton copyPasswordButton = new JButton("Copy recovery password to clipboard");
+        copyPasswordButton.addActionListener(event -> {
+            try {
+                java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
+                        new java.awt.datatransfer.StringSelection(new String(recoveryPassword)), null);
+                copied[0] = true;
+                copyPasswordButton.setText("Password copied — save it somewhere safe");
+            } catch (RuntimeException exception) {
+                copied[0] = false;
+                JOptionPane.showMessageDialog(this, "Could not copy the password. Deletion remains blocked.");
+            }
+        });
+
         JXMonthView calendar = new JXMonthView();
         calendar.setTraversable(true);
         calendar.setSelectionDate(new Date());
@@ -110,6 +138,11 @@ public class DataManager extends JFrame {
                 "Delete data through the selected date in database '" + database + "'.",
                 "Select the cutoff date (inclusive):",
                 calendar,
+                "A complete encrypted SQL backup will be saved in out/protected-backups before deletion.",
+                "Please copy the password for recovery and save it somewhere safe.",
+                "This password will be replaced in passwordHolder.txt after the backup is verified.",
+                recoveryField,
+                copyPasswordButton,
                 "Type CONFIRM in CAPITAL letters:",
                 confirmation
         };
@@ -125,13 +158,18 @@ public class DataManager extends JFrame {
                         "Confirmation does not match", JOptionPane.ERROR_MESSAGE);
                 continue;
             }
+            if (!copied[0]) {
+                JOptionPane.showMessageDialog(this, "Click Copy recovery password to clipboard before deleting.",
+                        "Recovery password required", JOptionPane.WARNING_MESSAGE);
+                continue;
+            }
             LocalDate cutoff = selectedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
             try {
-                deleteTill(database, cutoff);
+                java.nio.file.Path backup = deleteTill(database, cutoff, recoveryPassword);
                 JOptionPane.showMessageDialog(this, "Data in '" + database + "' deleted through " +
                         new SimpleDateFormat("dd MMM yyyy").format(selectedDate) +
-                        ". Account balances and stock have been carried forward.");
-            } catch (SQLException exception) {
+                        ". Account balances and stock have been carried forward.\nEncrypted backup: " + backup);
+            } catch (Exception exception) {
                 JOptionPane.showMessageDialog(this, "Deletion failed: " + exception.getMessage(),
                         "Error", JOptionPane.ERROR_MESSAGE);
             }
@@ -140,7 +178,7 @@ public class DataManager extends JFrame {
     }
 
     /** Compacts history through cutoff (inclusive); called only after UI confirmation. */
-    private void deleteTill(String database, LocalDate cutoff) throws SQLException {
+    private java.nio.file.Path deleteTill(String database, LocalDate cutoff, char[] recoveryPassword) throws Exception {
         if (database == null || cutoff == null ||
                 java.util.Arrays.asList("mysql", "sys", "information_schema", "performance_schema")
                         .contains(database.toLowerCase(Locale.ROOT))) {
@@ -176,6 +214,9 @@ public class DataManager extends JFrame {
                         }
                     }
                 }
+
+                // Fail closed: no accounting mutations happen until a full authenticated backup exists.
+                java.nio.file.Path backup = ProtectedDeletionBackup.create(database, recoveryPassword);
 
                 Map<String, BigDecimal> opening = new LinkedHashMap<>();
                 try (PreparedStatement statement = connection.prepareStatement(
@@ -237,7 +278,8 @@ public class DataManager extends JFrame {
                     statement.executeBatch();
                 }
                 connection.commit();
-            } catch (SQLException | RuntimeException exception) {
+                return backup;
+            } catch (Exception exception) {
                 try {
                     connection.rollback();
                 } catch (SQLException rollbackFailure) {
