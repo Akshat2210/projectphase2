@@ -60,9 +60,13 @@ public final class ProtectedDeletionBackup {
     }
 
     /** Called after deletion locks are acquired and before any accounting data changes. */
-    public static Path create(String database, char[] copiedPassword) throws Exception {
+    public static Path create(String database, char[] copiedPassword, Path directory) throws Exception {
         if (database == null || database.isBlank() || database.startsWith("-") || database.indexOf('\0') >= 0)
             throw new IOException("Invalid backup database.");
+        if (directory == null || !Files.isDirectory(directory) || !Files.isWritable(directory)) {
+            throw new IOException("Select an existing writable backup folder.");
+        }
+        directory = directory.toAbsolutePath().normalize();
         Path lockPath = HOLDER.resolveSibling("passwordHolder.lock");
         try (FileChannel channel = FileChannel.open(lockPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
              FileLock lock = channel.tryLock()) {
@@ -71,8 +75,6 @@ public final class ProtectedDeletionBackup {
             try {
                 if (!Arrays.equals(current, copiedPassword))
                     throw new IOException("The recovery password changed. Cancel and copy the current password again.");
-                Path directory = Path.of("out", "protected-backups").toAbsolutePath().normalize();
-                Files.createDirectories(directory);
                 String prefix = database.replaceAll("[^A-Za-z0-9_-]", "_");
                 Path destination = directory.resolve(prefix + "_before_delete_"
                         + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
@@ -157,7 +159,7 @@ public final class ProtectedDeletionBackup {
         return digest.digest();
     }
 
-    static void decrypt(Path source, char[] password, OutputStream output) throws Exception {
+    public static void decrypt(Path source, char[] password, OutputStream output) throws Exception {
         try (InputStream encrypted = Files.newInputStream(source)) {
             byte[] header = encrypted.readNBytes(HEADER_SIZE);
             if (header.length != HEADER_SIZE) throw new IOException("Incomplete encrypted backup.");

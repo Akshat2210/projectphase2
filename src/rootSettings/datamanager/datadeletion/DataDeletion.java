@@ -109,6 +109,9 @@ public class DataDeletion extends JFrame {
         String database = selectedDatabase();
         if (database == null) return;
 
+        java.nio.file.Path backupDirectory = chooseBackupDirectory();
+        if (backupDirectory == null) return;
+
         final char[] recoveryPassword;
         try { recoveryPassword = ProtectedDeletionBackup.recoveryPassword(); }
         catch (java.io.IOException exception) {
@@ -116,11 +119,26 @@ public class DataDeletion extends JFrame {
                     "Deletion blocked", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        try { confirmDeleteTillDate(database, recoveryPassword); }
+        try { confirmDeleteTillDate(database, recoveryPassword, backupDirectory); }
         finally { java.util.Arrays.fill(recoveryPassword, '\0'); }
     }
 
-    private void confirmDeleteTillDate(String database, char[] recoveryPassword) {
+    private java.nio.file.Path chooseBackupDirectory() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Choose encrypted backup folder");
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        chooser.setAcceptAllFileFilterUsed(false);
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return null;
+        java.nio.file.Path directory = chooser.getSelectedFile().toPath().toAbsolutePath().normalize();
+        if (!java.nio.file.Files.isDirectory(directory) || !java.nio.file.Files.isWritable(directory)) {
+            JOptionPane.showMessageDialog(this, "Choose an existing writable folder.",
+                    "Invalid backup folder", JOptionPane.ERROR_MESSAGE);
+            return null;
+        }
+        return directory;
+    }
+
+    private void confirmDeleteTillDate(String database, char[] recoveryPassword, java.nio.file.Path backupDirectory) {
         boolean[] copied = {false};
         JTextField recoveryField = new JTextField(new String(recoveryPassword), 24);
         recoveryField.setEditable(false);
@@ -145,7 +163,8 @@ public class DataDeletion extends JFrame {
                 "Delete data through the selected date in database '" + database + "'.",
                 "Select the cutoff date (inclusive):",
                 calendar,
-                "A complete encrypted SQL backup will be saved in out/protected-backups before deletion.",
+                "A complete encrypted SQL backup will be saved in:",
+                backupDirectory.toString(),
                 "Please copy the password for recovery and save it somewhere safe.",
                 "This password will be replaced in passwordHolder.txt after the backup is verified.",
                 recoveryField,
@@ -172,7 +191,7 @@ public class DataDeletion extends JFrame {
             }
             LocalDate cutoff = selectedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
             try {
-                java.nio.file.Path backup = deleteTill(database, cutoff, recoveryPassword);
+                java.nio.file.Path backup = deleteTill(database, cutoff, recoveryPassword, backupDirectory);
                 JOptionPane.showMessageDialog(this, "Data in '" + database + "' deleted through " +
                         new SimpleDateFormat("dd MMM yyyy").format(selectedDate) +
                         ". Account balances and stock have been carried forward.\nEncrypted backup: " + backup);
@@ -185,7 +204,8 @@ public class DataDeletion extends JFrame {
     }
 
     /** Compacts history through cutoff (inclusive); called only after UI confirmation. */
-    private java.nio.file.Path deleteTill(String database, LocalDate cutoff, char[] recoveryPassword) throws Exception {
+    private java.nio.file.Path deleteTill(String database, LocalDate cutoff, char[] recoveryPassword,
+                                          java.nio.file.Path backupDirectory) throws Exception {
         if (database == null || cutoff == null ||
                 java.util.Arrays.asList("mysql", "sys", "information_schema", "performance_schema")
                         .contains(database.toLowerCase(Locale.ROOT))) {
@@ -223,7 +243,7 @@ public class DataDeletion extends JFrame {
                 }
 
                 // Fail closed: no accounting mutations happen until a full authenticated backup exists.
-                java.nio.file.Path backup = ProtectedDeletionBackup.create(database, recoveryPassword);
+                java.nio.file.Path backup = ProtectedDeletionBackup.create(database, recoveryPassword, backupDirectory);
 
                 Map<String, BigDecimal> opening = new LinkedHashMap<>();
                 try (PreparedStatement statement = connection.prepareStatement(
