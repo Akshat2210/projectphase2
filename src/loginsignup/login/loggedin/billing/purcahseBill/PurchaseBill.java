@@ -56,6 +56,7 @@ public class PurchaseBill extends JFrame {
 
     private boolean returnIsCellEditable(int row, int col, int[][] extraIndices) {
         if (col == snoIndex) return false;
+        if (col == totalIndex) return false;
         if (extraIndices != null) {
             for (int[] index : extraIndices) {
                 if (index[0] == row && index[1] == col) return false;
