@@ -47,3 +47,13 @@ sample.summary.json
 samplegenerator.py
 .idea/dataSources.local.xml
 .idea/dataSources/
+
+
+src/resources/PORT.json
+passwordHolder.lock
+passwordHolder.txt
+
+ignore/
+
+ui_tests/
+
