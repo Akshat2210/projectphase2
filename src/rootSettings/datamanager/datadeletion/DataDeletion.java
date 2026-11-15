@@ -1,8 +1,9 @@
-package rootSettings.datamanager;
+package rootSettings.datamanager.datadeletion;
 
 import mainpack.MyClass;
 import org.jdesktop.swingx.JXMonthView;
-import rootSettings.RootSettiingsScreen;
+import rootSettings.datamanager.DataManager;
+import rootSettings.datamanager.ProtectedDeletionBackup;
 
 import javax.swing.*;
 import java.sql.Connection;
@@ -19,29 +20,35 @@ import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class DataManager extends JFrame {
+public class DataDeletion extends JFrame {
     private JPanel panel;
     private JButton backButton;
     private JList<String> databaselist;
     private JButton deleteTillDateButton;
     private JButton deleteAllDataButton;
-    private final RootSettiingsScreen parentWindow;
+    private final DataManager parentWindow;
+    private boolean initialized;
 
-    public DataManager(RootSettiingsScreen parentWindow) {
+    public DataDeletion(DataManager parentWindow) {
         this.parentWindow = parentWindow;
     }
 
     public void init() {
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        if (initialized) return;
+        initialized = true;
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setContentPane(panel);
-        setTitle(MyClass.TITLE + ": DATA MANAGER");
+        setTitle(MyClass.TITLE + ": DATA DELETION");
         databaselist.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         loadDatabases();
         pack();
+        setLocationRelativeTo(parentWindow);
 
-        backButton.addActionListener(e -> {
-            dispose();
-            parentWindow.setVisible(true);
+        backButton.addActionListener(e -> dispose());
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override public void windowClosed(java.awt.event.WindowEvent event) {
+                if (parentWindow != null) parentWindow.setVisible(true);
+            }
         });
         deleteAllDataButton.addActionListener(e -> confirmDeleteAll());
         deleteTillDateButton.addActionListener(e -> confirmDeleteTillDate());
