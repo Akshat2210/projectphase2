@@ -272,8 +272,6 @@ public class cashTransaction extends JFrame {
         remarkTextField.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
-                generateTransactions(Integer.parseInt(remarkTextField.getText()), -1);
             }
         });
         clearAccountButton.addActionListener(new ActionListener() {
