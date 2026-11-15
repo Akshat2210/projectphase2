@@ -383,6 +383,7 @@ public class PurchaseBill extends JFrame {
                 String designId = getDesignIdValue(row);
                 model.setValueAt(designId, row, designIDIndex);
                 fetchAndAppend(designId, row);
+                updateTotal(row);
                 updateDisplayedInventory();
                 billTable.repaint();
             }
