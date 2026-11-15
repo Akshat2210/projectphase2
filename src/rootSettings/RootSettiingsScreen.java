@@ -37,6 +37,7 @@ public class RootSettiingsScreen extends JFrame {
 
         logoutButton.addActionListener(e -> {
             MyClass.login.nullLoginParameters();
+            MyClass.login.clearLoginFields();
             Variables.devMode = false;
             MyClass.login.setDevModeSelected(false);
             MyClass.login.setVisible(true);

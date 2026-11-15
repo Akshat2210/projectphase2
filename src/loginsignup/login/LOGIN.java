@@ -271,6 +271,12 @@ public class LOGIN extends JFrame {
         LOGINButton.doClick();
     }
 
+    public void clearLoginFields() {
+        userTextField.setText("");
+        databaseField.setText("");
+        passwordField.setText("");
+    }
+
     public void nullLoginParameters() {
         database = null;
         loginID = null;

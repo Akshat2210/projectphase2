@@ -52,6 +52,7 @@ public class MainScreen extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 MyClass.closeConnectionPool();
                 MyClass.login.nullLoginParameters();
+                MyClass.login.clearLoginFields();
                 Variables.devMode = false;
                 MyClass.login.setDevModeSelected(false);
                 MyClass.login.setVisible(true);
