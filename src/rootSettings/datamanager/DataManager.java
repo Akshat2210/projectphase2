@@ -6,6 +6,7 @@ import java.awt.event.WindowEvent;
 import mainpack.MyClass;
 import rootSettings.RootSettiingsScreen;
 import rootSettings.datamanager.datadeletion.DataDeletion;
+import rootSettings.datamanager.recover.Recover;
 
 public class DataManager extends JFrame {
     private JPanel panel;
@@ -13,6 +14,7 @@ public class DataManager extends JFrame {
     private JButton deleteDataButton;
     private JButton modifyDataButton;
     private JButton viewDataButton;
+    private JButton recoverButton;
     private final RootSettiingsScreen parentWindow;
     private boolean initialized;
 
@@ -38,6 +40,12 @@ public class DataManager extends JFrame {
             DataDeletion deletion = new DataDeletion(DataManager.this);
             deletion.init();
             deletion.setVisible(true);
+            setVisible(false);
+        });
+        recoverButton.addActionListener(event -> {
+            Recover recover = new Recover(DataManager.this);
+            recover.init();
+            recover.setVisible(true);
             setVisible(false);
         });
         modifyDataButton.setEnabled(false);
