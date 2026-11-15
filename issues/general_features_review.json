@@ -20,7 +20,14 @@
         "Inventory selection currently displays TotalQuantity only. If opening stock is maintained separately, its display policy should be decided explicitly.",
         "Closing the inventory selector should close only that window, not the full application.",
         "Cancelled or reset order-slip forms should roll back and close their draft transaction."
-      ]
+      ],
+      "forwarded_to": "issues/issueCompiled.json",
+      "compiled_section": "feature_reviews"
     }
-  ]
+  ],
+  "archived_status": "historical_reference",
+  "status": "forwarded",
+  "forwarded_to": "issues/issueCompiled.json",
+  "forwarded_date": "2026-11-15",
+  "tracking_note": "Superseded. Update issues/issueCompiled.json only. Original entries remain for historical reference."
 }

@@ -5,7 +5,8 @@
   "status_values": [
     "open",
     "in_progress",
-    "completed"
+    "completed",
+    "forwarded"
   ],
   "notes": [
     "Original findings are retained even where subsequent user edits have fixed or partially fixed them. Status is based on source review, not a live database test. Original review line numbers may shift as the file changes."
@@ -135,24 +136,30 @@
       "id": "NEWBILL-008",
       "title": "Invalid numeric input silently becomes zero",
       "priority": "high",
-      "status": "open",
+      "status": "forwarded",
       "original_review_line": 406,
       "methods": [
-        "getDoubleValue",
+        "getDecimalValue",
         "insertData",
+        "calculateRowValues",
         "reCalculateValuesAndAppend"
       ],
-      "details": "getDoubleValue returns zero when parsing fails. Mistyped charges can disappear without an explanatory error. Plating precision and floating-point money rounding also remain inconsistent: calculation should use the same normalized weight that is saved, with an agreed decimal rounding policy.",
+      "details": "getDecimalValue still returns BigDecimal.ZERO on invalid input, and calculateRowValues writes blank/zero back to the model, so mistyped charges can disappear silently. BigDecimal arithmetic and normalized rounding are now implemented: charges use scale 2, plating weight scale 3, and calculated values are written back to the model before persistence. Numeric validation remains unresolved.",
       "notes": [
-        "The schema now declares plating weights as DECIMAL(10,3); that alone does not normalize Java calculations before saving."
+        "The schema now declares plating weights as DECIMAL(10,3); that alone does not normalize Java calculations before saving.",
+        "2026-11-14: Precision/rounding subproblem is resolved in current NewBill source. Keep this issue open for invalid numeric input; getDoubleValue no longer describes the current implementation."
       ],
-      "completed_date": null
+      "completed_date": null,
+      "original_status": "open",
+      "forwarded_to": "issues/issueCompiled.json",
+      "compiled_id": "NEWBILL-008",
+      "forwarded_date": "2026-11-15"
     },
     {
       "id": "NEWBILL-009",
       "title": "Bill-number generation can collide between users",
       "priority": "medium",
-      "status": "open",
+      "status": "forwarded",
       "methods": [
         "insertData",
         "UtilityMethods.getBillNumber"
@@ -162,22 +169,39 @@
         "src/resources/structure.sql"
       ],
       "details": "Bill numbers use MAX(BillNumber) + 1. Two simultaneous saves can select the same number. The unique database key prevents duplicate numbers, but one save fails rather than safely obtaining another number.",
-      "notes": [],
-      "completed_date": null
+      "notes": [
+        "2026-11-14: UtilityMethods.getBillNumber still uses MAX(BillNumber)+1 filtered by bill type. Unique numbering is not serialized between concurrent saves."
+      ],
+      "completed_date": null,
+      "original_status": "open",
+      "forwarded_to": "issues/issueCompiled.json",
+      "compiled_id": "NEWBILL-009",
+      "forwarded_date": "2026-11-15"
     },
     {
       "id": "NEWBILL-010",
       "title": "Rollback failures are not handled safely",
       "priority": "high",
-      "status": "open",
+      "status": "forwarded",
       "methods": [
         "insertData"
       ],
       "details": "If rollback to the submission savepoint fails, the handler displays an error and returns false, but the same screen still permits another submission on an uncertain transaction. Prevent further saves and require safe transaction recovery or a checked restart.",
       "notes": [
-        "2026-10-30: Deferred explicitly by the user and separated from NEWBILL-003."
+        "2026-10-30: Deferred explicitly by the user and separated from NEWBILL-003.",
+        "2026-11-14: Failed conn.rollback(savepoint) still returns false without disabling further submission or safely recreating transaction state. Remains open."
       ],
-      "completed_date": null
+      "completed_date": null,
+      "original_status": "open",
+      "forwarded_to": "issues/issueCompiled.json",
+      "compiled_id": "NEWBILL-010",
+      "forwarded_date": "2026-11-15"
     }
-  ]
+  ],
+  "last_status_review": "2026-11-14",
+  "archived_status": "historical_reference",
+  "status": "forwarded",
+  "forwarded_to": "issues/issueCompiled.json",
+  "forwarded_date": "2026-11-15",
+  "tracking_note": "Superseded. Update issues/issueCompiled.json only. Original entries remain for historical reference."
 }

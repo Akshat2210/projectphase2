@@ -1,0 +1,1375 @@
+{
+  "project": "AccountingSoftwarePro",
+  "title": "Compiled issues",
+  "created_date": "2026-11-15",
+  "status": "active",
+  "canonical": true,
+  "notes": [
+    "This is the single active issue tracker. Maintain statuses here; legacy source JSON files are forwarding/history references.",
+    "The issues array preserves the 27 pending items in the user-requested order. Completed history and schema review findings are retained separately.",
+    "Existing findings are preserved, not newly verified or fixed by consolidation. Source reviews do not establish live database or UI correctness.",
+    "Negative stock is allowed in later business notes; ISSUE-016 requires a policy decision before implementation.",
+    "Original line references and source file names are historical and can become stale."
+  ],
+  "status_values": [
+    "open",
+    "in_progress",
+    "blocked",
+    "completed",
+    "wont_fix"
+  ],
+  "issues": [
+    {
+      "id": "ISSUE-004",
+      "title": "Make deletion of old bills and transactions safer",
+      "priority": "high",
+      "status": "open",
+      "details": "Require a clear confirmation, backup check, preview of affected records, audit log, and a recoverable archive before deletion.",
+      "files": [
+        "src/loginsignup/login/loggedin/MainScreen.java"
+      ],
+      "notes": [
+        "2026-11-14 source recheck: Deletion has confirmation dialogs in DataManager, but no complete backup/preview/audit/recoverable archive workflow. MainScreen also retains deleteAndForwardBalance. Remains open.",
+        "2026-11-15: DataManager Delete till date now requires copying a 16-digit recovery password, streams a full mysqldump into an AES-GCM encrypted backup under out/protected-backups, authenticates it before accounting mutations, and atomically rotates passwordHolder.txt. Added a password-prompted SQL recovery tool. Full Java compilation and 13 isolated encryption/rotation tests passed. No live MySQL dump, restore or deletion tested. Keep open: affected-record preview, deletion audit and older MainScreen deletion path remain outside this change."
+      ],
+      "completed_date": null,
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-004",
+      "number": 1
+    },
+    {
+      "id": "ISSUE-005",
+      "title": "Use BigDecimal for money values",
+      "priority": "high",
+      "status": "open",
+      "details": "Billing calculations use double, which can cause rounding errors. Use BigDecimal for prices, tax, totals, balances, and applicable quantities.",
+      "files": [
+        "src/loginsignup/login/loggedin/billing/newBill/NewBill.java"
+      ],
+      "notes": [
+        "2026-11-14 source recheck: NewBill calculateRowValues, totals and save values use BigDecimal; PurchaseBill also uses BigDecimal. CashTransaction amount/journal bindings, AddParty opening balances and order-slip raw/plating bindings still use double/setDouble. The project-wide requirement is only partially complete."
+      ],
+      "completed_date": null,
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-005",
+      "number": 2
+    },
+    {
+      "id": "ISSUE-006",
+      "title": "Standardize database transactions and error recovery",
+      "priority": "high",
+      "status": "open",
+      "details": "Ensure every multi-step billing, inventory, and ledger operation is atomic, reports rollback outcomes clearly, and retains an audit record.",
+      "files": [],
+      "notes": [
+        "2026-11-14 source recheck: Savepoints and transactional writes exist in several screens, but NewBill rollback failure still permits retries and order-slip Reset still abandons its draft connection. Cannot close the project-wide requirement."
+      ],
+      "completed_date": null,
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-006",
+      "number": 3
+    },
+    {
+      "id": "ISSUE-007",
+      "title": "Separate user interface, business rules, and database code",
+      "priority": "medium",
+      "status": "open",
+      "details": "Large screen classes contain SQL, accounting calculations, and UI actions together. Introduce services, repositories, and small data models.",
+      "files": [],
+      "notes": [
+        "2026-11-14 source recheck: Screen classes still contain SQL, calculations and UI listeners together. Remains open."
+      ],
+      "completed_date": null,
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-007",
+      "number": 4
+    },
+    {
+      "id": "ISSUE-008",
+      "title": "Avoid global mutable application state",
+      "priority": "medium",
+      "status": "open",
+      "details": "MyClass stores many windows and login state as public static fields. Use an application context and dependency injection instead.",
+      "files": [
+        "src/mainpack/MyClass.java"
+      ],
+      "notes": [
+        "2026-11-14 source recheck: MyClass still owns public static windows and mutable login/application state. Some instance-passing work is complete, but the project-wide requirement remains open."
+      ],
+      "completed_date": null,
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-008",
+      "number": 5
+    },
+    {
+      "id": "ISSUE-009",
+      "title": "Improve database error handling and resource management",
+      "priority": "medium",
+      "status": "open",
+      "details": "Replace broad catch(Exception), printStackTrace, and generic dialogs with consistent logging, typed exceptions, clear user messages, and try-with-resources.",
+      "files": [],
+      "notes": [
+        "2026-11-14 source recheck: Many queries now use try-with-resources, but broad catches, printStackTrace and manually managed draft connections remain. Remains open."
+      ],
+      "completed_date": null,
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-009",
+      "number": 6
+    },
+    {
+      "id": "ISSUE-010",
+      "title": "Parameterize every SQL query",
+      "priority": "medium",
+      "status": "open",
+      "details": "Some SQL is built by joining values into query text. Use PreparedStatement consistently.",
+      "files": [],
+      "notes": [
+        "2026-11-14 source recheck: ViewOrders first/next/previous filters now use PreparedStatement. Other screens, including ViewCustomerBill navigation, still concatenate selected values into SQL. Remains open."
+      ],
+      "completed_date": null,
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-010",
+      "number": 7
+    },
+    {
+      "id": "ISSUE-011",
+      "title": "Move slow work off the Swing user-interface thread",
+      "priority": "medium",
+      "status": "open",
+      "details": "Backup and signup wait for external processes and may freeze the application. Use SwingWorker or background tasks with progress and cancellation support.",
+      "files": [
+        "src/loginsignup/signup/SignUp.java",
+        "src/loginsignup/login/loggedin/MainScreen.java"
+      ],
+      "notes": [
+        "2026-11-14 source recheck: Signup performs JDBC work in its action listener; BackupAndRestore waits for mysqldump synchronously from the button path. Debounce timers and connection pooling do not move these operations off the EDT."
+      ],
+      "completed_date": null,
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-011",
+      "number": 8
+    },
+    {
+      "id": "ISSUE-012",
+      "title": "Add automated tests",
+      "priority": "medium",
+      "status": "open",
+      "details": "Add unit tests for totals, tax, inventory deductions, ledgers, and rollback behavior, plus integration tests using a temporary database.",
+      "files": [],
+      "notes": [
+        "2026-11-14 source recheck: ui_tests contains 43 window entry points and a seeded master, but selectors/scenarios remain uncalibrated and most transaction workflows and financial assertions are unfinished. No unit/integration suite establishes accounting or rollback correctness."
+      ],
+      "completed_date": null,
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-012",
+      "number": 9
+    },
+    {
+      "id": "ISSUE-013",
+      "title": "Adopt Maven or Gradle for dependency management",
+      "priority": "low",
+      "status": "open",
+      "details": "The lib folder includes duplicate library versions and Javadoc jars. Use a build file with pinned dependencies and reproducible builds.",
+      "files": [
+        "lib"
+      ],
+      "notes": [
+        "2026-11-14 source recheck: No Maven/Gradle build configuration found; dependencies remain managed through IntelliJ and lib. Remains open."
+      ],
+      "completed_date": null,
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-013",
+      "number": 10
+    },
+    {
+      "id": "ISSUE-014",
+      "title": "Improve naming and cleanup",
+      "priority": "low",
+      "status": "open",
+      "details": "Correct unclear and misspelled names, remove debug output, and centralize user-facing text for consistency and localization.",
+      "files": [],
+      "notes": [
+        "2026-11-14 source recheck: Misspelled class/package names and debug output remain. Remains open."
+      ],
+      "completed_date": null,
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-014",
+      "number": 11
+    },
+    {
+      "id": "ISSUE-016",
+      "title": "Prevent inventory from becoming negative at the database level",
+      "priority": "critical",
+      "status": "open",
+      "details": "New Bill and Generate Order Slip subtract stock without a database condition requiring enough remaining quantity. UI warnings are not sufficient when two users or windows sell the same item. Reject the save when any conditional inventory update affects zero rows, unless an explicit approved oversell policy is implemented.",
+      "files": [
+        "src/loginsignup/login/loggedin/billing/newBill/NewBill.java",
+        "src/loginsignup/login/loggedin/ordermanagement/generateorder/OrderGenerateForm.java"
+      ],
+      "notes": [
+        "Reviewed for production readiness on 2026-10-04.",
+        "2026-11-14 source recheck: NewBill and OrderGenerateForm still subtract stock without a sufficient-stock predicate. However ISSUE-022 and general_features_review explicitly allow negative stock. Keep open for a policy decision, not as authorization to block overselling."
+      ],
+      "completed_date": null,
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-016",
+      "number": 12
+    },
+    {
+      "id": "ISSUE-018",
+      "title": "Roll back and close draft order-slip transactions when the form is cancelled",
+      "priority": "critical",
+      "status": "open",
+      "details": "Generate Order Slip creates a draft row in an uncommitted transaction during initialization. Back and Reset dispose the form without rolling back and closing that transaction, which can leave database locks and abandoned draft work. Centralize cancellation in a method that rolls back, closes, and then exits the form.",
+      "files": [
+        "src/loginsignup/login/loggedin/ordermanagement/generateorder/OrderGenerateForm.java"
+      ],
+      "notes": [
+        "Reviewed for production readiness on 2026-10-04.",
+        "2026-11-14 source recheck: Back attempts rollback and close, but a rollback exception skips close; Reset still disposes and opens a new form without closing the old transaction. Window-close still uses EXIT_ON_CLOSE. Partially fixed only."
+      ],
+      "completed_date": null,
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-018",
+      "number": 13
+    },
+    {
+      "id": "ISSUE-019",
+      "title": "Make bill PDF storage production-safe",
+      "priority": "high",
+      "status": "open",
+      "details": "Generated bill PDFs use a relative billsOut path and an unsanitized customer name. The final folder can vary with the application's working directory, and Windows-invalid filename characters can make saving fail. Configure one production folder and sanitize the customer-name portion of each filename.",
+      "files": [
+        "src/loginsignup/login/loggedin/billing/newBill/NewBill.java"
+      ],
+      "notes": [
+        "Reviewed for production readiness on 2026-10-04.",
+        "2026-11-14 source recheck: Filename risk is resolved: SaleBillPdf uses bill ID plus timestamp, validates the database folder and writes through a temporary file. NewBill still passes Paths.get(\"data\"), so the output location remains dependent on the working directory and is not a configured production folder."
+      ],
+      "completed_date": null,
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-019",
+      "number": 14
+    },
+    {
+      "id": "ISSUE-022",
+      "title": "Unify manual Design ID stock feedback with inventory-search availability",
+      "priority": "low",
+      "status": "open",
+      "details": "When a Design ID is typed directly into NewBill, the item and raw cost are filled from inventory, but the manual-entry feedback does not use the same combined remaining-stock calculation shown in SearchResultWindow. Keep the existing policy of ignoring order-slip rows, but calculate and show database stock minus quantities for the same Design ID already entered directly in the current bill.",
+      "files": [
+        "src/loginsignup/login/loggedin/billing/newBill/NewBill.java",
+        "src/loginsignup/login/loggedin/billing/newBill/SearchResultWindow.java"
+      ],
+      "notes": [
+        "Added on 2026-10-14. Negative stock is allowed; this is a feedback and consistency improvement, not a stock-blocking rule.",
+        "2026-11-14 source recheck: Manual design-ID entry still fetches inventory item/price without the combined remaining-direct-stock feedback in SearchResultWindow. Remains open; negative stock is intentionally allowed in this finding."
+      ],
+      "completed_date": null,
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-022",
+      "number": 15
+    },
+    {
+      "id": "ISSUE-023",
+      "title": "Add a reproducible library setup script",
+      "priority": "low",
+      "status": "open",
+      "details": "Keep IntelliJ GUI Designer as the application builder while providing a script that restores the approved JAR versions into lib on a new computer. The script should avoid duplicate versions, skip already-present valid JARs, and document how to run it.",
+      "files": [
+        "lib",
+        "setup-libraries.ps1",
+        "README.md"
+      ],
+      "notes": [
+        "Added on 2026-10-31. This is the first dependency-management step; it must not replace IntelliJ's handling of .form files.",
+        "2026-11-14 source recheck: No setup-libraries.ps1 or equivalent approved-JAR restoration script found. Remains open."
+      ],
+      "completed_date": null,
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-023",
+      "number": 16
+    },
+    {
+      "id": "NEWBILL-008",
+      "title": "Invalid numeric input silently becomes zero",
+      "priority": "high",
+      "status": "open",
+      "original_review_line": 406,
+      "methods": [
+        "getDecimalValue",
+        "insertData",
+        "calculateRowValues",
+        "reCalculateValuesAndAppend"
+      ],
+      "details": "getDecimalValue still returns BigDecimal.ZERO on invalid input, and calculateRowValues writes blank/zero back to the model, so mistyped charges can disappear silently. BigDecimal arithmetic and normalized rounding are now implemented: charges use scale 2, plating weight scale 3, and calculated values are written back to the model before persistence. Numeric validation remains unresolved.",
+      "notes": [
+        "The schema now declares plating weights as DECIMAL(10,3); that alone does not normalize Java calculations before saving.",
+        "2026-11-14: Precision/rounding subproblem is resolved in current NewBill source. Keep this issue open for invalid numeric input; getDoubleValue no longer describes the current implementation."
+      ],
+      "completed_date": null,
+      "category": "newbill",
+      "source_file": "issues/newBilllIssues.json",
+      "source_id": "NEWBILL-008",
+      "number": 17
+    },
+    {
+      "id": "NEWBILL-009",
+      "title": "Bill-number generation can collide between users",
+      "priority": "medium",
+      "status": "open",
+      "methods": [
+        "insertData",
+        "UtilityMethods.getBillNumber"
+      ],
+      "related_files": [
+        "src/utils/UtilityMethods.java",
+        "src/resources/structure.sql"
+      ],
+      "details": "Bill numbers use MAX(BillNumber) + 1. Two simultaneous saves can select the same number. The unique database key prevents duplicate numbers, but one save fails rather than safely obtaining another number.",
+      "notes": [
+        "2026-11-14: UtilityMethods.getBillNumber still uses MAX(BillNumber)+1 filtered by bill type. Unique numbering is not serialized between concurrent saves."
+      ],
+      "completed_date": null,
+      "category": "newbill",
+      "source_file": "issues/newBilllIssues.json",
+      "source_id": "NEWBILL-009",
+      "number": 18
+    },
+    {
+      "id": "NEWBILL-010",
+      "title": "Rollback failures are not handled safely",
+      "priority": "high",
+      "status": "open",
+      "methods": [
+        "insertData"
+      ],
+      "details": "If rollback to the submission savepoint fails, the handler displays an error and returns false, but the same screen still permits another submission on an uncertain transaction. Prevent further saves and require safe transaction recovery or a checked restart.",
+      "notes": [
+        "2026-10-30: Deferred explicitly by the user and separated from NEWBILL-003.",
+        "2026-11-14: Failed conn.rollback(savepoint) still returns false without disabling further submission or safely recreating transaction state. Remains open."
+      ],
+      "completed_date": null,
+      "category": "newbill",
+      "source_file": "issues/newBilllIssues.json",
+      "source_id": "NEWBILL-010",
+      "number": 19
+    },
+    {
+      "id": "TIMER-001",
+      "title": "NewBill search source can process stale rows",
+      "file": "src/loginsignup/login/loggedin/billing/newBill/SearchResultWindow.java",
+      "timer": "selectionDelay",
+      "problem": "After selecting Inventory or an order slip, mode, orderSlipID and the table remain on the previous selection for 200 ms. Enter or double-click remains enabled during that period and can process a row from the previous source.",
+      "suggested_correction": "Update mode immediately and clear or disable the table before restarting the timer, or leave this selection immediate.",
+      "status": "open",
+      "review_notes": [
+        "2026-11-14 source recheck: selectionComboBox still only restarts a local 200 ms timer; source mode and table update in the delayed callback. No immediate selection lock."
+      ],
+      "category": "timers",
+      "source_file": "problems/combobox-timer-problems.json",
+      "source_id": 1,
+      "number": 20
+    },
+    {
+      "id": "TIMER-002",
+      "title": "PurchaseBill search can add a stale row",
+      "file": "src/loginsignup/login/loggedin/billing/purcahseBill/SearchResultWindow.java",
+      "timer": "selectionDelay",
+      "problem": "The old table remains actionable for 200 ms after the selection changes. Add Item, Enter and double-click can add a row from the previous result set.",
+      "suggested_correction": "Clear or disable the table immediately and re-enable it after refresh, or leave this selection immediate.",
+      "status": "open",
+      "review_notes": [
+        "2026-11-14 source recheck: selectionComboBox still only restarts the timer while Add/Enter/double-click handlers remain available."
+      ],
+      "category": "timers",
+      "source_file": "problems/combobox-timer-problems.json",
+      "source_id": 2,
+      "number": 21
+    },
+    {
+      "id": "TIMER-003",
+      "title": "Send source remains ready during the delay",
+      "file": "src/loginsignup/login/loggedin/processingmanagement/send/Send.java",
+      "timer": "sourceSelectionDelay",
+      "problem": "sourceItemsReady can remain true and the previous source table stays visible until the timer fires. The user can attempt to push an item from the previous source while the combo box shows the new source.",
+      "suggested_correction": "Immediately set sourceItemsReady to false, increment or invalidate the active request and clear the table; delay only loadSelectedSourceItems().",
+      "status": "open",
+      "review_notes": [
+        "2026-11-14 source recheck: Source selection listeners restart the timer; sourceItemsReady/request invalidation occurs inside the delayed load methods, leaving the pre-callback interval unprotected."
+      ],
+      "category": "timers",
+      "source_file": "problems/combobox-timer-problems.json",
+      "source_id": 3,
+      "number": 22
+    },
+    {
+      "id": "TIMER-004",
+      "title": "ViewOrders actions remain available for the old order",
+      "file": "src/loginsignup/login/loggedin/ordermanagement/vieworders/ViewOrders.java",
+      "timer": "filterSelectionDelay",
+      "problem": "Customer and type filters change immediately, but the previous order stays active for 200 ms. Print, Delete, Next and Previous can operate while the filter and displayed order are inconsistent.",
+      "suggested_correction": "Disable order actions immediately and re-enable them after the filtered order loads, or keep these filters immediate.",
+      "status": "open",
+      "review_notes": [
+        "2026-11-14 source recheck: Filter listeners still restart the timer without immediately disabling Print/Delete/Next/Previous. Parameterizing the query did not resolve this timing problem."
+      ],
+      "category": "timers",
+      "source_file": "problems/combobox-timer-problems.json",
+      "source_id": 4,
+      "number": 23
+    },
+    {
+      "id": "TIMER-005",
+      "title": "ViewCustomerBill can print the previous bill",
+      "file": "src/loginsignup/login/loggedin/billing/viewbills/ViewCustomerBill.java",
+      "timer": "customerSelectionDelay",
+      "problem": "The previous customer's bill remains displayed and printable for 200 ms after selecting another customer.",
+      "suggested_correction": "Disable Print and navigation immediately until loadBillData() finishes, or keep the customer filter immediate.",
+      "status": "open",
+      "review_notes": [
+        "2026-11-14 source recheck: Customer selection restarts the timer; printing/navigation are not immediately locked while the old bill is displayed."
+      ],
+      "category": "timers",
+      "source_file": "problems/combobox-timer-problems.json",
+      "source_id": 5,
+      "number": 24
+    },
+    {
+      "id": "TIMER-007",
+      "title": "PurchaseBill customer label is temporarily stale",
+      "file": "src/loginsignup/login/loggedin/billing/purcahseBill/PurchaseBill.java",
+      "timer": "customerSelectionDelay",
+      "problem": "The existing search window can retain the previous customer's label for 200 ms. Inventory is not customer-specific, so the data risk is lower, but the UI is temporarily inconsistent.",
+      "suggested_correction": "Update the label or disable the search window immediately, then delay only the heavier work.",
+      "status": "open",
+      "review_notes": [
+        "2026-11-14 source recheck: The existing purchase search label is updated only inside the delayed callback."
+      ],
+      "category": "timers",
+      "source_file": "problems/combobox-timer-problems.json",
+      "source_id": 7,
+      "number": 25
+    },
+    {
+      "id": "TIMER-008",
+      "title": "Receive temporarily shows a different lot than the selected lot",
+      "file": "src/loginsignup/login/loggedin/processingmanagement/recieve/Recieve.java",
+      "timer": "lotSelectionDelay",
+      "problem": "The previous lot remains displayed for 200 ms after the combo selection changes. Saving is protected by the displayedLotId comparison, so a wrong-lot save is rejected, but the user can receive a confusing error.",
+      "suggested_correction": "Immediately disable Submit and clear or mark the old lot as loading before restarting the timer.",
+      "status": "open",
+      "review_notes": [
+        "2026-11-14 source recheck: Submit is disabled when fetchLot starts, not at the selection event. displayedLotId still prevents a wrong-lot save, but the misleading interval remains."
+      ],
+      "category": "timers",
+      "source_file": "problems/combobox-timer-problems.json",
+      "source_id": 8,
+      "number": 26
+    },
+    {
+      "id": "TIMER-009",
+      "title": "Pending timers can fire after their window closes",
+      "affected_screens": [
+        "NewBill",
+        "NewBill SearchResultWindow",
+        "PurchaseBill",
+        "PurchaseBill SearchResultWindow",
+        "ViewCustomerBill",
+        "ViewOrders",
+        "ViewTransactions",
+        "Receive",
+        "Send",
+        "CashTransaction",
+        "SendDiary"
+      ],
+      "problem": "A combo change followed immediately by Back or Close can leave a pending timer that fires against a hidden or disposed window. This can cause unnecessary database queries and, on billing screens, can recreate or update child windows after the parent closes.",
+      "suggested_correction": "Store timers as fields and stop them during window cleanup, or begin each callback with an appropriate closed or displayability check.",
+      "status": "open",
+      "review_notes": [
+        "2026-11-14 source recheck: Local timers remain unstopped on several affected screens. SendDiary has closed/request guards on lot loads but customerFilterChanged lacks an initial closed check. New RecieveDiary stops its field timers, but that does not close this multi-screen issue."
+      ],
+      "category": "timers",
+      "source_file": "problems/combobox-timer-problems.json",
+      "source_id": 9,
+      "number": 27
+    }
+  ],
+  "completed_history": [
+    {
+      "id": "ISSUE-001",
+      "title": "Remove exposed database credentials",
+      "priority": "critical",
+      "status": "completed",
+      "details": "A root database password is hard-coded in src/mainpack/MyClass.java. Store credentials outside source code and rotate the exposed password.",
+      "files": [
+        "src/mainpack/MyClass.java"
+      ],
+      "notes": [
+        "2026-10-29: Removed the unused connection with embedded credentials from MyClass.java. Confirmed backup.exe.bat, exec.bat.txt, and src/utils/helloworld.bat were removed. User clarified LOGIN.java confirmation code is not an account credential and requested closure. Password rotation was not verified by the assistant."
+      ],
+      "completed_date": "2026-10-29",
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-001"
+    },
+    {
+      "id": "ISSUE-002",
+      "title": "Make login and signup password fields secure",
+      "priority": "critical",
+      "status": "completed",
+      "details": "Password fields use JTextField and are handled as Strings. Use JPasswordField and clear password arrays after use.",
+      "files": [
+        "src/loginsignup/login/LOGIN.java",
+        "src/loginsignup/signup/SignUp.java"
+      ],
+      "notes": [
+        "Login and signup now use JPasswordField. Password character arrays are cleared during reset or after signup processing."
+      ],
+      "completed_date": "2026-10-26",
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-002"
+    },
+    {
+      "id": "ISSUE-003",
+      "title": "Eliminate command injection and password exposure in batch files",
+      "priority": "critical",
+      "status": "completed",
+      "details": "Signup and backup construct batch commands from user, database, and password text. Replace generated batch files with safer process execution and protected configuration.",
+      "files": [
+        "src/loginsignup/signup/SignUp.java",
+        "src/loginsignup/login/loggedin/MainScreen.java"
+      ],
+      "notes": [
+        "Signup now uses JDBC instead of generated batch files. BackupAndRestore.createBackUpFile now runs mysqldump directly with separate arguments, protected temporary MySQL option-file credentials and cleanup; passwords are not command arguments. Compilation passed.",
+        "2026-10-31: Inspected the user-generated tempback.sql backup of jivan: 19 CREATE TABLE statements, 13 INSERT statements, a dump-completed marker and no error lines. Restore testing was not performed. Historical plaintext batch artifacts, if any, are not removed by this change."
+      ],
+      "completed_date": "2026-10-31",
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-003"
+    },
+    {
+      "id": "ISSUE-015",
+      "title": "Keep bill saving and transaction linking in one database transaction",
+      "priority": "critical",
+      "status": "completed",
+      "details": "NewBill commits the bill, bill details, inventory, and customer balance before linkBillToTransactions updates matching transactions through a separate connection. If transaction linking fails, the saved bill and the customer's outstanding balance can disagree. Use one transaction for every part of bill submission.",
+      "files": [
+        "src/loginsignup/login/loggedin/billing/newBill/NewBill.java"
+      ],
+      "notes": [
+        "Reviewed for production readiness on 2026-10-04.",
+        "Completed on 2026-10-05: bill-to-transaction linking now runs on the bill-save connection before commit, so a linking failure rolls back the whole save."
+      ],
+      "completed_date": "2026-10-05",
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-015"
+    },
+    {
+      "id": "ISSUE-017",
+      "title": "Do not terminate the application for an order-slip data error",
+      "priority": "critical",
+      "status": "completed",
+      "details": "NewBill calls System.exit(-1) when an expected order-slip item cannot be found. This closes the production application and can interrupt active work. Show an error, roll back the current bill transaction, and keep the application running.",
+      "files": [
+        "src/loginsignup/login/loggedin/billing/newBill/NewBill.java"
+      ],
+      "notes": [
+        "Reviewed for production readiness on 2026-10-04.",
+        "2026-11-14: Rechecked current NewBill.java: no System.exit calls remain. Inventory/order-slip query failures report errors instead of terminating the application. This duplicates the already-completed NEWBILL-004. Source review only; no live failure injection."
+      ],
+      "completed_date": "2026-11-14",
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-017"
+    },
+    {
+      "id": "ISSUE-020",
+      "title": "Restore only unbilled order-slip quantity when deleting a slip",
+      "priority": "high",
+      "status": "completed",
+      "details": "The order-slip deletion flow restores the original quantity from the displayed billed/original value. When a slip is partially or fully billed, this restores stock that has already been sold. Restore original quantity minus billed quantity, or block deletion once billing has begun.",
+      "files": [
+        "src/loginsignup/login/loggedin/ordermanagement/vieworders/ViewOrders.java"
+      ],
+      "notes": [
+        "Reviewed on 2026-10-09.",
+        "2026-11-03: Order-slip deletion now restores original quantity minus billed quantity from the displayed billed/original value. Checked unbilled, partially billed and fully billed cases; compilation passed. Live database deletion and concurrent changes were not tested."
+      ],
+      "completed_date": "2026-11-03",
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-020"
+    },
+    {
+      "id": "ISSUE-021",
+      "title": "Make order-slip keyboard and mouse selection behave consistently",
+      "priority": "low",
+      "status": "completed",
+      "details": "In SearchResultWindow, double-click temporarily marks NewBill.notThroughOrderSlip as false before transferring an order-slip item, while Enter does not. The difference can cause an unnecessary inventory-stock warning when using Enter. Route both actions through one shared selection method.",
+      "files": [
+        "src/loginsignup/login/loggedin/billing/newBill/SearchResultWindow.java",
+        "src/loginsignup/login/loggedin/billing/newBill/NewBill.java"
+      ],
+      "notes": [
+        "Reviewed on 2026-10-12.",
+        "Completed on 2026-10-12: Enter and double-click both use activateSelection(), which applies the same temporary order-slip mode."
+      ],
+      "completed_date": "2026-10-12",
+      "category": "main",
+      "source_file": "issues/issues_2026-10-03.json",
+      "source_id": "ISSUE-021"
+    },
+    {
+      "id": "NEWBILL-001",
+      "title": "Deleting a manual row can break later order-slip links",
+      "priority": "high",
+      "status": "completed",
+      "original_review_line": 1203,
+      "methods": [
+        "relinkAssociations",
+        "checkAndRemoveRow",
+        "updateOrderSlipQuantity"
+      ],
+      "details": "relinkAssociations originally returned immediately if the deleted row was not linked to an order slip, although later rows were renumbered. For example, deleting manual row 1 moves linked row 2 to row 1 while its map entry remains under serial 2. Saving or deleting afterward can use the wrong reference.",
+      "notes": [
+        "User separated quantity restoration into updateOrderSlipQuantity. checkAndRemoveRow now calls quantity restoration, unconditional map relinking, then row deletion. Verified by source review."
+      ],
+      "completed_date": "2026-10-30",
+      "category": "newbill",
+      "source_file": "issues/newBilllIssues.json",
+      "source_id": "NEWBILL-001"
+    },
+    {
+      "id": "NEWBILL-002",
+      "title": "Reset leaves the previous transaction open",
+      "priority": "high",
+      "status": "completed",
+      "original_review_line": 500,
+      "methods": [
+        "init",
+        "insertData"
+      ],
+      "details": "Reset originally disposed the window without rolling back or closing transacTemp, retaining draft records, order-slip quantity reservations and database locks. The successful-save path also does not close this connection.",
+      "notes": [
+        "2026-10-30: Reset rolls back and closes its connection. Successful Submit now closes transacTemp in a finally block around printBill, including when printing throws. Back closes the connection after a successful rollback. Verified by source review.",
+        "User accepted that an unexpected printing exception can prevent the subsequent form reset. Rollback failures remain separately deferred under NEWBILL-010. No live database test performed."
+      ],
+      "completed_date": "2026-10-30",
+      "category": "newbill",
+      "source_file": "issues/newBilllIssues.json",
+      "source_id": "NEWBILL-002"
+    },
+    {
+      "id": "NEWBILL-003",
+      "title": "Retrying after a failed save is unreliable",
+      "priority": "high",
+      "status": "completed",
+      "original_review_line": 305,
+      "methods": [
+        "insertData",
+        "init"
+      ],
+      "details": "A full rollback removes the draft bill created during initialization and reverses order-slip reservations, while the screen retains the old bill ID and item associations. Another Submit does not recreate that state.",
+      "notes": [
+        "2026-10-30: Savepoint is created before the bill-header update. Both save blocks catch SQL and runtime exceptions and roll back to the savepoint, preserving the draft and earlier order-slip reservations. Source review and compilation passed; live failure recovery was not tested.",
+        "User agreed to close ordinary failed-save retry recovery and track rollback failures separately as NEWBILL-010."
+      ],
+      "completed_date": "2026-10-30",
+      "category": "newbill",
+      "source_file": "issues/newBilllIssues.json",
+      "source_id": "NEWBILL-003"
+    },
+    {
+      "id": "NEWBILL-004",
+      "title": "Some data errors terminate the entire application",
+      "priority": "high",
+      "status": "completed",
+      "original_review_lines": [
+        712,
+        782
+      ],
+      "methods": [
+        "init"
+      ],
+      "details": "The table listener calls System.exit(1) after an inventory-query error and System.exit(-1) when an expected order-slip item cannot be found. These terminate the full application and interrupt active work.",
+      "notes": [
+        "2026-10-30: System.exit calls were removed from NewBill.java. The previously reviewed error paths now show dialogs rather than terminating the application. Marked completed at the user's request; source review only, no live database test."
+      ],
+      "completed_date": "2026-10-30",
+      "category": "newbill",
+      "source_file": "issues/newBilllIssues.json",
+      "source_id": "NEWBILL-004"
+    },
+    {
+      "id": "NEWBILL-005",
+      "title": "Submit does not explicitly finish the active cell edit",
+      "priority": "high",
+      "status": "completed",
+      "original_review_line": 486,
+      "methods": [
+        "init",
+        "allQuantityValid",
+        "askConfirmation"
+      ],
+      "details": "There is no stopCellEditing call before validation and preview. Text still being edited can differ from the table model, causing the previous value to be previewed or saved. Stop editing and check whether the editor accepts the value before continuing.",
+      "notes": [
+        "2026-10-30: Submit checks billTable.isEditing(), shows a warning and returns before quantity validation, preview or saving. Users must finish editing before submitting. Verified by source review; no live UI test performed."
+      ],
+      "completed_date": "2026-10-30",
+      "category": "newbill",
+      "source_file": "issues/newBilllIssues.json",
+      "source_id": "NEWBILL-005"
+    },
+    {
+      "id": "NEWBILL-006",
+      "title": "An exception can permanently disconnect the calculation listener",
+      "priority": "high",
+      "status": "completed",
+      "original_review_lines": [
+        629,
+        837
+      ],
+      "methods": [
+        "init"
+      ],
+      "details": "The table-edit listener removes listeners and restores them later without finally. An exception can leave subsequent edits without automatic calculation. The Delete handler similarly removes its action and listeners without guaranteed restoration.",
+      "notes": [
+        "2026-10-30: Calculation listeners are restored in finally, including the early-return path. The redundant restoration before return was removed. The Delete handler restores both model listeners and its deleteRow action in finally. Verified by source review; no live UI test performed."
+      ],
+      "completed_date": "2026-10-30",
+      "category": "newbill",
+      "source_file": "issues/newBilllIssues.json",
+      "source_id": "NEWBILL-006"
+    },
+    {
+      "id": "NEWBILL-007",
+      "title": "The empty-item-name check does not work",
+      "priority": "medium",
+      "status": "completed",
+      "original_review_line": 183,
+      "methods": [
+        "insertData",
+        "getStringValue"
+      ],
+      "details": "A blank item name is replaced with Unknown before checking isEmpty, so the intended validation never rejects a blank name.",
+      "notes": [
+        "2026-10-31: insertData now uses an empty-string fallback for item names. getStringValue maps null, empty and whitespace-only values to that fallback; the isEmpty check displays a warning and throws to abort the save. Verified by source review; no live database test performed."
+      ],
+      "completed_date": "2026-10-31",
+      "category": "newbill",
+      "source_file": "issues/newBilllIssues.json",
+      "source_id": "NEWBILL-007"
+    },
+    {
+      "id": "TIMER-006",
+      "title": "NewBill customer change leaves the previous search results active",
+      "file": "src/loginsignup/login/loggedin/billing/newBill/NewBill.java",
+      "timer": "customerSelectionDelay",
+      "problem": "The previous customer's search or order-slip results remain available for 200 ms. A very quick selection can use an order slip belonging to the previous customer.",
+      "suggested_correction": "Immediately clear or disable the search window when the customer changes; delay only rebuilding its database-backed model.",
+      "status": "completed",
+      "completed_date": "2026-11-10",
+      "resolution": "NewBill now disables its bill table, Submit button and existing search-results window while customerSelectionDelay is pending, then restores them in a finally block after the selected customer's results are loaded.",
+      "category": "timers",
+      "source_file": "problems/combobox-timer-problems.json",
+      "source_id": 6
+    },
+    {
+      "id": "TRIM-001",
+      "title": "AddInventory writes identity fields without trimming",
+      "priority": "high",
+      "direction": "write",
+      "file": "src/loginsignup/login/loggedin/inventorymanagement/addinventory/AddInventory.java",
+      "methods": [
+        "addData",
+        "updateData"
+      ],
+      "lines_reviewed": [
+        24,
+        26,
+        39,
+        76,
+        79,
+        80
+      ],
+      "details": "Design ID and item name are validated with trim(), but the original untrimmed text is written. Supplier selection is also written without normalization. The insert path additionally stores the literal supplier value 'hi   ' with trailing spaces.",
+      "risk": "Design IDs can look identical while behaving inconsistently in Java maps and comparisons. Item and supplier names can display unwanted spaces.",
+      "suggested_fix": "Create trimmed local values once before validation and use those same values for every INSERT, UPDATE and WHERE parameter. Remove or normalize the hard-coded supplier placeholder.",
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged.",
+      "category": "trimming",
+      "source_file": "problems/trimIssues.json",
+      "source_id": "TRIM-001"
+    },
+    {
+      "id": "TRIM-002",
+      "title": "UtilityMethods.parseString preserves surrounding spaces",
+      "priority": "high",
+      "direction": "shared boundary",
+      "file": "src/utils/UtilityMethods.java",
+      "methods": [
+        "parseString"
+      ],
+      "lines_reviewed": [
+        43,
+        44
+      ],
+      "details": "parseString currently returns Objects.toString(object, \"\") without trimming. Multiple order, billing and lookup paths use this helper as if it returned normalized input.",
+      "risk": "One shared helper propagates untrimmed customer names, design IDs, order types, item names and notes into database operations.",
+      "suggested_fix": "Do not silently change parseString until all callers are reviewed. Add explicit helpers such as trimToEmpty(Object) and stripTrailingToEmpty(Object), then migrate identity-field callers first.",
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Kept parseString raw for authentication/free-form compatibility. Added explicit trimToEmpty/stripTrailingToEmpty helpers and migrated affected order callers.",
+      "category": "trimming",
+      "source_file": "problems/trimIssues.json",
+      "source_id": "TRIM-002"
+    },
+    {
+      "id": "TRIM-003",
+      "title": "NewBill persists several untrimmed text values",
+      "priority": "high",
+      "direction": "write and lookup",
+      "file": "src/loginsignup/login/loggedin/billing/newBill/NewBill.java",
+      "methods": [
+        "insertData",
+        "init"
+      ],
+      "lines_reviewed": [
+        137,
+        158,
+        195,
+        209,
+        237,
+        239,
+        253,
+        262,
+        283,
+        291,
+        298,
+        709,
+        823,
+        846
+      ],
+      "details": "The selected customer, item name, order type and other-details text are not consistently normalized before bill, journal, customer-balance and transaction-link operations. Design ID is trimmed, but the related item and order text is not. Customer and order-type values fetched into combo boxes are also left unchanged.",
+      "risk": "Customer balance or journal updates can miss a party when values contain spaces, and bill lines can retain inconsistent item/order text.",
+      "suggested_fix": "Normalize the selected customer when setCustomerName is called, trim identity fields before preparing statements, and normalize fetched combo-box strings at load time. Use trailing-only normalization for free-form other details if desired.",
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged.",
+      "category": "trimming",
+      "source_file": "problems/trimIssues.json",
+      "source_id": "TRIM-003"
+    },
+    {
+      "id": "TRIM-004",
+      "title": "PurchaseBill leaves customer and item names untrimmed",
+      "priority": "high",
+      "direction": "write",
+      "file": "src/loginsignup/login/loggedin/billing/purcahseBill/PurchaseBill.java",
+      "methods": [
+        "insertData"
+      ],
+      "lines_reviewed": [
+        83,
+        111,
+        123,
+        132,
+        157,
+        166,
+        185,
+        193
+      ],
+      "details": "Design IDs are trimmed, but the selected supplier/customer and item names taken from the table are written without trimming to bills, billdetails, inventory, journalentry and customer balance lookups.",
+      "risk": "The same purchase can update inventory correctly by design ID while creating mismatched party or item text elsewhere.",
+      "suggested_fix": "Create normalized customerName and itemName values before any statement parameters are populated and reuse them throughout the transaction.",
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged.",
+      "category": "trimming",
+      "source_file": "problems/trimIssues.json",
+      "source_id": "TRIM-004"
+    },
+    {
+      "id": "TRIM-005",
+      "title": "OrderGenerateForm stores untrimmed slip text",
+      "priority": "high",
+      "direction": "write",
+      "file": "src/loginsignup/login/loggedin/ordermanagement/generateorder/OrderGenerateForm.java",
+      "methods": [
+        "updateInventory",
+        "pushSlipData"
+      ],
+      "lines_reviewed": [
+        360,
+        389,
+        390,
+        397,
+        398,
+        404,
+        408,
+        409,
+        412,
+        413,
+        415,
+        416,
+        420
+      ],
+      "details": "parseString does not trim. Customer name, order-slip type, design ID, item name and other details can therefore be stored with surrounding spaces in order_slips_main and order_slips. The inventory update also uses an untrimmed design ID.",
+      "risk": "Order-slip customer filtering and later inventory or billing associations can become inconsistent.",
+      "suggested_fix": "Use normalized local values for customer, order type, design ID and item name. Use stripTrailing for free-form other details if leading spaces must be retained.",
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged.",
+      "category": "trimming",
+      "source_file": "problems/trimIssues.json",
+      "source_id": "TRIM-005"
+    },
+    {
+      "id": "TRIM-006",
+      "title": "CashTransaction writes untrimmed customer and remark values",
+      "priority": "high",
+      "direction": "write and lookup",
+      "file": "src/loginsignup/login/loggedin/transactionsandaccounts/CashEntry/cashTransaction.java",
+      "methods": [
+        "init"
+      ],
+      "lines_reviewed": [
+        70,
+        145,
+        153,
+        185,
+        188,
+        200,
+        210,
+        282,
+        289
+      ],
+      "details": "Customer names loaded into and read from the party combo box are not normalized. The remark field is stored exactly as entered. The clear-account lookup checks customerName.trim().isEmpty() but sends the original value to SQL.",
+      "risk": "Cash transactions and journal entries may use a spaced account name, and customer balance lookups can fail or target inconsistent records.",
+      "suggested_fix": "Trim the selected customer immediately and reuse it for all statements. Apply stripTrailing or trim to the remark before storage and normalize customer names when loading the combo box.",
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged.",
+      "category": "trimming",
+      "source_file": "problems/trimIssues.json",
+      "source_id": "TRIM-006"
+    },
+    {
+      "id": "TRIM-007",
+      "title": "Shared customer combo-box loader returns raw database names",
+      "priority": "high",
+      "direction": "fetch",
+      "file": "src/utils/UtilityMethods.java",
+      "methods": [
+        "generateAndAddNames"
+      ],
+      "lines_reviewed": [
+        685,
+        691
+      ],
+      "details": "Customer names are added directly from ResultSet.getString(1). This method supplies customer selectors across billing and transaction screens.",
+      "risk": "A legacy customer name with trailing spaces spreads into many later INSERT, UPDATE and WHERE parameters.",
+      "suggested_fix": "Normalize each non-null customer name before adding it to the combo box. Long term, clean existing customer rows and enforce normalized writes at party creation and rename boundaries.",
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged.",
+      "category": "trimming",
+      "source_file": "problems/trimIssues.json",
+      "source_id": "TRIM-007"
+    },
+    {
+      "id": "TRIM-008",
+      "title": "DBStructure inventory helpers do not normalize design IDs",
+      "priority": "high",
+      "direction": "fetch, lookup and write",
+      "file": "src/utils/DBStructure.java",
+      "methods": [
+        "getStock",
+        "getInventoryItemName",
+        "getSellPrice",
+        "getBuyPrice",
+        "setBuyPrice",
+        "getInventoryDesignIDs"
+      ],
+      "lines_reviewed": [
+        205,
+        219,
+        221,
+        234,
+        254,
+        275,
+        291
+      ],
+      "details": "Design IDs supplied to helper queries are not trimmed, fetched item names are returned raw, and the design-ID list preserves database whitespace.",
+      "risk": "Central inventory lookups can report not found for an otherwise valid identifier, while fetched spaced IDs can contaminate tables and selectors.",
+      "suggested_fix": "Normalize incoming design IDs at the beginning of every public helper and normalize textual ResultSet values before returning them.",
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged.",
+      "category": "trimming",
+      "source_file": "problems/trimIssues.json",
+      "source_id": "TRIM-008"
+    },
+    {
+      "id": "TRIM-009",
+      "title": "Inventory and search screens display raw inventory strings",
+      "priority": "medium",
+      "direction": "fetch",
+      "files": [
+        "src/loginsignup/login/loggedin/inventorymanagement/InventoryScreen.java",
+        "src/loginsignup/login/loggedin/accountingandledger/AALScreen.java",
+        "src/loginsignup/login/loggedin/billing/newBill/SearchResultWindow.java",
+        "src/loginsignup/login/loggedin/billing/purcahseBill/SearchResultWindow.java"
+      ],
+      "details": "Design IDs, item names and supplier names are copied directly from ResultSet values into tables or list models without normalization.",
+      "risk": "Trailing spaces remain visible or become part of selections later copied back into bills and orders.",
+      "suggested_fix": "Normalize identifier and display-name columns immediately after ResultSet retrieval, preferably through a shared null-safe helper.",
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged.",
+      "category": "trimming",
+      "source_file": "problems/trimIssues.json",
+      "source_id": "TRIM-009"
+    },
+    {
+      "id": "TRIM-010",
+      "title": "ViewOrders uses raw fetched and selected filter text",
+      "priority": "high",
+      "direction": "fetch and lookup",
+      "file": "src/loginsignup/login/loggedin/ordermanagement/vieworders/ViewOrders.java",
+      "methods": [
+        "setCurrentBill",
+        "init",
+        "filter and navigation listeners"
+      ],
+      "lines_reviewed": [
+        75,
+        77,
+        80,
+        123,
+        125,
+        130,
+        188,
+        193,
+        210,
+        215,
+        416,
+        421,
+        438,
+        440,
+        445
+      ],
+      "details": "Customer and slip-type values are loaded and reused without trimming. Filter and navigation SQL also concatenates the selected raw values directly into SQL text.",
+      "risk": "Spaced values can cause filters to miss records. Direct concatenation is also a separate SQL-injection and quoting concern.",
+      "suggested_fix": "Normalize values when loading and selecting them, and replace concatenated filter text with PreparedStatement parameters.",
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Normalized fetched filter names and replaced first/next/previous filter SQL concatenation with normalized PreparedStatement parameters.",
+      "category": "trimming",
+      "source_file": "problems/trimIssues.json",
+      "source_id": "TRIM-010"
+    },
+    {
+      "id": "TRIM-011",
+      "title": "Send preset and source strings are not consistently normalized",
+      "priority": "medium",
+      "direction": "fetch and write",
+      "file": "src/loginsignup/login/loggedin/processingmanagement/send/Send.java",
+      "methods": [
+        "loadPresetRemarks",
+        "savePresetRemark",
+        "snapshotLot",
+        "persistLot"
+      ],
+      "lines_reviewed": [
+        505,
+        506,
+        553,
+        554,
+        555,
+        556,
+        560,
+        598,
+        599,
+        601,
+        1010,
+        1042,
+        1227,
+        1261
+      ],
+      "details": "Most editable packet text is normalized through text(), but source design IDs copied into PacketItemSource and preset remarks fetched or saved directly can preserve spaces. nullableString also assumes its caller already normalized the value.",
+      "risk": "Quick remarks can be duplicated by whitespace and forwarded item identifiers can retain legacy spaces.",
+      "suggested_fix": "Normalize preset remarks at dialog acceptance and ResultSet retrieval. Normalize source identity fields when PacketItemSource is created, while keeping persistLot focused on already-validated snapshots.",
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged.",
+      "category": "trimming",
+      "source_file": "problems/trimIssues.json",
+      "source_id": "TRIM-011"
+    },
+    {
+      "id": "TRIM-012",
+      "title": "Receive and SendDiary expose raw stored text",
+      "priority": "low",
+      "direction": "fetch",
+      "files": [
+        "src/loginsignup/login/loggedin/processingmanagement/recieve/Recieve.java",
+        "src/loginsignup/login/loggedin/processingmanagement/diary/senddiary/SendDiary.java"
+      ],
+      "details": "Customer, packet remark, item name, item remark, godown name and user values are placed directly into fields, report models and diary objects from ResultSet strings.",
+      "risk": "This is mainly a display and PDF formatting problem, but fetched values may later be reused in filters.",
+      "suggested_fix": "Use null-safe normalization on fetched identity/display fields. Use trailing-only normalization for remarks if intentional leading spaces are supported.",
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged.",
+      "category": "trimming",
+      "source_file": "problems/trimIssues.json",
+      "source_id": "TRIM-012"
+    },
+    {
+      "id": "TRIM-013",
+      "title": "Transaction, bill and ledger views display raw database strings",
+      "priority": "low",
+      "direction": "fetch",
+      "files": [
+        "src/loginsignup/login/loggedin/transactionsandaccounts/viewTransactions/ViewTransactions.java",
+        "src/loginsignup/login/loggedin/transactionsandaccounts/CashEntry/AddedTransactions.java",
+        "src/loginsignup/login/loggedin/billing/viewbills/ViewCustomerBill.java",
+        "src/loginsignup/login/loggedin/billing/viewbills/ViewBackendBill.java",
+        "src/loginsignup/login/loggedin/accountingandledger/ledgerwindows/LedgerWindow.java"
+      ],
+      "details": "Party names, remarks, account names and transaction-type text are displayed or reused directly from ResultSet values without consistent normalization.",
+      "risk": "Trailing spaces can appear in tables, printed bills and account labels even after write-side fixes are introduced.",
+      "suggested_fix": "Normalize textual identity and presentation values at ResultSet boundaries while leaving numeric and date strings unchanged.",
+      "status": "completed",
+      "completed_date": "2026-11-14",
+      "resolution": "Added null-safe normalization at the affected text boundaries. Numeric/date values and passwords are unchanged.",
+      "category": "trimming",
+      "source_file": "problems/trimIssues.json",
+      "source_id": "TRIM-013"
+    },
+    {
+      "file": "src/mainpack/MyClass.java",
+      "line": 166,
+      "issue": "A root database credential is hard-coded in source code.",
+      "status": "closed",
+      "resolution": "The current connection-pool code uses the authenticated login object's runtime password; no root password is present in MyClass.java.",
+      "id": "PASSWORD-001",
+      "category": "credentials",
+      "source_file": "issues/exposed_database_password_leaks.json",
+      "source_id": "PASSWORD-001"
+    },
+    {
+      "file": "src/loginsignup/signup/SignUp.java",
+      "lines": [
+        65,
+        90
+      ],
+      "issue": "Root and new-user passwords are added to MySQL batch commands and written to createUser.bat.",
+      "status": "closed",
+      "resolution": "Signup now uses JDBC directly, does not create createUser.bat, and clears password character arrays after use.",
+      "id": "PASSWORD-002",
+      "category": "credentials",
+      "source_file": "issues/exposed_database_password_leaks.json",
+      "source_id": "PASSWORD-002"
+    },
+    {
+      "file": "src/loginsignup/login/loggedin/MainScreen.java",
+      "lines": [
+        68,
+        80
+      ],
+      "issue": "The logged-in database password is written into tempBack.bat for backups.",
+      "status": "closed",
+      "resolution": "MainScreen no longer writes tempBack.bat. BackupAndRestore uses a temporary MySQL option file with a direct ProcessBuilder invocation, then cleans it up.",
+      "id": "PASSWORD-003",
+      "category": "credentials",
+      "source_file": "issues/exposed_database_password_leaks.json",
+      "source_id": "PASSWORD-003"
+    }
+  ],
+  "schema_review_findings": [
+    {
+      "id": "customer-name-as-relationship-key",
+      "severity": "high",
+      "tables": [
+        "customers",
+        "bills",
+        "order_slips",
+        "transactions",
+        "send_packets"
+      ],
+      "detail": "customers.customer_id is the primary key, but these tables reference the UNIQUE customer_name text field instead. A customer rename cascades correctly, but names are mutable business data rather than stable identifiers.",
+      "status": "review_required",
+      "source_file": "ignore/sql/sqlProblem.json",
+      "note": "Schema design finding; not automatically a confirmed bug or an approved migration."
+    },
+    {
+      "id": "order-type-name-as-relationship-key",
+      "severity": "medium",
+      "tables": [
+        "ordertype",
+        "order_slips"
+      ],
+      "detail": "ordertype.type_id is the primary key, but order_slips.slip_type references UNIQUE ordertype.type_name instead.",
+      "status": "review_required",
+      "source_file": "ignore/sql/sqlProblem.json",
+      "note": "Schema design finding; not automatically a confirmed bug or an approved migration."
+    },
+    {
+      "id": "order-slip-header-not-constrained",
+      "severity": "medium",
+      "tables": [
+        "order_slips_main",
+        "order_slips",
+        "customers",
+        "ordertype"
+      ],
+      "detail": "order_slips_main.customer_name and order_slips_main.slip_type have no foreign keys. They can be invalid or disagree with the child order_slips rows.",
+      "status": "review_required",
+      "source_file": "ignore/sql/sqlProblem.json",
+      "note": "Schema design finding; not automatically a confirmed bug or an approved migration."
+    },
+    {
+      "id": "design-id-integrity-is-not-uniform",
+      "severity": "medium",
+      "tables": [
+        "inventory",
+        "godownstock",
+        "send_items",
+        "billdetails",
+        "order_slips"
+      ],
+      "detail": "godownstock.design_id and send_items.design_id are foreign keys to inventory.DESIGNID. billdetails.DesignID and order_slips.design_id are only indexed, so they may contain Design IDs absent from inventory. This may be intentional for historical or pre-inventory data.",
+      "status": "review_required",
+      "source_file": "ignore/sql/sqlProblem.json",
+      "note": "Schema design finding; not automatically a confirmed bug or an approved migration."
+    },
+    {
+      "id": "bill-detail-order-slip-is-not-a-foreign-key",
+      "severity": "high",
+      "tables": [
+        "billdetails",
+        "order_slips_main"
+      ],
+      "detail": "billdetails.OrderSlipNumber has an index named fk_orderslip but no foreign-key constraint. It is BIGINT while order_slips_main.slip_id is INT, so orphan references are possible.",
+      "status": "review_required",
+      "source_file": "ignore/sql/sqlProblem.json",
+      "note": "Schema design finding; not automatically a confirmed bug or an approved migration."
+    },
+    {
+      "id": "otherdetail-has-no-key-or-parent",
+      "severity": "high",
+      "tables": [
+        "otherdetail"
+      ],
+      "detail": "otherdetail has no primary key, no unique key, and no foreign key for dnumber. Duplicate and orphan rows are possible.",
+      "status": "review_required",
+      "source_file": "ignore/sql/sqlProblem.json",
+      "note": "Schema design finding; not automatically a confirmed bug or an approved migration."
+    },
+    {
+      "id": "user-audit-columns-are-not-constrained",
+      "severity": "low",
+      "tables": [
+        "users",
+        "send_lots",
+        "send_items",
+        "receive_actions"
+      ],
+      "detail": "send_lots.created_by_user, send_items.intended_recipient_user, and receive_actions.received_by_user do not reference users.user. This can be intentional for historical audit text, but unknown usernames are allowed.",
+      "status": "review_required",
+      "source_file": "ignore/sql/sqlProblem.json",
+      "note": "Schema design finding; not automatically a confirmed bug or an approved migration."
+    },
+    {
+      "id": "item-name-definition-differences",
+      "severity": "low",
+      "tables": [
+        "inventory",
+        "billdetails",
+        "order_slips",
+        "send_items"
+      ],
+      "detail": "Item name limits differ: inventory 50, billdetails 100, and order_slips/send_items 255. Confirm that truncation differences are deliberate.",
+      "status": "review_required",
+      "source_file": "ignore/sql/sqlProblem.json",
+      "note": "Schema design finding; not automatically a confirmed bug or an approved migration."
+    },
+    {
+      "id": "destructive-cascades-for-accounting-history",
+      "severity": "high",
+      "tables": [
+        "customers",
+        "bills",
+        "billdetails",
+        "transactions",
+        "journalentry",
+        "order_slips"
+      ],
+      "detail": "Deleting a customer cascades into bills, bill details, transactions, journal entries, and order-slip rows. Deleting a bill cascades into its transactions and journal entries. Production code should normally deactivate/cancel accounting records rather than delete them.",
+      "status": "review_required",
+      "source_file": "ignore/sql/sqlProblem.json",
+      "note": "Schema design finding; not automatically a confirmed bug or an approved migration."
+    }
+  ],
+  "feature_reviews": [
+    {
+      "feature": "Order-slip inventory selection",
+      "status": "verified",
+      "review_date": "2026-10-09",
+      "verification_method": "source-code review",
+      "flow_verified": [
+        "Inventory items are loaded from the inventory table into the selector.",
+        "Selecting an item transfers its design ID and requested quantity to the order-slip form.",
+        "The order-slip form resolves the item name and price from the design ID.",
+        "Submitting the order slip saves the slip and updates inventory in the same transaction."
+      ],
+      "confirmed_business_rules": [
+        "Users may continue when requested quantity exceeds available stock.",
+        "Negative quantities are allowed for flexible stock adjustments."
+      ],
+      "review_notes": [
+        "Inventory selection currently displays TotalQuantity only. If opening stock is maintained separately, its display policy should be decided explicitly.",
+        "Closing the inventory selector should close only that window, not the full application.",
+        "Cancelled or reset order-slip forms should roll back and close their draft transaction."
+      ],
+      "source_file": "issues/general_features_review.json"
+    }
+  ],
+  "legacy_sources": [
+    "issues/issues_2026-10-03.json",
+    "issues/newBilllIssues.json",
+    "problems/combobox-timer-problems.json",
+    "problems/trimIssues.json",
+    "issues/exposed_database_password_leaks.json",
+    "issues/general_features_review.json",
+    "ignore/sql/sqlProblem.json"
+  ],
+  "summary": {
+    "open_issue_count": 27,
+    "completed_history_count": 31,
+    "schema_review_count": 9
+  }
+}
