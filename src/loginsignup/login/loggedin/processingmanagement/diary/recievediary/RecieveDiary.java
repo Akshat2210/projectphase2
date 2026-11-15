@@ -185,6 +185,7 @@ public class RecieveDiary extends JFrame {
                             Packet packet = entry.packets.get(packetId);
                             if (packet == null) {
                                 packet = new Packet(); packet.number = r.getInt("packet_number");
+                                packet.id = packetId;
                                 packet.customer = utils.TextNormalization.trimNullable(r.getString("customer_name")); packet.remark = utils.TextNormalization.stripTrailingNullable(r.getString("packet_remark"));
                                 entry.packets.put(packetId, packet);
                             }
@@ -227,6 +228,7 @@ public class RecieveDiary extends JFrame {
                 JScrollPane items = new JScrollPane(table); items.getVerticalScrollBar().setUnitIncrement(26);
                 card.add(items, BorderLayout.CENTER); card.setPreferredSize(new Dimension(700, 220));
                 card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 220));
+                  loginsignup.login.loggedin.processingmanagement.diary.PacketHistoryWindow.attach(card, packet.id);
                 packetListPanel.add(Box.createVerticalStrut(8)); packetListPanel.add(card);
             }
             packetListPanel.add(Box.createVerticalStrut(16));
@@ -266,6 +268,7 @@ public class RecieveDiary extends JFrame {
         final Map<Long, Packet> packets = new LinkedHashMap<>();
     }
     private static final class Packet {
+        long id;
         int number; String customer, remark; final List<Object[]> rows = new ArrayList<>();
     }
 }

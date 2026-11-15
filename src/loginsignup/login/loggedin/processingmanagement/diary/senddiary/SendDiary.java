@@ -397,6 +397,7 @@ public class SendDiary extends JFrame {
                     PacketData packet = packets.get(packetId);
                     if (packet == null) {
                         packet = new PacketData();
+                        packet.id = packetId;
                         packet.number = result.getInt("packet_number");
                         packet.customer = utils.TextNormalization.trimNullable(result.getString("customer_name"));
                         packet.remark = utils.TextNormalization.stripTrailingNullable(result.getString("packet_remark"));
@@ -484,6 +485,7 @@ public class SendDiary extends JFrame {
         card.setPreferredSize(new Dimension(600, 220));
         card.setMinimumSize(new Dimension(0, 220));
         card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 220));
+        loginsignup.login.loggedin.processingmanagement.diary.PacketHistoryWindow.attach(card, packet.id);
         return card;
     }
 
@@ -539,6 +541,7 @@ public class SendDiary extends JFrame {
     }
 
     static final class PacketData {
+        long id;
         int number;
         String customer, remark;
         final List<Object[]> rows = new ArrayList<>();
