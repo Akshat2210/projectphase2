@@ -145,6 +145,11 @@ public class cashTransaction extends JFrame {
                     String remark = remarkTextField.getText();
                     try {
                         amount = Double.parseDouble(amountTextField.getText());
+                        if (!Double.isFinite(amount) || amount <= 0) {
+                            JOptionPane.showMessageDialog(cashTransaction.this,
+                                    "Enter an amount greater than zero. Use In or Out to choose the direction.");
+                            return;
+                        }
                     } catch (NumberFormatException exception) {
                         JOptionPane.showMessageDialog(cashTransaction.this, "invalid amount entered");
                         return;
