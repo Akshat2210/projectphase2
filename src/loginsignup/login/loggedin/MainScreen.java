@@ -12,6 +12,7 @@ import loginsignup.login.loggedin.transactionsandaccounts.TransactionsScreen;
 import loginsignup.login.loggedin.transactionsandaccounts.CashEntry.cashTransaction;
 import mainpack.MyClass;
 import utils.Variables;
+import utils.LogoutGuard;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -23,6 +24,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Random;
 
 public class MainScreen extends JFrame {
+    private LogoutGuard logoutGuard;
 
     public MainScreen() {
     }
@@ -33,6 +35,7 @@ public class MainScreen extends JFrame {
 
         this.setContentPane(panel);
         pack();
+        logoutGuard = new LogoutGuard(this, logoutButton);
         if (Variables.devMode) {
             developerField.setEnabled(true);
         } else {
@@ -50,6 +53,7 @@ public class MainScreen extends JFrame {
         logoutButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                if (!logoutGuard.canLogout()) return;
                 MyClass.closeConnectionPool();
                 MyClass.login.nullLoginParameters();
                 MyClass.login.clearLoginFields();

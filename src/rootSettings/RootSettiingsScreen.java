@@ -4,6 +4,7 @@ import mainpack.MyClass;
 import rootSettings.datamanager.DataManager;
 import rootSettings.users.Users;
 import utils.Variables;
+import utils.LogoutGuard;
 
 import javax.swing.*;
 
@@ -12,6 +13,7 @@ public class RootSettiingsScreen extends JFrame {
     private JPanel panel;
     private JButton logoutButton;
     private JButton dataManagerButton;
+    private LogoutGuard logoutGuard;
 
     public RootSettiingsScreen() {
     }
@@ -20,6 +22,7 @@ public class RootSettiingsScreen extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setContentPane(panel);
         pack();
+        logoutGuard = new LogoutGuard(this, logoutButton);
 
         usersAndDatabaseButton.addActionListener(e -> {
             Users users = new Users(RootSettiingsScreen.this);
@@ -36,6 +39,7 @@ public class RootSettiingsScreen extends JFrame {
         });
 
         logoutButton.addActionListener(e -> {
+            if (!logoutGuard.canLogout()) return;
             MyClass.login.nullLoginParameters();
             MyClass.login.clearLoginFields();
             Variables.devMode = false;
