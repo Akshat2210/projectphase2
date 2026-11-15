@@ -1,7 +1,7 @@
 {
   "title": "Untrimmed database text issues",
   "date_reviewed": "2026-11-14",
-  "status": "completed",
+  "status": "forwarded",
   "scope": "Java strings written to MySQL without normalization and database strings fetched without removing accidental surrounding spaces.",
   "policy": {
     "identity_fields": "Trim both leading and trailing whitespace for party names, design IDs, account names, order types, godown names and usernames before validation, lookup and storage.",
@@ -377,5 +377,9 @@
     "source_compilation": "All Java sources compile with JDK 25 and configured libraries.",
     "live_database": "Not performed; existing stored names have not been rewritten.",
     "normalization_tests": "Null, blank, identifier trimming and descriptive leading-space preservation checked."
-  }
+  },
+  "archived_status": "completed",
+  "forwarded_to": "issues/issueCompiled.json",
+  "forwarded_date": "2026-11-15",
+  "tracking_note": "Superseded. Update issues/issueCompiled.json only. Original entries remain for historical reference."
 }

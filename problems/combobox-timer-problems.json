@@ -1,7 +1,7 @@
 {
   "title": "Remaining combo-box timer problems",
-  "date_reviewed": "2026-11-10",
-  "status": "open",
+  "date_reviewed": "2026-11-14",
+  "status": "forwarded",
   "notes": "The CashTransaction null-date problem was fixed separately.",
   "issues": [
     {
@@ -11,7 +11,14 @@
       "timer": "selectionDelay",
       "problem": "After selecting Inventory or an order slip, mode, orderSlipID and the table remain on the previous selection for 200 ms. Enter or double-click remains enabled during that period and can process a row from the previous source.",
       "suggested_correction": "Update mode immediately and clear or disable the table before restarting the timer, or leave this selection immediate.",
-      "status": "open"
+      "status": "forwarded",
+      "review_notes": [
+        "2026-11-14 source recheck: selectionComboBox still only restarts a local 200 ms timer; source mode and table update in the delayed callback. No immediate selection lock."
+      ],
+      "original_status": "open",
+      "forwarded_to": "issues/issueCompiled.json",
+      "compiled_id": "TIMER-001",
+      "forwarded_date": "2026-11-15"
     },
     {
       "id": 2,
@@ -20,7 +27,14 @@
       "timer": "selectionDelay",
       "problem": "The old table remains actionable for 200 ms after the selection changes. Add Item, Enter and double-click can add a row from the previous result set.",
       "suggested_correction": "Clear or disable the table immediately and re-enable it after refresh, or leave this selection immediate.",
-      "status": "open"
+      "status": "forwarded",
+      "review_notes": [
+        "2026-11-14 source recheck: selectionComboBox still only restarts the timer while Add/Enter/double-click handlers remain available."
+      ],
+      "original_status": "open",
+      "forwarded_to": "issues/issueCompiled.json",
+      "compiled_id": "TIMER-002",
+      "forwarded_date": "2026-11-15"
     },
     {
       "id": 3,
@@ -29,7 +43,14 @@
       "timer": "sourceSelectionDelay",
       "problem": "sourceItemsReady can remain true and the previous source table stays visible until the timer fires. The user can attempt to push an item from the previous source while the combo box shows the new source.",
       "suggested_correction": "Immediately set sourceItemsReady to false, increment or invalidate the active request and clear the table; delay only loadSelectedSourceItems().",
-      "status": "open"
+      "status": "forwarded",
+      "review_notes": [
+        "2026-11-14 source recheck: Source selection listeners restart the timer; sourceItemsReady/request invalidation occurs inside the delayed load methods, leaving the pre-callback interval unprotected."
+      ],
+      "original_status": "open",
+      "forwarded_to": "issues/issueCompiled.json",
+      "compiled_id": "TIMER-003",
+      "forwarded_date": "2026-11-15"
     },
     {
       "id": 4,
@@ -38,7 +59,14 @@
       "timer": "filterSelectionDelay",
       "problem": "Customer and type filters change immediately, but the previous order stays active for 200 ms. Print, Delete, Next and Previous can operate while the filter and displayed order are inconsistent.",
       "suggested_correction": "Disable order actions immediately and re-enable them after the filtered order loads, or keep these filters immediate.",
-      "status": "open"
+      "status": "forwarded",
+      "review_notes": [
+        "2026-11-14 source recheck: Filter listeners still restart the timer without immediately disabling Print/Delete/Next/Previous. Parameterizing the query did not resolve this timing problem."
+      ],
+      "original_status": "open",
+      "forwarded_to": "issues/issueCompiled.json",
+      "compiled_id": "TIMER-004",
+      "forwarded_date": "2026-11-15"
     },
     {
       "id": 5,
@@ -47,7 +75,14 @@
       "timer": "customerSelectionDelay",
       "problem": "The previous customer's bill remains displayed and printable for 200 ms after selecting another customer.",
       "suggested_correction": "Disable Print and navigation immediately until loadBillData() finishes, or keep the customer filter immediate.",
-      "status": "open"
+      "status": "forwarded",
+      "review_notes": [
+        "2026-11-14 source recheck: Customer selection restarts the timer; printing/navigation are not immediately locked while the old bill is displayed."
+      ],
+      "original_status": "open",
+      "forwarded_to": "issues/issueCompiled.json",
+      "compiled_id": "TIMER-005",
+      "forwarded_date": "2026-11-15"
     },
     {
       "id": 6,
@@ -67,7 +102,14 @@
       "timer": "customerSelectionDelay",
       "problem": "The existing search window can retain the previous customer's label for 200 ms. Inventory is not customer-specific, so the data risk is lower, but the UI is temporarily inconsistent.",
       "suggested_correction": "Update the label or disable the search window immediately, then delay only the heavier work.",
-      "status": "open"
+      "status": "forwarded",
+      "review_notes": [
+        "2026-11-14 source recheck: The existing purchase search label is updated only inside the delayed callback."
+      ],
+      "original_status": "open",
+      "forwarded_to": "issues/issueCompiled.json",
+      "compiled_id": "TIMER-007",
+      "forwarded_date": "2026-11-15"
     },
     {
       "id": 8,
@@ -76,7 +118,14 @@
       "timer": "lotSelectionDelay",
       "problem": "The previous lot remains displayed for 200 ms after the combo selection changes. Saving is protected by the displayedLotId comparison, so a wrong-lot save is rejected, but the user can receive a confusing error.",
       "suggested_correction": "Immediately disable Submit and clear or mark the old lot as loading before restarting the timer.",
-      "status": "open"
+      "status": "forwarded",
+      "review_notes": [
+        "2026-11-14 source recheck: Submit is disabled when fetchLot starts, not at the selection event. displayedLotId still prevents a wrong-lot save, but the misleading interval remains."
+      ],
+      "original_status": "open",
+      "forwarded_to": "issues/issueCompiled.json",
+      "compiled_id": "TIMER-008",
+      "forwarded_date": "2026-11-15"
     },
     {
       "id": 9,
@@ -96,7 +145,14 @@
       ],
       "problem": "A combo change followed immediately by Back or Close can leave a pending timer that fires against a hidden or disposed window. This can cause unnecessary database queries and, on billing screens, can recreate or update child windows after the parent closes.",
       "suggested_correction": "Store timers as fields and stop them during window cleanup, or begin each callback with an appropriate closed or displayability check.",
-      "status": "open"
+      "status": "forwarded",
+      "review_notes": [
+        "2026-11-14 source recheck: Local timers remain unstopped on several affected screens. SendDiary has closed/request guards on lot loads but customerFilterChanged lacks an initial closed check. New RecieveDiary stops its field timers, but that does not close this multi-screen issue."
+      ],
+      "original_status": "open",
+      "forwarded_to": "issues/issueCompiled.json",
+      "compiled_id": "TIMER-009",
+      "forwarded_date": "2026-11-15"
     }
   ],
   "currently_low_risk": [
@@ -108,5 +164,9 @@
       "screen": "SendDiary",
       "reason": "The delayed result is read-only and its background requests are versioned. It still shares the pending-timer-after-close cleanup issue."
     }
-  ]
+  ],
+  "archived_status": "open",
+  "forwarded_to": "issues/issueCompiled.json",
+  "forwarded_date": "2026-11-15",
+  "tracking_note": "Superseded. Update issues/issueCompiled.json only. Original entries remain for historical reference."
 }
