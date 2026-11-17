@@ -38,13 +38,12 @@ public class InventorySelect extends JFrame {
         rowDesignIdMap=new HashMap<>();
         this.orderGenerateForm = orderGenerateForm;
         setContentPane(panel);
-        inventoryTable.addKeyListener(new KeyAdapter() {
+        inventoryTable.getInputMap(JComponent.WHEN_FOCUSED)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "selectOrderItem");
+        inventoryTable.getActionMap().put("selectOrderItem", new AbstractAction() {
             @Override
-            public void keyPressed(KeyEvent e) {
-                super.keyPressed(e);
-                if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
-                    processSelection();
-                }
+            public void actionPerformed(ActionEvent e) {
+                processSelection();
             }
         });
         backButton.addActionListener(new ActionListener() {
