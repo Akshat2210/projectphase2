@@ -2,11 +2,11 @@ package loginsignup.login.loggedin.billing.newBill;
 
 import mainpack.MyClass;
 import utils.DBStructure;
+import utils.LogUtils;
 import utils.UtilityMethods;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.event.*;
 import java.sql.*;
@@ -201,12 +201,13 @@ public class SearchResultWindow extends JFrame {
         }
     }
 
-    private Vector<Integer> sqlOrderSlipUpdate(int BID) //this will also writen values to append to the bill
+    private Vector<Integer> sqlOrderSlipUpdate(int BID) throws SQLException
     {
         Vector<Integer> detailsToPush = new Vector<>();
 
         DefaultTableModel model = (DefaultTableModel) dataTable.getModel();
         int selectedRow = dataTable.getSelectedRow();
+        if (selectedRow < 0) throw new SQLException("Select an order-slip item first.");
         selectedRow = dataTable.convertRowIndexToModel(selectedRow);
         String itemName = model.getValueAt(selectedRow, model.findColumn("Item Name")).toString();
         int maxQuantity = Integer.parseInt(model.getValueAt(selectedRow, model.findColumn("Quantity")).toString());
@@ -214,21 +215,26 @@ public class SearchResultWindow extends JFrame {
         int selectedQuantity = showOrderSlipPrompt(maxQuantity, itemName);
 
         if (selectedQuantity < 0) return null;
-        String query = "UPDATE " + DBStructure.ORDER_SLIPS_TABLE + " SET " + DBStructure.ORDER_SLIPS_BILLED_QUANTITY + " = " + DBStructure.ORDER_SLIPS_BILLED_QUANTITY + " + ? WHERE " + DBStructure.ORDER_SLIPS_SLIP_ID + " = ? AND " + DBStructure.ORDER_SLIPS_ITEM_ID + " = ?";
-        try {
-            Connection con = parent.getTransacTemp();
-            PreparedStatement statement = con.prepareStatement(query);
+        if (!"orderslip".equals(mode) || orderSlipID != BID) {
+            throw new SQLException("The source changed. Select the item again.");
+        }
+        String query = "UPDATE " + DBStructure.ORDER_SLIPS_TABLE + " SET " + DBStructure.ORDER_SLIPS_BILLED_QUANTITY
+                + " = COALESCE(" + DBStructure.ORDER_SLIPS_BILLED_QUANTITY + ",0) + ? WHERE "
+                + DBStructure.ORDER_SLIPS_SLIP_ID + " = ? AND " + DBStructure.ORDER_SLIPS_ITEM_ID + " = ? AND COALESCE("
+                + DBStructure.ORDER_SLIPS_QUANTITY + ",0) - COALESCE(" + DBStructure.ORDER_SLIPS_BILLED_QUANTITY + ",0) >= ?";
+        try (PreparedStatement statement = parent.getTransacTemp().prepareStatement(query)) {
             int itemid = snoToItemIdMap.get(Integer.parseInt(model.getValueAt(selectedRow, model.findColumn("sno")).toString()));
             statement.setInt(1, selectedQuantity);
             statement.setInt(2, BID);
             statement.setInt(3, itemid);
-            statement.executeUpdate();
+            statement.setInt(4, selectedQuantity);
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException("The item no longer exists or its remaining quantity changed. Reload the order slip.");
+            }
             detailsToPush.add(itemid);
             detailsToPush.add(selectedQuantity);
             fetchOrderSlip((DefaultTableModel) dataTable.getModel());
 
-        } catch (SQLException | NullPointerException e) {
-            throw new RuntimeException();
         }
         return detailsToPush;
     }
@@ -358,11 +364,54 @@ public class SearchResultWindow extends JFrame {
     private void activateSelection() {
 
        if(mode.contentEquals("orderslip")) {
-           parent.notThroughOrderSlip = false;
+           if (!parent.canAddOrderSlipSelection()) return;
+           Connection connection = parent.getTransacTemp();
+           Savepoint beforeSelection = null;
+           NewBill.BillSelectionState previousState = parent.captureSelectionState();
+           boolean previousSearchFlag = searchFlag;
            try {
-               orderSlipItem(sqlOrderSlipUpdate(orderSlipID));
+               // A failed savepoint must stop the selection before any reservation is written.
+               beforeSelection = connection.setSavepoint();
+               parent.notThroughOrderSlip = false;
+               Vector<Integer> details = sqlOrderSlipUpdate(orderSlipID);
+               if (details != null) orderSlipItem(details);
+           } catch (Exception failure) {
+               boolean recovered = true;
+               if (beforeSelection != null) {
+                   try { connection.rollback(beforeSelection); }
+                   catch (SQLException rollbackFailure) {
+                       failure.addSuppressed(rollbackFailure);
+                       recovered = false;
+                   }
+               }
+               try { parent.restoreSelectionState(previousState); }
+               catch (RuntimeException restoreFailure) {
+                   failure.addSuppressed(restoreFailure);
+                   recovered = false;
+               }
+               LogUtils.logError(failure);
+               if (!recovered) {
+                   parent.blockAfterSelectionRecoveryFailure();
+                   setEnabled(false);
+               } else {
+                   try { fetchOrderSlip((DefaultTableModel) dataTable.getModel()); }
+                   catch (RuntimeException refreshFailure) {
+                       LogUtils.logError(refreshFailure);
+                       // A failed refresh must not leave stale source rows actionable.
+                       ((DefaultTableModel) dataTable.getModel()).setRowCount(0);
+                   }
+               }
+               JOptionPane.showMessageDialog(this, recovered
+                       ? "The item was not added. Earlier bill items have been kept.\n" + failure.getMessage()
+                       : "Could not safely recover this selection. Do not submit this bill; go Back and reopen it.\n" + failure.getMessage(),
+                       "Order-slip selection failed", JOptionPane.ERROR_MESSAGE);
            } finally {
-               parent.notThroughOrderSlip = true;
+               parent.notThroughOrderSlip = previousState.notThroughOrderSlip;
+               setSearchFlag(previousSearchFlag);
+               if (beforeSelection != null) {
+                   try { connection.releaseSavepoint(beforeSelection); }
+                   catch (SQLException releaseFailure) { LogUtils.logError(releaseFailure); }
+               }
            }
        }else if(mode.contentEquals("inventory")) {
            pushInventoryData();
@@ -436,11 +485,10 @@ public class SearchResultWindow extends JFrame {
         return comboBoxModel;
     }
 
-    private void orderSlipItem(Vector<Integer> detailsToPush) {//detailstopush-> item id at index 0 and quantity at index 1
+    private void orderSlipItem(Vector<Integer> detailsToPush) throws SQLException {
         if (detailsToPush == null) return;
         if (detailsToPush.size() < 2) {
-            JOptionPane.showMessageDialog(null, "Invalid details to push!");
-            return;
+            throw new SQLException("Invalid order-slip selection details.");
         }
 
         Connection con = parent.getTransacTemp();
@@ -466,24 +514,24 @@ public class SearchResultWindow extends JFrame {
 
 
             if (rs.next()) {
-                TableColumnModel columnModel = billTable.getColumnModel();
                 setUpdateThroughSlip(true);
                 parent.setItemID(itemId);
                 setSearchFlag(true);
-                model.setValueAt(rs.getString("slip_id") + "." + itemId + "/" + (rs.getInt("quantity") - rs.getInt("billed_quantity")), lastrow, columnModel.getColumnIndex("OrderSlip/quantity"));
-                model.setValueAt(String.valueOf(quantity), lastrow, columnModel.getColumnIndex("Quantity"));
-                model.setValueAt(utils.TextNormalization.trimNullable(rs.getString("item_name")), lastrow, columnModel.getColumnIndex("ItemName"));
-                model.setValueAt(rs.getString("raw_material_price"), lastrow, columnModel.getColumnIndex("Raw"));
-                model.setValueAt(utils.TextNormalization.trimNullable(rs.getString("design_id")), lastrow, columnModel.getColumnIndex("DesignID"));
+                model.setValueAt(rs.getString("slip_id") + "." + itemId + "/" + (rs.getInt("quantity") - rs.getInt("billed_quantity")), lastrow, NewBill.ORDER_SLIP_QUANTITY_INDEX);
+                model.setValueAt(String.valueOf(quantity), lastrow, NewBill.QUANTITY_INDEX);
+                model.setValueAt(utils.TextNormalization.trimNullable(rs.getString("item_name")), lastrow, NewBill.ITEM_NAME_INDEX);
+                model.setValueAt(rs.getString("raw_material_price"), lastrow, NewBill.RAW_INDEX);
+                model.setValueAt(utils.TextNormalization.trimNullable(rs.getString("design_id")), lastrow, NewBill.DESIGN_ID_INDEX);
+                if (UtilityMethods.parseInt(model.getValueAt(lastrow, NewBill.QUANTITY_INDEX)) != quantity) {
+                    throw new SQLException("The selected quantity could not be added to the bill.");
+                }
                 model.fireTableDataChanged();
                 setSearchFlag(false);
             } else {
-                JOptionPane.showMessageDialog(null, "Item not found in order_slips!");
+                throw new SQLException("Item not found in order_slips.");
             }
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Database error occurred!");
-            throw new RuntimeException();
-
+        } finally {
+            setSearchFlag(false);
         }
 
     }
@@ -512,23 +560,20 @@ public class SearchResultWindow extends JFrame {
                 + " FROM " + DBStructure.ORDER_SLIPS_TABLE
                 + " WHERE " + DBStructure.ORDER_SLIPS_SLIP_ID + " = ? "
                 + " ORDER BY " + DBStructure.ORDER_SLIPS_ITEM_ID;
-        try {
-            PreparedStatement pstmt = parent.getTransacTemp().prepareStatement(query);
+        try (PreparedStatement pstmt = parent.getTransacTemp().prepareStatement(query)) {
             pstmt.setInt(1, orderSlipID);
-            ResultSet rs = pstmt.executeQuery();
-            snoToItemIdMap = new HashMap<>();
-
-            while (rs.next()) {
-
-                int sno = rs.getInt("sno");
-                int itemId = rs.getInt("item_id");
-
-                snoToItemIdMap.put(sno, itemId); //
-                model.addRow(new Object[]{
-                        rs.getString("sno"), utils.TextNormalization.trimNullable(rs.getString("design_id")), utils.TextNormalization.trimNullable(rs.getString("item_name")), (rs.getInt("quantity") - rs.getInt("billed_quantity")), rs.getBigDecimal("plating_grams"), rs.getBigDecimal("raw_material_price"), utils.TextNormalization.stripTrailingNullable(rs.getString("other_details"))});// now this
+            try (ResultSet rs = pstmt.executeQuery()) {
+                snoToItemIdMap = new HashMap<>();
+                while (rs.next()) {
+                    int sno = rs.getInt("sno");
+                    int itemId = rs.getInt("item_id");
+                    snoToItemIdMap.put(sno, itemId);
+                    model.addRow(new Object[]{
+                            rs.getString("sno"), utils.TextNormalization.trimNullable(rs.getString("design_id")), utils.TextNormalization.trimNullable(rs.getString("item_name")), (rs.getInt("quantity") - rs.getInt("billed_quantity")), rs.getBigDecimal("plating_grams"), rs.getBigDecimal("raw_material_price"), utils.TextNormalization.stripTrailingNullable(rs.getString("other_details"))});
+                }
             }
         } catch (SQLException e) {
-            throw new RuntimeException();
+            throw new IllegalStateException("Could not refresh the order-slip items.", e);
 
         }
 

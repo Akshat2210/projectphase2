@@ -85,6 +85,7 @@ public class NewBill extends JFrame {
     private JLabel grandTotalLabel;
     private JButton resetButton1;
     private Connection transacTemp;
+    private boolean selectionRecoveryFailed;
     public boolean notThroughOrderSlip = true;
 
     public JTable getBillTable() {
@@ -471,6 +472,10 @@ public class NewBill extends JFrame {
         });
         NewBill temp = this;
         submitButton.addActionListener(e -> {
+            if (selectionRecoveryFailed) {
+                JOptionPane.showMessageDialog(this, "This draft could not be recovered safely. Go Back and reopen it.");
+                return;
+            }
             if (billTable.isEditing()) {
                 JOptionPane.showMessageDialog(NewBill.this, "please complete changes and stop editing before submiting", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
@@ -1247,6 +1252,58 @@ public class NewBill extends JFrame {
 
     public JButton getBackButton() {
         return backButton;
+    }
+
+    // Restore the in-memory draft as well as the database when one selection fails.
+    static final class BillSelectionState {
+        final Vector<Vector<Object>> rows = new Vector<>();
+        final HashMap<Integer, Integer> associations;
+        final Vector<Integer[]> disabledCells;
+        final int serial, itemId;
+        final boolean updateThroughSlip, notThroughOrderSlip, customerEnabled;
+
+        BillSelectionState(NewBill bill) {
+            for (Vector<?> row : bill.tableModel.getDataVector()) rows.add(new Vector<>(row));
+            associations = new HashMap<>(bill.snoToItemIdMap);
+            disabledCells = new Vector<>(bill.listOfNonEditableCells);
+            serial = bill.sno;
+            itemId = bill.itemID;
+            updateThroughSlip = bill.updateThroughSlip;
+            notThroughOrderSlip = bill.notThroughOrderSlip;
+            customerEnabled = bill.customerComboBox.isEnabled();
+        }
+    }
+
+    BillSelectionState captureSelectionState() { return new BillSelectionState(this); }
+
+    void restoreSelectionState(BillSelectionState state) {
+        TableModelListener[] listeners = UtilityMethods.removeModelListener(tableModel);
+        try {
+            tableModel.setRowCount(0);
+            for (Vector<Object> row : state.rows) tableModel.addRow(new Vector<>(row));
+            snoToItemIdMap.clear();
+            snoToItemIdMap.putAll(state.associations);
+            listOfNonEditableCells.clear();
+            listOfNonEditableCells.addAll(state.disabledCells);
+            sno = state.serial;
+            itemID = state.itemId;
+            updateThroughSlip = state.updateThroughSlip;
+            notThroughOrderSlip = state.notThroughOrderSlip;
+            customerComboBox.setEnabled(state.customerEnabled);
+            updateGrandTotalLabel();
+        } finally {
+            UtilityMethods.addModelListeners(listeners, tableModel);
+            tableModel.fireTableDataChanged();
+        }
+    }
+
+    boolean canAddOrderSlipSelection() { return !selectionRecoveryFailed; }
+
+    void blockAfterSelectionRecoveryFailure() {
+        selectionRecoveryFailed = true;
+        submitButton.setEnabled(false);
+        billTable.setEnabled(false);
+        customerComboBox.setEnabled(false);
     }
 }
 

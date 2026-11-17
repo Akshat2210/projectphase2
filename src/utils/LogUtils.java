@@ -14,6 +14,36 @@ import java.time.format.DateTimeFormatter;
 import java.util.Vector;
 
 public class LogUtils {
+    public static synchronized void logError(Exception exception) {
+        if (exception == null) return;
+        String username = mainpack.MyClass.login == null
+                ? "unknown" : mainpack.MyClass.login.getLoginID();
+        if (username == null || username.isBlank()) username = "unknown";
+        username = username.trim().replaceAll("[<>:\"/\\\\|?*\\p{Cntrl}]", "_");
+        String timestamp = LocalDateTime.now().format(
+                DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss_SSS"));
+        String exceptionName = exception.getClass().getSimpleName();
+        if (exceptionName.isEmpty()) exceptionName = "Exception";
+        java.nio.file.Path directory = java.nio.file.Path.of("src", "logs");
+        java.nio.file.Path file = directory.resolve(username + "_" + timestamp + "_" + exceptionName + ".logs");
+        try {
+            java.nio.file.Files.createDirectories(directory);
+            java.io.StringWriter trace = new java.io.StringWriter();
+            exception.printStackTrace(new java.io.PrintWriter(trace));
+            // Append on a same-millisecond collision instead of overwriting an earlier error.
+            try (BufferedWriter writer = java.nio.file.Files.newBufferedWriter(file,
+                    java.nio.charset.StandardCharsets.UTF_8,
+                    java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND)) {
+                writer.write("Username: " + username + " | Time: " + timestamp);
+                writer.newLine();
+                writer.write(trace.toString());
+                writer.newLine();
+            }
+        } catch (IOException | SecurityException loggingError) {
+            System.err.println("Could not write error log: " + loggingError.getMessage());
+        }
+    }
+
     static void main() {
     }
 
