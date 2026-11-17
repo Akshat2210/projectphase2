@@ -231,17 +231,6 @@ public class DataDeletion extends JFrame {
                         while (rows.next()) { /* Consume the locking read. */ }
                     }
                 }
-                try (PreparedStatement statement = connection.prepareStatement(
-                        "SELECT COUNT(*) FROM bills WHERE date < ? AND COALESCE(drafts, 0) <> 0")) {
-                    statement.setDate(1, endExclusive);
-                    try (ResultSet rows = statement.executeQuery()) {
-                        rows.next();
-                        if (rows.getLong(1) != 0) {
-                            throw new SQLException("Resolve draft bills before deleting this date range.");
-                        }
-                    }
-                }
-
                 // Fail closed: no accounting mutations happen until a full authenticated backup exists.
                 java.nio.file.Path backup = ProtectedDeletionBackup.create(database, recoveryPassword, backupDirectory);
 
@@ -269,12 +258,12 @@ public class DataDeletion extends JFrame {
                         "SET c.openingaccount = COALESCE(c.openingaccount,0) + COALESCE(b.net,0) " +
                         "- COALESCE(t.net,0) + COALESCE(j.net,0)", endExclusive, 3);
 
-                // Preserve TotalQuantity + openingstock and the item ledger's opening quantity.
+                // Carry deleted movements into the ledger opening; current TotalQuantity stays unchanged.
                 executeCutoff(connection, "UPDATE inventory i JOIN (" +
                         "SELECT bd.DesignID, SUM(bd.quantity) AS quantity FROM billdetails bd " +
                         "JOIN bills b ON b.BillID = bd.BillID WHERE b.date < ? GROUP BY bd.DesignID" +
                         ") x ON x.DesignID = i.DESIGNID SET i.openingstock = COALESCE(i.openingstock,0) " +
-                        "- COALESCE(x.quantity,0), i.TotalQuantity = i.TotalQuantity + COALESCE(x.quantity,0)",
+                        "- COALESCE(x.quantity,0)",
                         endExclusive, 1);
 
                 // Detach surviving children before ON DELETE CASCADE can remove them.
