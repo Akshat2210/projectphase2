@@ -93,8 +93,12 @@ public class MyClass {
             }
             return new DatabaseEndpoint(host, String.valueOf(portNumber));
         } catch (IOException | IllegalArgumentException exception) {
-            throw new ExceptionInInitializerError(
-                    "Could not load database endpoint from PORT.json: " + exception.getMessage());
+            JOptionPane.showMessageDialog(null,
+                    "Could not load database endpoint from PORT.json:\n" + exception.getMessage()
+                            + "\nCheck the file and its permissions, then configure the host and port.",
+                    "Database configuration", JOptionPane.ERROR_MESSAGE);
+            new PortConfig(null, true).setVisible(true);
+            return null;
         }
     }
     public static void loadConfiguration(boolean startApp) {

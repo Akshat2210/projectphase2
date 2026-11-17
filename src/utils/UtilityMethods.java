@@ -497,10 +497,14 @@ public class UtilityMethods {
         }
 
         // Write to file
-        try (FileOutputStream fileOut = new FileOutputStream(filename)) {
-            workbook.write(fileOut);
-            System.out.println("Excel file saved as: " + filename);
-        } catch (IOException e) {
+        try {
+            java.nio.file.Path destination = java.nio.file.Path.of(filename).toAbsolutePath();
+            java.nio.file.Files.createDirectories(destination.getParent());
+            try (FileOutputStream fileOut = new FileOutputStream(destination.toFile())) {
+                workbook.write(fileOut);
+                System.out.println("Excel file saved as: " + filename);
+            }
+        } catch (IOException | SecurityException e) {
             e.printStackTrace();
         }
 

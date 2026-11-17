@@ -52,6 +52,12 @@ public class LogUtils {
     {
         String date=LocalDateTime       .now().format(DateTimeFormatter.ofPattern("dd_MM_yyyy_HH_mm_ss"));
         File file=new File("src/logs/"+title+"_"+date+".logs");
+        try {
+            java.nio.file.Files.createDirectories(file.toPath().getParent());
+        } catch (IOException | SecurityException e) {
+            e.printStackTrace();
+            return CONSTANTS.FAIL_CODE;
+        }
         try(FileWriter fileWriter=new FileWriter(file);
         BufferedWriter bufferedWriter=new BufferedWriter(fileWriter);
         ){
@@ -63,7 +69,7 @@ public class LogUtils {
             }
             System.out.println("orderslip logged succesfully");
             return CONSTANTS.SUCCESS_CODE;
-        } catch (IOException e) {
+        } catch (IOException | SecurityException e) {
             e.printStackTrace();
             return (CONSTANTS.FAIL_CODE);
         }
@@ -75,6 +81,7 @@ public class LogUtils {
         try (Connection con = UtilityMethods.createConnection();
              PreparedStatement preparedStatement = con.prepareStatement("select * from " + DBStructure.INVENTORY_TABLE);) {
             File file = new File("src/logs/inventory_" + status + "_" + now + ".logs");
+            java.nio.file.Files.createDirectories(file.toPath().getParent());
             if (!file.exists()) {
                 file.createNewFile();
             }
@@ -94,7 +101,7 @@ public class LogUtils {
 //            throw new RuntimeException(e);
             e.printStackTrace();
             return String.valueOf(CONSTANTS.SQL_ERROR);
-        } catch (IOException e) {
+        } catch (IOException | SecurityException e) {
             JOptionPane.showMessageDialog(null, "could not create snapshot", "Error", JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
             return String.valueOf(CONSTANTS.FAIL_CODE);

@@ -223,11 +223,16 @@ public final class ProtectedDeletionBackup {
         if (Files.exists(destination)) throw new IOException("Recovery destination already exists.");
         char[] password = System.console().readPassword("16-digit recovery password: ");
         if (password == null) return;
-        Path temporary = privateTemp(destination.getParent(), ".sql-recovery-", ".tmp");
+        Path temporary = null;
         try {
+            Files.createDirectories(destination.getParent());
+            temporary = privateTemp(destination.getParent(), ".sql-recovery-", ".tmp");
             try (OutputStream output = Files.newOutputStream(temporary)) { decrypt(source, password, output); }
             Files.move(temporary, destination, StandardCopyOption.ATOMIC_MOVE);
             System.out.println("SQL recovered to " + destination + ". Import it separately into a recovery database.");
-        } finally { Arrays.fill(password, '\0'); Files.deleteIfExists(temporary); }
+        } finally {
+            Arrays.fill(password, '\0');
+            if (temporary != null) Files.deleteIfExists(temporary);
+        }
     }
 }
