@@ -712,17 +712,24 @@ public class UtilityMethods {
     public static TableModelListener[] removeModelListener(DefaultTableModel tableModel) {
 
         TableModelListener[] listeners = tableModel.getTableModelListeners();
+        ArrayList<TableModelListener> uniqueListeners = new ArrayList<>();
         for (TableModelListener listener : listeners) {
-
-
+            // Remove every registration, but save each listener instance only once.
             tableModel.removeTableModelListener(listener);
+            if (uniqueListeners.stream().noneMatch(saved -> saved == listener)) {
+                uniqueListeners.add(listener);
+            }
         }
-        return listeners;
+        return uniqueListeners.toArray(new TableModelListener[0]);
     }
 
     public static void addModelListeners(TableModelListener[] listeners, DefaultTableModel model) {
         for (TableModelListener listener : listeners) {
-            model.addTableModelListener(listener);
+            // JTable may already be attached by setModel() on a replacement model.
+            if (java.util.Arrays.stream(model.getTableModelListeners())
+                    .noneMatch(attached -> attached == listener)) {
+                model.addTableModelListener(listener);
+            }
         }
     }
 
