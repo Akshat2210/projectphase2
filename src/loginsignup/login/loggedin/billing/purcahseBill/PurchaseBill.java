@@ -308,6 +308,10 @@ public class PurchaseBill extends JFrame {
         submitButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                if (billTable.isEditing() && !billTable.getCellEditor().stopCellEditing()) {
+                    JOptionPane.showMessageDialog(PurchaseBill.this, "Please correct the active cell before submitting.");
+                    return;
+                }
                 System.out.println(billid);
 
                 if (customerComboBox.getSelectedItem() != null && customerComboBox.getSelectedIndex() != 0) {
