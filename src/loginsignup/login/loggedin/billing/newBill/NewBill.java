@@ -542,6 +542,10 @@ public class NewBill extends JFrame {
                         if (billTable.getRowCount() != 1)
                             checkAndRemoveRow(selectedRow, tableModel, SNO_INDEX, true);// Remove the row
                     }
+                } catch (RuntimeException failure) {
+                    utils.LogUtils.logError(failure);
+                    JOptionPane.showMessageDialog(NewBill.this, failure.getMessage(), "Could not delete row", JOptionPane.ERROR_MESSAGE);
+                    return;
                 } finally {
 
                     UtilityMethods.addModelListeners(listeners, tableModel);
@@ -1143,18 +1147,50 @@ public class NewBill extends JFrame {
         }
 
         if (isEmpty) {
-            updateOrderSlipQuantity(row + 1);
-            relinkAssociations(row + 1);
-            tableModel.removeRow(row);
-            reCheckEnableDisableInItemNameColumn();
-
-            int sno = 0;
-            for (int i = 0; i < tableModel.getRowCount() - 1; i++) {
-                sno++; // Increment SNo
-                tableModel.setValueAt(sno, i, snoIndex); // Set new value in SNo column
+            if (selectionRecoveryFailed) {
+                throw new IllegalStateException("This draft could not be recovered safely. Go Back and reopen it.");
             }
-            tableModel.setValueAt("", billTable.getRowCount() - 1, SNO_INDEX);
-            this.sno = sno;
+            // Keep a linked row and its reservation together if any part of deletion fails.
+            BillSelectionState previousState = snoToItemIdMap.containsKey(row + 1) ? captureSelectionState() : null;
+            Savepoint beforeDeletion = null;
+            try {
+                if (previousState != null) beforeDeletion = getTransacTemp().setSavepoint();
+                updateOrderSlipQuantity(row + 1);
+                relinkAssociations(row + 1);
+                tableModel.removeRow(row);
+                reCheckEnableDisableInItemNameColumn();
+
+                int sno = 0;
+                for (int i = 0; i < tableModel.getRowCount() - 1; i++) {
+                    sno++; // Increment SNo
+                    tableModel.setValueAt(sno, i, snoIndex); // Set new value in SNo column
+                }
+                tableModel.setValueAt("", billTable.getRowCount() - 1, SNO_INDEX);
+                this.sno = sno;
+            } catch (Exception failure) {
+                boolean recovered = true;
+                if (beforeDeletion != null) {
+                    try { getTransacTemp().rollback(beforeDeletion); }
+                    catch (SQLException rollbackFailure) {
+                        failure.addSuppressed(rollbackFailure);
+                        recovered = false;
+                    }
+                    try { restoreSelectionState(previousState); }
+                    catch (RuntimeException restoreFailure) {
+                        failure.addSuppressed(restoreFailure);
+                        recovered = false;
+                    }
+                }
+                if (!recovered) blockAfterSelectionRecoveryFailure();
+                throw new IllegalStateException(recovered
+                        ? "The row was not deleted. Earlier bill items have been kept."
+                        : "Could not safely recover deletion. Do not submit this bill; go Back and reopen it.", failure);
+            } finally {
+                if (beforeDeletion != null) {
+                    try { getTransacTemp().releaseSavepoint(beforeDeletion); }
+                    catch (SQLException releaseFailure) { utils.LogUtils.logError(releaseFailure); }
+                }
+            }
         }
     }
 
@@ -1169,12 +1205,13 @@ public class NewBill extends JFrame {
 
         try {
             String query = "update " + DBStructure.ORDER_SLIPS_TABLE + " set " + DBStructure.ORDER_SLIPS_BILLED_QUANTITY + " =" + DBStructure.ORDER_SLIPS_BILLED_QUANTITY + "-? where " + DBStructure.ORDER_SLIPS_ITEM_ID + "=?";
-            PreparedStatement stmt = temp.prepareStatement(query);
-            stmt.setInt(1, quantity);
-            stmt.setInt(2, itemid);
-
-
-            stmt.executeUpdate();
+            try (PreparedStatement stmt = temp.prepareStatement(query)) {
+                stmt.setInt(1, quantity);
+                stmt.setInt(2, itemid);
+                if (stmt.executeUpdate() != 1) {
+                    throw new SQLException("The linked order-slip item no longer exists.");
+                }
+            }
             if (searchResultWindow != null && searchResultWindow.isVisible())
                 searchResultWindow.fetchOrderSlip(searchResultWindow.getTableModel());
         } catch (SQLException e) {
