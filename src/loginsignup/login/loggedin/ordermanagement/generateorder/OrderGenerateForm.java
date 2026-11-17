@@ -11,6 +11,8 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -277,13 +279,14 @@ public class OrderGenerateForm extends JFrame {
                     model.setValueAt(rawPrice == 0 ? "" : rawPrice, row, RAW_MATERIAL_COST_INDEX);
                 }
                 if (column == PLATING_INDEX) {
-                    double plating;
+                    BigDecimal plating;
                     try {
-                        plating = parseDouble((model.getValueAt(row, PLATING_INDEX)));
+                        plating = new BigDecimal(utils.TextNormalization.trimToEmpty(model.getValueAt(row, PLATING_INDEX)))
+                                .setScale(3, RoundingMode.HALF_UP);
                     } catch (NumberFormatException ex) {
-                        plating = 0;
+                        plating = BigDecimal.ZERO;
                     }
-                    model.setValueAt(plating == 0 ? "" : plating, row, PLATING_INDEX);
+                    model.setValueAt(plating.signum() == 0 ? "" : plating, row, PLATING_INDEX);
                 }
                 if (row == model.getRowCount() - 1 && !cellContent.isEmpty()) {
                     model.setRowCount(model.getRowCount() + 1);
