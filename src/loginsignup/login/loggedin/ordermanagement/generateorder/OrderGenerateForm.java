@@ -103,6 +103,17 @@ public class OrderGenerateForm extends JFrame {
         resetFormButton.addActionListener(e -> {
             int answer = JOptionPane.showConfirmDialog(OrderGenerateForm.this, "are you sure you want to reset the form, data will be lost?");
             if (answer != JOptionPane.YES_OPTION) return;
+            try {
+                if (orderSlipConnectionObject != null && !orderSlipConnectionObject.isClosed()) {
+                    orderSlipConnectionObject.rollback();
+                    orderSlipConnectionObject.close();
+                }
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(OrderGenerateForm.this,
+                        "Could not discard the current draft: " + ex.getMessage(),
+                        "Reset failed", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             dispose();
             Vector<String> vector1 = new Vector(List.of(new String[]{String.valueOf(OrderGenerateForm.this.getX()), String.valueOf(OrderGenerateForm.this.getY()), String.valueOf(OrderGenerateForm.this.getWidth()), String.valueOf(OrderGenerateForm.this.getHeight())}));
             Vector<String> vector2 = new Vector(List.of(String.valueOf(MyClass.inventorySelect.getX()), String.valueOf(MyClass.inventorySelect.getY()), String.valueOf(MyClass.inventorySelect.getWidth()), String.valueOf(MyClass.inventorySelect.getHeight())));
