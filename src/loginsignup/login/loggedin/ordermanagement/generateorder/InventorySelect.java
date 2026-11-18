@@ -97,6 +97,13 @@ public class InventorySelect extends JFrame {
     }
 
     private void processSelection() {
+        int viewRow = inventoryTable.getSelectedRow();
+        if (viewRow < 0) {
+            JOptionPane.showMessageDialog(InventorySelect.this,
+                    "Please select an inventory item first.",
+                    "No item selected", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         int quantity;
         try {
             quantity = Integer.parseInt(JOptionPane.showInputDialog("enter quantity"));
@@ -108,7 +115,7 @@ public class InventorySelect extends JFrame {
             JOptionPane.showMessageDialog(InventorySelect.this, "please enter valid quantity");
             return;
         }
-        int selectedRow = inventoryTable.convertRowIndexToModel(inventoryTable.getSelectedRow());
+        int selectedRow = inventoryTable.convertRowIndexToModel(viewRow);
         String designID = Objects.toString(inventoryTable.getModel().getValueAt(selectedRow, COL_DESIGN_ID_INDEX), "");
         pushDataToGenerator(designID, quantity, orderGenerateForm,true);
 
