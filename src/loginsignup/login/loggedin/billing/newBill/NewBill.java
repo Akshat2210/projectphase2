@@ -293,10 +293,11 @@ public class NewBill extends JFrame {
             customerTableStatement.executeUpdate();
             System.out.println(billID + " is the billid");
 
-            String linkQuery = "UPDATE " + DBStructure.TRANSACTIONS_TABLE + " SET " + DBStructure.TRANSACTIONS_BILLID + " = ? WHERE " + DBStructure.TRANSACTIONS_CUSTOMER_NAME + " = ? AND " + DBStructure.TRANSACTIONS_BILLID + " IS NULL";
+            String linkQuery = "UPDATE " + DBStructure.TRANSACTIONS_TABLE + " SET " + DBStructure.TRANSACTIONS_BILLID + " = ? WHERE " + DBStructure.TRANSACTIONS_CUSTOMER_NAME + " = ? AND " + DBStructure.TRANSACTIONS_BILLID + " IS NULL AND " + DBStructure.TRANSACTIONS_DATE + " <= ?";
             linkTransactionsStatement = conn.prepareStatement(linkQuery);
             linkTransactionsStatement.setInt(1, getCurBillID());
             linkTransactionsStatement.setString(2, utils.TextNormalization.trimNullable(customerName));
+            linkTransactionsStatement.setDate(3, java.sql.Date.valueOf(getDateTime().toLocalDate()));
             linkTransactionsStatement.executeUpdate();
 
             conn.commit(); // Commit transaction

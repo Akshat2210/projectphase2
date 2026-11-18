@@ -339,7 +339,10 @@ public class UtilityMethods {
     public static BigDecimal[] balance(int billID) {
         BigDecimal lastbillTotal = BigDecimal.ZERO;
         String openingBalanceQuery = "select openingaccount from customers where customer_name=(select customer_name from bills where billid=?)";
-        String billQuery = "select billid from bills where customer_name=(select customer_name from bills where billid=?) and date <= (select date from bills where billid=?) and billid<?";
+        String billQuery = "SELECT billid FROM bills WHERE customer_name = "
+                + "(SELECT customer_name FROM bills WHERE billid = ?) AND ("
+                + "DATE(date) < (SELECT DATE(date) FROM bills WHERE billid = ?) OR ("
+                + "DATE(date) = (SELECT DATE(date) FROM bills WHERE billid = ?) AND billid < ?))";
 //        String transactionQuery="Select *from transactions where date<=()"
         String transactionQuery = "SELECT sum(amount) FROM transactions " +
                 "WHERE customer_name = (SELECT customer_name FROM bills WHERE billid = ?) " +
@@ -364,6 +367,7 @@ public class UtilityMethods {
             billStatement.setInt(1, billID);
             billStatement.setInt(2, billID);
             billStatement.setInt(3, billID);
+            billStatement.setInt(4, billID);
             StringBuilder placeholders = new StringBuilder();
             try (ResultSet rs = billStatement.executeQuery();
             ) {
