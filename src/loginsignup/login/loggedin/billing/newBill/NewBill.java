@@ -558,7 +558,9 @@ public class NewBill extends JFrame {
                 if (searchResultWindow != null && searchResultWindow.isVisible()) {
                     searchResultWindow.refreshResults();
                 }
-                billTable.setRowSelectionInterval(selectedrow, selectedrow);
+                if (selectedrow >= 0 && selectedrow < billTable.getRowCount()) {
+                    billTable.setRowSelectionInterval(selectedrow, selectedrow);
+                }
             }
 
         });
