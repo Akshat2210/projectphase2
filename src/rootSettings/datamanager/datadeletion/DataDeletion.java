@@ -161,6 +161,8 @@ public class DataDeletion extends JFrame {
         JTextField confirmation = new JTextField(24);
         Object[] fields = {
                 "Delete data through the selected date in database '" + database + "'.",
+                "This includes order slips and their items, even partly billed or unbilled slips.",
+                "Order-slip cleanup restores only unbilled reserved stock and removes processing links to deleted slips.",
                 "Select the cutoff date (inclusive):",
                 calendar,
                 "A complete encrypted SQL backup will be saved in:",
@@ -225,7 +227,8 @@ public class DataDeletion extends JFrame {
                 String[] locks = {"SELECT customer_id FROM customers FOR UPDATE",
                         "SELECT DESIGNID FROM inventory FOR UPDATE", "SELECT BillID FROM bills FOR UPDATE",
                         "SELECT itemid_bill FROM billdetails FOR UPDATE",
-                        "SELECT transaction_id FROM transactions FOR UPDATE", "SELECT id FROM journalentry FOR UPDATE"};
+                        "SELECT transaction_id FROM transactions FOR UPDATE", "SELECT id FROM journalentry FOR UPDATE",
+                        "SELECT slip_id FROM order_slips_main FOR UPDATE", "SELECT item_id FROM order_slips FOR UPDATE"};
                 for (String query : locks) {
                     try (Statement statement = connection.createStatement(); ResultSet rows = statement.executeQuery(query)) {
                         while (rows.next()) { /* Consume the locking read. */ }
@@ -277,6 +280,17 @@ public class DataDeletion extends JFrame {
                 executeCutoff(connection, "DELETE FROM journalentry WHERE date < ?", endExclusive, 1);
                 executeCutoff(connection, "DELETE FROM transactions WHERE date < ?", endExclusive, 1);
                 executeCutoff(connection, "DELETE FROM bills WHERE date < ?", endExclusive, 1);
+                // An order already reserved its full quantity from current stock. Once its history is
+                // removed, return only the part that was never billed; fully billed rows add back zero.
+                executeCutoff(connection, "UPDATE inventory i JOIN (" +
+                        "SELECT s.design_id, SUM(COALESCE(s.quantity,0) - COALESCE(s.billed_quantity,0)) AS quantity " +
+                        "FROM order_slips s JOIN order_slips_main m ON m.slip_id = s.slip_id " +
+                        "WHERE m.created_at < ? AND s.design_id IS NOT NULL GROUP BY s.design_id" +
+                        ") x ON x.design_id = i.DESIGNID SET i.TotalQuantity = i.TotalQuantity + x.quantity",
+                        endExclusive, 1);
+                // History cleanup rather than cancellation: child item rows cascade.
+                // Item rows cascade; send_items retains its records with the deleted slip links set to NULL.
+                executeCutoff(connection, "DELETE FROM order_slips_main WHERE created_at < ?", endExclusive, 1);
 
                 try (PreparedStatement statement = connection.prepareStatement(
                         "INSERT INTO journalentry (transaction_type,date,accountname,remark,billid,transaction_id,debit,credit) " +
