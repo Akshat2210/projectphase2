@@ -28,11 +28,11 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 /** Saves a sale bill using the existing bill layout, with order-slip-style file handling. */
-final class SaleBillPdf {
+public final class SaleBillPdf {
     private SaleBillPdf() { }
 
-    static Path save(DefaultTableModel model, int billId, java.sql.Date date, String customerName,
-                     String database, Path dataFolder) throws Exception {
+    public static Path save(DefaultTableModel model, int billId, java.sql.Date date, String customerName,
+                            String database, Path dataFolder) throws Exception {
         validateFolderName(database);
         Path directory = dataFolder.toAbsolutePath().normalize().resolve(database).resolve("salebills");
         Files.createDirectories(directory);

@@ -1,5 +1,7 @@
 package loginsignup.login.loggedin.billing.viewbills;
 
+import loginsignup.login.loggedin.billing.newBill.SaleBillPdf;
+import loginsignup.login.loggedin.processingmanagement.send.BrowserPdfPrint;
 import mainpack.MyClass;
 import utils.CONSTANTS;
 import utils.DBStructure;
@@ -71,6 +73,65 @@ public class ViewCustomerBill extends JFrame {
 //    public void init(){
 //
 //    }
+
+    private DefaultTableModel snapshotBillModel() {
+        DefaultTableModel source = (DefaultTableModel) billTable.getModel();
+        Vector<String> columnNames = new Vector<>();
+        for (int column = 0; column < source.getColumnCount(); column++) {
+            columnNames.add(source.getColumnName(column));
+        }
+
+        DefaultTableModel snapshot = new DefaultTableModel(columnNames, 0);
+        for (int row = 0; row < source.getRowCount(); row++) {
+            Object[] values = new Object[source.getColumnCount()];
+            for (int column = 0; column < source.getColumnCount(); column++) {
+                values[column] = source.getValueAt(row, column);
+            }
+            snapshot.addRow(values);
+        }
+        return snapshot;
+    }
+
+    private void printCurrentBillAsPdf() {
+        int billId = getBillID();
+        Date billDate = getDate() == null ? null : new Date(getDate().getTime());
+        String billCustomer = getCustomerName();
+        DefaultTableModel billSnapshot = snapshotBillModel();
+
+        if (billId <= 0 || billDate == null) {
+            JOptionPane.showMessageDialog(this, "Load a bill before printing.", "No bill selected", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        printButton.setEnabled(false);
+        new SwingWorker<Void, Void>() {
+            private java.nio.file.Path savedPdf;
+
+            @Override
+            protected Void doInBackground() throws Exception {
+                savedPdf = SaleBillPdf.save(billSnapshot, billId, billDate, billCustomer,
+                        MyClass.login.getDatabase(), java.nio.file.Paths.get("data"));
+                BrowserPdfPrint.openPrintDialog(savedPdf);
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                printButton.setEnabled(true);
+                try {
+                    get();
+                } catch (Exception printError) {
+                    Throwable cause = printError.getCause() == null ? printError : printError.getCause();
+                    String message = savedPdf == null
+                            ? "The bill PDF could not be created.\n" + cause.getMessage()
+                            : "The bill PDF is saved.\n" + cause.getMessage() + "\nPDF: " + savedPdf;
+                    JOptionPane.showMessageDialog(ViewCustomerBill.this, message,
+                            "Open PDF for printing", JOptionPane.WARNING_MESSAGE);
+                }
+            }
+        }.execute();
+    }
+
     public void init() {
         setContentPane(panel);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -79,13 +140,7 @@ public class ViewCustomerBill extends JFrame {
             dispose();
             MyClass.billingScreen.setVisible(true);
         });
-        printButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                printQueue.offer(() -> printWithDefaultSettings((DefaultTableModel) billTable.getModel(), getBillID(), getDate(), getCustomerName(), CONSTANTS.CUSTOMER_BILL));
-
-            }
-        });
+        printButton.addActionListener(e -> printCurrentBillAsPdf());
 
         setListOfCustomer();// sets the list of customers in jcombobox
         setExtendedState(JFrame.MAXIMIZED_BOTH);
