@@ -141,11 +141,12 @@ public class cashTransaction extends JFrame {
                 e -> {
 
 
-                    double amount;
+                    BigDecimal amount;
                     String remark = remarkTextField.getText();
                     try {
-                        amount = Double.parseDouble(amountTextField.getText());
-                        if (!Double.isFinite(amount) || amount <= 0) {
+                        amount = new BigDecimal(amountTextField.getText().trim())
+                                .setScale(2, RoundingMode.HALF_UP);
+                        if (amount.signum() <= 0) {
                             JOptionPane.showMessageDialog(cashTransaction.this,
                                     "Enter an amount greater than zero. Use In or Out to choose the direction.");
                             return;
@@ -175,7 +176,7 @@ public class cashTransaction extends JFrame {
                                 "Invalid date", JOptionPane.WARNING_MESSAGE);
                         return;
                     }
-                    if (outRadioButton.isSelected()) amount = amount * (-1);
+                    if (outRadioButton.isSelected()) amount = amount.negate();
                     java.sql.Date sqlDate = new java.sql.Date(parsed.getTime());
 
 
@@ -188,7 +189,7 @@ public class cashTransaction extends JFrame {
                         ) {
                             con.setAutoCommit(false);
                             transactionStatement.setString(1, utils.TextNormalization.trimNullable(customerName));
-                            transactionStatement.setDouble(2, amount);
+                            transactionStatement.setBigDecimal(2, amount);
                             transactionStatement.setDate(3, sqlDate);
                             transactionStatement.setString(4, utils.TextNormalization.stripTrailingNullable(remark));
                             transactionStatement.executeUpdate();
@@ -201,13 +202,13 @@ public class cashTransaction extends JFrame {
                                 transactionId = generatedKeys.getInt(1);
                             }
 
-                            customerStatement.setDouble(1, amount);
+                            customerStatement.setBigDecimal(1, amount);
                             customerStatement.setString(2, utils.TextNormalization.trimNullable(customerName));
                             if (customerStatement.executeUpdate() != 1) {
                                 throw new SQLException("Could not update the selected party's balance.");
                             }
 
-                            double journalAmount = Math.abs(amount);
+                            BigDecimal journalAmount = amount.abs();
 
                             // The party account is credited for cash received and debited for cash paid.
                             journalEntryStatement.setString(1, "payments");
@@ -215,8 +216,8 @@ public class cashTransaction extends JFrame {
                             journalEntryStatement.setString(3, utils.TextNormalization.trimNullable(customerName));
                             journalEntryStatement.setNull(4, Types.INTEGER);
                             journalEntryStatement.setInt(5, transactionId);
-                            journalEntryStatement.setDouble(6, inRadioButton.isSelected() ? journalAmount : 0);
-                            journalEntryStatement.setDouble(7, outRadioButton.isSelected() ? journalAmount : 0);
+                            journalEntryStatement.setBigDecimal(6, inRadioButton.isSelected() ? journalAmount : BigDecimal.ZERO);
+                            journalEntryStatement.setBigDecimal(7, outRadioButton.isSelected() ? journalAmount : BigDecimal.ZERO);
                             journalEntryStatement.addBatch();
 
                             // Cash is debited for money received and credited for money paid out.
@@ -225,8 +226,8 @@ public class cashTransaction extends JFrame {
                             journalEntryStatement.setString(3, "Cash");
                             journalEntryStatement.setNull(4, Types.INTEGER);
                             journalEntryStatement.setInt(5, transactionId);
-                            journalEntryStatement.setDouble(6, inRadioButton.isSelected() ? 0 : journalAmount);
-                            journalEntryStatement.setDouble(7, outRadioButton.isSelected() ? 0 : journalAmount);
+                            journalEntryStatement.setBigDecimal(6, inRadioButton.isSelected() ? BigDecimal.ZERO : journalAmount);
+                            journalEntryStatement.setBigDecimal(7, outRadioButton.isSelected() ? BigDecimal.ZERO : journalAmount);
                             journalEntryStatement.addBatch();
 
                             journalEntryStatement.executeBatch();
