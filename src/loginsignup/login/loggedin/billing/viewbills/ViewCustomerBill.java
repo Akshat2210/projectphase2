@@ -108,17 +108,16 @@ public class ViewCustomerBill extends JFrame {
 
         nextButton.addActionListener(e -> {
             int currentBillID = getBillID();  // Function to get the current BillID
-            String query;
-            if (customerNameComboBox.getSelectedIndex() == 0) {
-                // No customer filter
-                query = "SELECT BillID FROM bills WHERE BillID > " + currentBillID + " ORDER BY BillID ASC LIMIT 1";
-            } else {
-                // Get selected customer
-                String selectedCustomer = customerNameComboBox.getSelectedItem() == null ? "" : customerNameComboBox.getSelectedItem().toString();
-                query = "SELECT BillID FROM bills WHERE BillID > " + currentBillID + " AND customer_name = '" + selectedCustomer + "' ORDER BY BillID ASC LIMIT 1";
-            }
-            try (Connection con=MyClass.createConnection(); Statement stmt=con.createStatement()){
-                try(ResultSet rs = stmt.executeQuery(query);){
+            boolean customerSelected = customerNameComboBox.getSelectedIndex() != 0;
+            String query = "SELECT BillID FROM bills WHERE BillID > ?"
+                    + (customerSelected ? " AND customer_name = ?" : "")
+                    + " ORDER BY BillID ASC LIMIT 1";
+            try (Connection con = MyClass.createConnection(); PreparedStatement stmt = con.prepareStatement(query)) {
+                stmt.setInt(1, currentBillID);
+                if (customerSelected) {
+                    stmt.setString(2, utils.TextNormalization.trimToEmpty(customerNameComboBox.getSelectedItem()));
+                }
+                try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) loadBillData(billTable, rs.getInt(1));
                 }
             } catch (SQLException ex) {
@@ -128,19 +127,17 @@ public class ViewCustomerBill extends JFrame {
         });
         previousButton.addActionListener(e -> {
             int currentBillID = getBillID();  // Function to get the current BillID
-            String query;
+            boolean customerSelected = customerNameComboBox.getSelectedIndex() != 0;
+            String query = "SELECT BillID FROM bills WHERE BillID < ?"
+                    + (customerSelected ? " AND customer_name = ?" : "")
+                    + " ORDER BY BillID DESC LIMIT 1";
 
-            if (customerNameComboBox.getSelectedIndex() == 0) {
-                // No customer filter
-                query = "SELECT BillID FROM bills WHERE BillID < " + getBillID() + " ORDER BY BillID DESC LIMIT 1";
-            } else {
-                // Get selected customer
-                String selectedCustomer = customerNameComboBox.getSelectedItem() == null ? "" : customerNameComboBox.getSelectedItem().toString();
-                query = "SELECT BillID FROM bills WHERE BillID < " + getBillID() + " AND customer_name = '" + selectedCustomer + "' ORDER BY BillID DESC LIMIT 1";
-            }
-
-            try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
-                try (ResultSet rs = stmt.executeQuery(query)) {
+            try (Connection con = MyClass.createConnection(); PreparedStatement stmt = con.prepareStatement(query)) {
+                stmt.setInt(1, currentBillID);
+                if (customerSelected) {
+                    stmt.setString(2, utils.TextNormalization.trimToEmpty(customerNameComboBox.getSelectedItem()));
+                }
+                try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
                         loadBillData(billTable, rs.getInt(1));  // Load previous bill data
                     }

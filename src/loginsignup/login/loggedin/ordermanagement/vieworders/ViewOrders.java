@@ -236,29 +236,28 @@ public class ViewOrders extends JFrame {
                 }
                 if (deleteAction == JOptionPane.OK_OPTION) {
                     Connection con = null;
-                    Statement prevNextStatement = null;
-                    Statement orderSlipMainDeleteStatement = null;
+                    PreparedStatement prevNextStatement = null;
+                    PreparedStatement orderSlipMainDeleteStatement = null;
                     PreparedStatement inventoryUpdateStatement = null;
 
                     boolean nextOrPrev;
                     try {
                         con = MyClass.createConnection();
                         con.setAutoCommit(false);
-                        String prevNextQuery;
-                        prevNextQuery = "select min(slip_id) from order_slips ";
-                        if (!(customerComboBox.getSelectedIndex() == 0)) {
-                            prevNextQuery += "where customer_name=\"" + customerName + "\" ";
-                            if (!(panaTypeComboBox.getSelectedIndex() == 0)) {
-                                prevNextQuery += " and slip_type= \"" + panaType + "\";";
-                            } else {
-                                prevNextQuery += ";";
-                            }
-
-                        } else if (!(panaTypeComboBox.getSelectedIndex() == 0)) {
-                            prevNextQuery += "where slip_type=\"" + panaType + "\";";
-                        } else prevNextQuery += ";";
-                        prevNextStatement = con.createStatement();
-                        ResultSet rs = prevNextStatement.executeQuery(prevNextQuery);
+                        boolean customerSelected = customerComboBox.getSelectedIndex() != 0;
+                        boolean typeSelected = panaTypeComboBox.getSelectedIndex() != 0;
+                        String prevNextQuery = "select min(slip_id) from order_slips"
+                                + (customerSelected ? " where customer_name = ?" : "")
+                                + (typeSelected ? (customerSelected ? " and" : " where") + " slip_type = ?" : "");
+                        prevNextStatement = con.prepareStatement(prevNextQuery);
+                        int parameter = 1;
+                        if (customerSelected) {
+                            prevNextStatement.setString(parameter++, utils.TextNormalization.trimToEmpty(customerComboBox.getSelectedItem()));
+                        }
+                        if (typeSelected) {
+                            prevNextStatement.setString(parameter, utils.TextNormalization.trimToEmpty(panaTypeComboBox.getSelectedItem()));
+                        }
+                        ResultSet rs = prevNextStatement.executeQuery();
                         int idd = ViewOrders.this.id;
 //                        if (rs.next()) {
 //                            if (rs.getString(1).contentEquals("" + idd)) {
@@ -271,9 +270,10 @@ public class ViewOrders extends JFrame {
 //                                System.out.println(rs.getString(1) + "       " + idd);
 //                            }
 //                        }
-                        String orderSlipMainDeleteString = "delete from order_slips_main where slip_id=" + idd;
-                        orderSlipMainDeleteStatement = con.createStatement();
-                        if (orderSlipMainDeleteStatement.executeUpdate(orderSlipMainDeleteString) != 1) {
+                        String orderSlipMainDeleteString = "delete from order_slips_main where slip_id = ?";
+                        orderSlipMainDeleteStatement = con.prepareStatement(orderSlipMainDeleteString);
+                        orderSlipMainDeleteStatement.setInt(1, idd);
+                        if (orderSlipMainDeleteStatement.executeUpdate() != 1) {
                             con.rollback();
                             setCurrentBill(-1);
                             JOptionPane.showMessageDialog(ViewOrders.this, "This order slip no longer exists. No stock was restored.");
