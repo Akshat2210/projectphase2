@@ -377,17 +377,7 @@ public class UtilityMethods {
             }
             placeholders.append(billID);
 
-            billQuery = "SELECT " +
-                    "SUM(ROUND((" +
-                    "(IFNULL(LabourCost, 0) + " +
-                    "IFNULL(DullChillaiCost, 0) + " +
-                    "IFNULL(MeenaColorMeenaCost, 0) + " +
-                    "IFNULL(RhodiumCost, 0) + " +
-                    "IFNULL(NagSettingCost, 0) + " +
-                    "IFNULL(OtherBaseCosts, 0) + " +
-                    "IFNULL(RawCost, 0)) * IFNULL(quantity, 0)" +
-                    "), 2) + ROUND((IFNULL(GoldRate, 0) * IFNULL(GoldPlatingWeight, 0)), 2)) AS total, " +
-                    "SUM(TotalFinalCost),billid " +
+            billQuery = "SELECT SUM(COALESCE(TotalFinalCost, 0)) AS total, billid " +
                     "FROM billdetails " +
                     "WHERE billid in ( " + placeholders + ")" +
                     "GROUP BY billid;";
@@ -400,7 +390,7 @@ public class UtilityMethods {
                     while (rs.next()) {
                         BigDecimal billTotal = rs.getBigDecimal(1);
                         if (billTotal == null) billTotal = BigDecimal.ZERO;
-                        if (rs.getInt(3) == billID) lastbillTotal = lastbillTotal.add(billTotal);
+                        if (rs.getInt(2) == billID) lastbillTotal = lastbillTotal.add(billTotal);
                         grandTotalBill = grandTotalBill.add(billTotal);
                     }
                 }

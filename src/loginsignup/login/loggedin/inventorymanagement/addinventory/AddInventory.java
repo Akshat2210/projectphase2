@@ -18,25 +18,26 @@ public class AddInventory extends JFrame {
         }
 
     private int addData() {
-        String inventoryAddQuery = "INSERT INTO " + INVENTORY_TABLE + " (" + INVENTORY_DESIGN_ID + ", " + INVENTORY_TOTAL_QUANTITY + ", " + INVENTORY_SUPPLIER_NAME + "," + INVENTORY_BUY_PRICE + ", " + INVENTORY_SELL_PRICE + ", " + INVENTORY_ITEM_NAME + ") VALUES (?, ?, ?,? ,?,? )";
+        String inventoryAddQuery = "INSERT INTO " + INVENTORY_TABLE + " (" + INVENTORY_DESIGN_ID + ", " + INVENTORY_TOTAL_QUANTITY + ", " + INVENTORY_OPENING_STOCK + ", " + INVENTORY_SUPPLIER_NAME + "," + INVENTORY_BUY_PRICE + ", " + INVENTORY_SELL_PRICE + ", " + INVENTORY_ITEM_NAME + ") VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection con = MyClass.createConnection();
              PreparedStatement stmt = con.prepareStatement(inventoryAddQuery)) {
             stmt.setString(1, utils.TextNormalization.trimNullable(designID.getText()));
             stmt.setInt(2, Integer.parseInt(openingStockField.getText()));
-            stmt.setString(3, getSelectedSupplier());
+            stmt.setInt(3, Integer.parseInt(openingStockField.getText()));
+            stmt.setString(4, getSelectedSupplier());
             try {
-                stmt.setBigDecimal(4, parsePrice(buyPriceField.getText()));
+                stmt.setBigDecimal(5, parsePrice(buyPriceField.getText()));
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(panel, "invalid buy price entered");
                 return NUMBER_FORMAT_ERROR;
             }
             try {
-                stmt.setBigDecimal(5, parsePrice(sellPriceField.getText()));
+                stmt.setBigDecimal(6, parsePrice(sellPriceField.getText()));
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(panel, "invalid sell price entered");
                 return NUMBER_FORMAT_ERROR;
             }
-            stmt.setString(6, utils.TextNormalization.trimNullable(itemNameField.getText()));
+            stmt.setString(7, utils.TextNormalization.trimNullable(itemNameField.getText()));
 
             int rowsAffected = stmt.executeUpdate();
             if (rowsAffected > 0) {
@@ -65,6 +66,7 @@ public class AddInventory extends JFrame {
     private int updateData() {
         String inventoryUpdateQuery = "UPDATE " + INVENTORY_TABLE + " SET "
                 + INVENTORY_TOTAL_QUANTITY + " = " + INVENTORY_TOTAL_QUANTITY + " + ?, "
+                + INVENTORY_OPENING_STOCK + " = " + INVENTORY_OPENING_STOCK + " + ?, "
                 + INVENTORY_ITEM_NAME + " = ?, "
                 + INVENTORY_BUY_PRICE + " = ?, "
                 + INVENTORY_SELL_PRICE + " = ? ,"
@@ -73,11 +75,12 @@ public class AddInventory extends JFrame {
 
         try (Connection con = MyClass.createConnection(); PreparedStatement inventoryUpdateStmt = con.prepareStatement(inventoryUpdateQuery)) {
             inventoryUpdateStmt.setInt(1, Integer.parseInt(openingStockField.getText())); // quantity increment
-            inventoryUpdateStmt.setString(2, utils.TextNormalization.trimNullable(itemNameField.getText())); // assuming you have this field
-            inventoryUpdateStmt.setBigDecimal(3, parsePrice(buyPriceField.getText())); // buy price
-            inventoryUpdateStmt.setBigDecimal(4, parsePrice(sellPriceField.getText())); // sell price
-            inventoryUpdateStmt.setString(5, getSelectedSupplier());
-            inventoryUpdateStmt.setString(6, utils.TextNormalization.trimNullable(designID.getText())); // WHERE condition
+            inventoryUpdateStmt.setInt(2, Integer.parseInt(openingStockField.getText())); // opening-stock increment
+            inventoryUpdateStmt.setString(3, utils.TextNormalization.trimNullable(itemNameField.getText())); // assuming you have this field
+            inventoryUpdateStmt.setBigDecimal(4, parsePrice(buyPriceField.getText())); // buy price
+            inventoryUpdateStmt.setBigDecimal(5, parsePrice(sellPriceField.getText())); // sell price
+            inventoryUpdateStmt.setString(6, getSelectedSupplier());
+            inventoryUpdateStmt.setString(7, utils.TextNormalization.trimNullable(designID.getText())); // WHERE condition
             inventoryUpdateStmt.executeUpdate();
             return SUCCESS_CODE;
         } catch (NumberFormatException e) {
