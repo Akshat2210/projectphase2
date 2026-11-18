@@ -3,7 +3,6 @@ package utils;
 import mainpack.MyClass;
 
 import javax.swing.*;
-import javax.swing.plaf.nimbus.State;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
@@ -198,21 +197,6 @@ public class DBStructure {
     public static final String RECEIVE_ITEMS_RECEIVED_QUANTITY = "received_quantity";
     public static final String RECEIVE_ITEMS_REMARK = "receive_item_remark";
 
-
-    static int getStock(String designID) {
-        String query = "select " + INVENTORY_TOTAL_QUANTITY + "+" + INVENTORY_OPENING_STOCK + " FROM " + INVENTORY_TABLE + " WHERE " + INVENTORY_DESIGN_ID + " = ?";
-
-        try (Connection con = MyClass.createConnection(); PreparedStatement preparedStatement = con.prepareStatement(query)) {
-            preparedStatement.setString(1, utils.TextNormalization.trimNullable(designID));
-            try (ResultSet rs = preparedStatement.executeQuery()) {
-                if (rs.next()) return rs.getInt(1);
-                else return NOT_FOUND;
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return SQLEXCEPTIONOCCURED;
-        }
-    }
 
     public static String getInventoryItemName(String designID) {
         String query = "select " + INVENTORY_ITEM_NAME + " from " + INVENTORY_TABLE + " where " + INVENTORY_DESIGN_ID + " = ?";
