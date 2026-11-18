@@ -48,6 +48,6 @@ public class CONSTANTS {
      * the customers table and are added to account selectors when required.
      */
     public static final List<String> BUILT_IN_LEDGER_ACCOUNTS = Collections.unmodifiableList(Arrays.asList(
-            "Bank", "Cash", "Expense", "Income", "Purchase", "Sale"
+            "Bank", "Cash", "Expense", "Income", "Purchase", "Sales"
     ));
 }

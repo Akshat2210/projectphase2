@@ -67,6 +67,12 @@ public class AddParty extends JFrame {
                     JOptionPane.showMessageDialog(AddParty.this, "Party name cannot exceed 50 characters.");
                     return;
                 }
+                if (isReservedAccountName(name)) {
+                    JOptionPane.showMessageDialog(AddParty.this,
+                            "This name is reserved for an internal account. Choose a different party name.",
+                            "Reserved party name", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
                 String query = "insert into " + DBStructure.CUSTOMERS_TABLE + "(" + DBStructure.CUSTOMERS_CUSTOMER_NAME + "," + DBStructure.CUSTOMERS_OPENING_ACCOUNT + "," + DBStructure.CUSTOMERS_BALANCE + ") values(?,?,?)";
                 String journalQuery = "INSERT INTO " + DBStructure.JOURNAL_ENTRY_TABLE + " (" +
                         DBStructure.JOURNAL_ENTRY_TRANSACTION_TYPE + ", " +
@@ -136,6 +142,14 @@ public class AddParty extends JFrame {
         });
         pack();
 
+    }
+
+    private boolean isReservedAccountName(String name) {
+        if (name.equalsIgnoreCase("Inventory") || name.equalsIgnoreCase("Opening Balance Equity")) {
+            return true;
+        }
+        return CONSTANTS.BUILT_IN_LEDGER_ACCOUNTS.stream()
+                .anyMatch(account -> account.equalsIgnoreCase(name));
     }
 
     private void addOpeningBalanceJournalLine(PreparedStatement statement, java.sql.Date entryDate,

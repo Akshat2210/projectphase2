@@ -63,7 +63,7 @@ public class JournalEntry extends JFrame {
         accounts.add("Expense");
         accounts.add("Income");
         accounts.add("Purchase");
-        accounts.add("Sale");
+        accounts.add("Sales");
 
         String customerQuery = "SELECT customer_name FROM customers " +
                 "WHERE customer_name IS NOT NULL AND TRIM(customer_name) <> ''";
