@@ -44,6 +44,7 @@ public class OrderGenerateForm extends JFrame {
     public static final int OTHER_DETAILS_INDEX = 5;
 
     Connection orderSlipConnectionObject;
+    Savepoint draftCreatedSavepoint;
 
     Vector<Integer[]> listOfDisabledCells;
     private Vector<Integer> listOfDisabledColumn;
@@ -161,15 +162,9 @@ public class OrderGenerateForm extends JFrame {
                 }
             } else {
                 try {
-                    orderSlipConnectionObject.rollback();
+                    orderSlipConnectionObject.rollback(draftCreatedSavepoint);
                 } catch (SQLException ex) {
                     JOptionPane.showMessageDialog(MyClass.orderGenerateForm, "roll back failed", "error", JOptionPane.ERROR_MESSAGE);
-                    throw new RuntimeException(ex);
-                }
-                try {
-                    orderSlipConnectionObject.close();
-                } catch (SQLException ex) {
-                    JOptionPane.showMessageDialog(MyClass.orderGenerateForm, "closing connection failed", "error", JOptionPane.ERROR_MESSAGE);
                     throw new RuntimeException(ex);
                 }
 
@@ -337,6 +332,7 @@ public class OrderGenerateForm extends JFrame {
                         setSlipID(rs.getInt(1));
                     } else setSlipID(-1);
                 }
+                draftCreatedSavepoint = orderSlipConnectionObject.setSavepoint("draft_created");
             }
         } catch (SQLException e) {
             dispose();
