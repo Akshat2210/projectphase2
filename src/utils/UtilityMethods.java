@@ -343,20 +343,19 @@ public class UtilityMethods {
                 + "(SELECT customer_name FROM bills WHERE billid = ?) AND ("
                 + "DATE(date) < (SELECT DATE(date) FROM bills WHERE billid = ?) OR ("
                 + "DATE(date) = (SELECT DATE(date) FROM bills WHERE billid = ?) AND billid < ?))";
-//        String transactionQuery="Select *from transactions where date<=()"
-        String transactionQuery = "SELECT sum(amount) FROM transactions " +
-                "WHERE customer_name = (SELECT customer_name FROM bills WHERE billid = ?) " +
-                "AND (date <=(SELECT date FROM bills WHERE billid = ?) and (billid<?))";
-        String directJournalQuery = "SELECT COALESCE(SUM(" + DBStructure.JOURNAL_ENTRY_DEBIT +
-                " - " + DBStructure.JOURNAL_ENTRY_CREDIT + "), 0) FROM " +
-                DBStructure.JOURNAL_ENTRY_TABLE + " WHERE " +
-                DBStructure.JOURNAL_ENTRY_ACCOUNT_NAME + " = (SELECT " +
-                DBStructure.BILLS_CUSTOMER_NAME + " FROM " + DBStructure.BILLS_TABLE + " WHERE " +
-                DBStructure.BILLS_BILL_ID + " = ?) AND " +
-                DBStructure.JOURNAL_ENTRY_TRANSACTION_TYPE + " = ? AND " +
-                DBStructure.JOURNAL_ENTRY_BILL_ID + " < ? AND " +
-                DBStructure.JOURNAL_ENTRY_DATE + " <= (SELECT " + DBStructure.BILLS_DATE + " FROM " +
-                DBStructure.BILLS_TABLE + " WHERE " + DBStructure.BILLS_BILL_ID + " = ?)";
+        // Both adjustment types follow their linked bill's calendar date, then its ID.
+        String olderLinkedBill = "(DATE(linked.date) < DATE(current_bill.date) OR "
+                + "(DATE(linked.date) = DATE(current_bill.date) AND linked.billid < current_bill.billid))";
+        String transactionQuery = "SELECT SUM(t.amount) FROM transactions t "
+                + "JOIN bills linked ON linked.billid = t.billid "
+                + "JOIN bills current_bill ON current_bill.billid = ? "
+                + "WHERE t.customer_name = current_bill.customer_name "
+                + "AND t.date <= DATE(current_bill.date) AND " + olderLinkedBill;
+        String directJournalQuery = "SELECT COALESCE(SUM(j.debit - j.credit), 0) FROM journalentry j "
+                + "JOIN bills linked ON linked.billid = j.billid "
+                + "JOIN bills current_bill ON current_bill.billid = ? "
+                + "WHERE j.accountname = current_bill.customer_name AND j.transaction_type = ? "
+                + "AND j.date <= DATE(current_bill.date) AND " + olderLinkedBill;
         BigDecimal grandTotalBill = BigDecimal.ZERO;//contains total till previous bills
         try (Connection con = MyClass.createConnection();
              PreparedStatement billStatement = con.prepareStatement(billQuery); PreparedStatement transacStatement = con.prepareStatement(transactionQuery);
@@ -409,8 +408,6 @@ public class UtilityMethods {
 
             }
             transacStatement.setInt(1, billID);
-            transacStatement.setInt(2, billID);
-            transacStatement.setInt(3, billID);
 
             BigDecimal transactionSum = BigDecimal.ZERO;
             try (ResultSet rs = transacStatement.executeQuery();) {
@@ -423,8 +420,6 @@ public class UtilityMethods {
             BigDecimal directJournalNet = BigDecimal.ZERO;
             directJournalStatement.setInt(1, billID);
             directJournalStatement.setString(2, CONSTANTS.DIRECT_JOURNAL_ENUM);
-            directJournalStatement.setInt(3, billID);
-            directJournalStatement.setInt(4, billID);
             try (ResultSet rs = directJournalStatement.executeQuery()) {
                 if (rs.next()) {
                     BigDecimal value = rs.getBigDecimal(1);
