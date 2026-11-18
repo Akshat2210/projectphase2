@@ -449,8 +449,17 @@ public class OrderGenerateForm extends JFrame {
     private boolean isSlipValid() {
         int numberOfRows = orderSlipTable.getRowCount();
         for (int i = 0; i < numberOfRows - 1; i++) {
-            if (utils.TextNormalization.trimToEmpty(model.getValueAt(i, ITEM_NAME_INDEX)).trim().contentEquals("") || utils.TextNormalization.trimToEmpty(model.getValueAt(i, QUANTITY_INDEX)).trim().contentEquals(""))
+            String itemName = utils.TextNormalization.trimToEmpty(model.getValueAt(i, ITEM_NAME_INDEX)).trim();
+            String quantityText = utils.TextNormalization.trimToEmpty(model.getValueAt(i, QUANTITY_INDEX)).trim();
+
+            if (itemName.contentEquals(""))
                 return false;
+
+            // An empty quantity is intentionally stored as zero by UtilityMethods.parseInt.
+            if (!quantityText.isEmpty() && parseInt(quantityText) < 0) {
+                JOptionPane.showMessageDialog(this, "Quantity cannot be negative.", "Invalid Slip Data", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
         }
         return true;
     }
