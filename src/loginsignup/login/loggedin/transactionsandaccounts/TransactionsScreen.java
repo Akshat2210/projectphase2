@@ -23,6 +23,7 @@ public class TransactionsScreen extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setContentPane(panel);
         pack();
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         backButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {

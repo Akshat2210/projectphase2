@@ -31,6 +31,7 @@ public class Diary extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setContentPane(panel);
         pack();
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLocationRelativeTo(processingManagementScreen);
         backButton.addActionListener(event -> dispose());
         addWindowListener(new WindowAdapter() {

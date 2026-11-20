@@ -39,6 +39,7 @@ public class Recover extends JFrame {
         setContentPane(panel);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         pack();
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLocationRelativeTo(parentWindow);
         backButton.addActionListener(event -> dispose());
         fromEncryptedFileButton.addActionListener(event -> chooseEncryptedBackup());

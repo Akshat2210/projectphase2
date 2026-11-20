@@ -25,6 +25,7 @@ public class ProcessingManagementScreen extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setContentPane(panel);
         pack();
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
 
         backButton.addActionListener(new ActionListener() {
             @Override

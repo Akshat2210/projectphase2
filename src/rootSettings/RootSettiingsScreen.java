@@ -22,6 +22,7 @@ public class RootSettiingsScreen extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setContentPane(panel);
         pack();
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         logoutGuard = new LogoutGuard(this, logoutButton);
 
         usersAndDatabaseButton.addActionListener(e -> {

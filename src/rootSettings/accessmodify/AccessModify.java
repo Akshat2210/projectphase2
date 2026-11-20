@@ -45,6 +45,7 @@ public class AccessModify extends JFrame {
         restrictedList.setBorder(BorderFactory.createTitledBorder("Restricted databases"));
         loadDatabaseLists();
         pack();
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
 
         backButton.addActionListener(e -> {
             dispose();

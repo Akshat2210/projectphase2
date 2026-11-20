@@ -28,6 +28,7 @@ public class OrderScreen extends JFrame {
 
         setContentPane(panel);
         pack();
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         backButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {

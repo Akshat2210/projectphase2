@@ -42,6 +42,7 @@ public class DataDeletion extends JFrame {
         databaselist.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         loadDatabases();
         pack();
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLocationRelativeTo(parentWindow);
 
         backButton.addActionListener(e -> dispose());

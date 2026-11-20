@@ -40,6 +40,7 @@ public class BillingScreen extends JFrame {
 
         setContentPane(panel);
         pack();
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
 
         newBillButton.addActionListener(new ActionListener() {
             @Override

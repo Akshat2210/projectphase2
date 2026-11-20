@@ -29,6 +29,7 @@ public class DataManager extends JFrame {
         setContentPane(panel);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         pack();
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLocationRelativeTo(parentWindow);
         backButton.addActionListener(event -> dispose());
         addWindowListener(new WindowAdapter() {

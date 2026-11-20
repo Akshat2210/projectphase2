@@ -30,6 +30,7 @@ public class Users extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setContentPane(panel);
         pack();
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         generateUserList();
 
         backButton.addActionListener(e -> {

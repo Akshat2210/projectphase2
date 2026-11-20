@@ -83,6 +83,7 @@ public class advancesetting extends JFrame {
         loadDatabases();
         setMinimumSize(new Dimension(650, 400));
         pack();
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLocationRelativeTo(previousScreen);
     }
 

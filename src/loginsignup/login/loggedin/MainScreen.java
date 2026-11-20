@@ -35,6 +35,7 @@ public class MainScreen extends JFrame {
 
         this.setContentPane(panel);
         pack();
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         logoutGuard = new LogoutGuard(this, logoutButton);
         if (Variables.devMode) {
             developerField.setEnabled(true);
