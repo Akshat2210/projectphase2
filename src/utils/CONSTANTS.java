@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.List;
 
 public class CONSTANTS {
+    // Shared PDF font multiplier loaded from the local settings.json at startup.
+    public static final float PDF_FONT_SCALE = AppSettings.getPdfFontScale();
     //codes
     public static final int SUCCESS_CODE =0;
     public static final int WRITE_CODE_HERE = 1;

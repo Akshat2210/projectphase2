@@ -63,14 +63,14 @@ public final class SaleBillPdf {
             PdfWriter.getInstance(document, output);
             document.open();
             try {
-                Font titleFont = new Font(Font.HELVETICA, 18, Font.BOLD, Color.BLUE);
+                Font titleFont = new Font(Font.HELVETICA, 18 * utils.CONSTANTS.PDF_FONT_SCALE, Font.BOLD, Color.BLUE);
                 Path fontPath = java.nio.file.Paths.get(System.getenv().getOrDefault("WINDIR", "C:\\Windows"),
                         "Fonts", "mangal.ttf");
                 if (!Files.isRegularFile(fontPath)) {
                     throw new IOException("Mangal font was not found in Windows Fonts.");
                 }
                 BaseFont baseFont = BaseFont.createFont(fontPath.toString(), BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-                Font normalFont = new Font(baseFont, 12, Font.NORMAL, Color.BLACK);
+                Font normalFont = new Font(baseFont, 12 * utils.CONSTANTS.PDF_FONT_SCALE, Font.NORMAL, Color.BLACK);
                 Paragraph title = new Paragraph("Gurukripa Jewellers", titleFont);
                 title.setSpacingAfter(40);
                 document.add(title);

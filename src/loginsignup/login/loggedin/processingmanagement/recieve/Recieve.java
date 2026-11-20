@@ -433,11 +433,11 @@ public class Recieve extends JFrame {
         if (!Files.isRegularFile(unicode)) throw new java.io.IOException("Mangal font was not found in Windows Fonts.");
         LayoutProcessor.enable();
         BaseFont base = BaseFont.createFont(unicode.toString(), BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-        Font normal = new Font(base, 10, Font.NORMAL, Color.BLACK);
-        Font bold = new Font(base, 10, Font.BOLD, navy);
-        Font small = new Font(base, 8, Font.NORMAL, new Color(86, 101, 117));
-        Font title = new Font(base, 22, Font.BOLD, navy);
-        Font white = new Font(base, 9, Font.BOLD, Color.WHITE);
+        Font normal = new Font(base, 10 * utils.CONSTANTS.PDF_FONT_SCALE, Font.NORMAL, Color.BLACK);
+        Font bold = new Font(base, 10 * utils.CONSTANTS.PDF_FONT_SCALE, Font.BOLD, navy);
+        Font small = new Font(base, 8 * utils.CONSTANTS.PDF_FONT_SCALE, Font.NORMAL, new Color(86, 101, 117));
+        Font title = new Font(base, 22 * utils.CONSTANTS.PDF_FONT_SCALE, Font.BOLD, navy);
+        Font white = new Font(base, 9 * utils.CONSTANTS.PDF_FONT_SCALE, Font.BOLD, Color.WHITE);
         ReceivePrintRow first = rows.getFirst();
         Document document = new Document(PageSize.A4, 40, 40, 48, 52);
         try (java.io.OutputStream output = Files.newOutputStream(path)) {

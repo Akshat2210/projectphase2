@@ -133,6 +133,7 @@ public class MyClass {
     }
 
     public static void main(String[] args) {
+        utils.AppSettings.getPdfFontScale(); // Create/load local settings before opening windows.
     setHindiUiFont();
         Runtime.getRuntime().addShutdownHook(
                 new Thread(MyClass::closeConnectionPool, "DatabasePoolShutdown")

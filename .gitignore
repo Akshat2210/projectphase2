@@ -56,4 +56,5 @@ passwordHolder.txt
 ignore/
 
 ui_tests/
+/settings.json
 

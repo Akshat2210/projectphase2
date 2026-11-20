@@ -37,9 +37,9 @@ final class PacketHistoryPdf {
         LayoutProcessor.enable();
         BaseFont base = BaseFont.createFont(fontFile.toString(), BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
         Color navy = new Color(24, 53, 74);
-        Font normal = new Font(base, 10);
-        Font bold = new Font(base, 10, Font.BOLD, navy);
-        Font small = new Font(base, 8);
+        Font normal = new Font(base, 10 * utils.CONSTANTS.PDF_FONT_SCALE);
+        Font bold = new Font(base, 10 * utils.CONSTANTS.PDF_FONT_SCALE, Font.BOLD, navy);
+        Font small = new Font(base, 8 * utils.CONSTANTS.PDF_FONT_SCALE);
         Document document = new Document(PageSize.A4, 36, 36, 40, 48);
         try (OutputStream stream = Files.newOutputStream(file)) {
             PdfWriter writer = PdfWriter.getInstance(document, stream);
@@ -54,7 +54,7 @@ final class PacketHistoryPdf {
             document.addTitle(title); // BrowserPdfPrint identifies this exact PDF by its unique title.
             document.open();
             try {
-                document.add(new Paragraph("PACKET HISTORY", new Font(base, 20, Font.BOLD, navy)));
+                document.add(new Paragraph("PACKET HISTORY", new Font(base, 20 * utils.CONSTANTS.PDF_FONT_SCALE, Font.BOLD, navy)));
                 document.add(new Paragraph(database + " | Send packet ID " + packetId, normal));
                 Paragraph note = new Paragraph("Complete forwarding flow. * marks the selected packet. Receive counts are separate audit entries; they are not added to the sent quantities.", small);
                 note.setSpacingAfter(12);
