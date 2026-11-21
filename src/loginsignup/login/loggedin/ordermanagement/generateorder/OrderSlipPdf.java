@@ -59,7 +59,7 @@ public final class OrderSlipPdf {
             throw new IOException("Select an order slip with items before printing.");
         }
         SlipData slip = read(connection, slipId);
-        // View Orders displays billed/total quantities. Preserve the displayed values exactly.
+        // View Orders displays billed/total; the printed slip needs only the total order quantity.
         slip.rows.clear();
         for (int row = 0; row < displayed.getRowCount(); row++) {
             String[] values = new String[6];
@@ -67,6 +67,8 @@ public final class OrderSlipPdf {
                 Object value = displayed.getValueAt(row, column);
                 values[column] = value == null ? "" : value.toString();
             }
+            int separator = values[2].indexOf('/');
+            if (separator >= 0) values[2] = values[2].substring(separator + 1).trim();
             slip.rows.add(values);
         }
         return write(slip, database, dataFolder, "viewslip", "order_", false);
@@ -104,7 +106,6 @@ public final class OrderSlipPdf {
         LayoutProcessor.enable();
         BaseFont base = BaseFont.createFont(font.toString(), BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
         Font body = new Font(base, 9 * utils.CONSTANTS.PDF_FONT_SCALE);
-        Font heading = new Font(base, 18 * utils.CONSTANTS.PDF_FONT_SCALE, Font.BOLD, Color.BLUE);
         Font bold = new Font(base, 9 * utils.CONSTANTS.PDF_FONT_SCALE, Font.BOLD);
         Font small = new Font(base, 8 * utils.CONSTANTS.PDF_FONT_SCALE, Font.NORMAL, Color.GRAY);
         Document document = new Document(PageSize.A4, 30, 30, 40, 45);
@@ -122,30 +123,28 @@ public final class OrderSlipPdf {
             document.addTitle(title); // Browser helper identifies this exact receipt by its unique filename.
             document.open();
             try {
-                Paragraph name = new Paragraph("Gurukripa Jewellers", heading);
-                name.setSpacingAfter(25);
-                document.add(name);
                 PdfPTable details = new PdfPTable(new float[]{1, 1, 2});
                 details.setWidthPercentage(100);
-                details.addCell(cell("Order slip: " + slip.id, bold));
-                details.addCell(cell(slip.date, body));
-                details.addCell(cell(slip.customer, body));
-                PdfPCell type = cell("Slip type: " + value(slip.type), body);
+                details.addCell(cell(String.valueOf(slip.id), bold));
+                details.addCell(cell(slip.date, bold));
+                details.addCell(cell(slip.customer, bold));
+                PdfPCell type = cell(value(slip.type), bold);
                 type.setColspan(3);
                 details.addCell(type);
                 details.setSpacingAfter(12);
                 document.add(details);
                 PdfPTable table = new PdfPTable(new float[]{1, 1.7f, .85f, .8f, 1, 2.1f});
                 table.setWidthPercentage(100);
-                table.setHeaderRows(1);
                 table.setSplitRows(true);
                 table.setSplitLate(false);
-                for (String column : new String[]{"Design ID", "Item Name", "Quantity", "Plating", "Raw Material Cost", "Other Details"}) {
-                    PdfPCell header = cell(column, bold);
-                    header.setBackgroundColor(new Color(235, 239, 243));
-                    table.addCell(header);
+                for (String[] row : slip.rows) {
+                    for (int column = 0; column < row.length; column++) {
+                        String text = row[column];
+                        // Leave numeric zero cells empty for handwritten values; keep IDs and remarks intact.
+                        if (column >= 2 && column <= 4) text = blankIfZero(text);
+                        table.addCell(cell(text, body));
+                    }
                 }
-                for (String[] row : slip.rows) for (String text : row) table.addCell(cell(text, body));
                 document.add(table);
             } finally {
                 document.close();
@@ -164,6 +163,15 @@ public final class OrderSlipPdf {
     }
 
     private static String value(String text) { return text == null ? "" : text; }
+
+    private static String blankIfZero(String text) {
+        if (text == null || text.isBlank()) return "";
+        try {
+            return new java.math.BigDecimal(text.trim()).signum() == 0 ? "" : text;
+        } catch (NumberFormatException notNumeric) {
+            return text; // View Orders quantities such as 0/10 must remain unchanged.
+        }
+    }
 
     static final class SlipData {
         int id;
