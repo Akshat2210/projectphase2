@@ -7,6 +7,7 @@ import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
 import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.BaseFont;
+import com.lowagie.text.pdf.LayoutProcessor;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
@@ -69,8 +70,9 @@ public final class SaleBillPdf {
                 if (!Files.isRegularFile(fontPath)) {
                     throw new IOException("Mangal font was not found in Windows Fonts.");
                 }
+                LayoutProcessor.enable();
                 BaseFont baseFont = BaseFont.createFont(fontPath.toString(), BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-                Font normalFont = new Font(baseFont, 12 * utils.CONSTANTS.PDF_FONT_SCALE, Font.NORMAL, Color.BLACK);
+                Font normalFont = new Font(baseFont, 9 * utils.CONSTANTS.PDF_FONT_SCALE, Font.NORMAL, Color.BLACK);
                 Paragraph title = new Paragraph("Gurukripa Jewellers", titleFont);
                 title.setSpacingAfter(40);
                 document.add(title);
@@ -95,18 +97,23 @@ public final class SaleBillPdf {
                 int columnCount = model.getColumnCount();
                 if (columnCount == 0) return;
                 float[] columnWidths = new float[columnCount];
-                columnWidths[0] = 30f;
                 float totalWidth = 0f;
-                for (int column = 1; column < columnCount; column++) {
-                    float widestText = baseFont.getWidthPoint(model.getColumnName(column), 12f);
+                for (int column = 0; column < columnCount; column++) {
+                    float widestText = baseFont.getWidthPoint(model.getColumnName(column), normalFont.getSize());
                     for (int row = 0; row < model.getRowCount(); row++) {
                         Object value = model.getValueAt(row, column);
-                        if (value != null) widestText = Math.max(widestText, baseFont.getWidthPoint(value.toString(), 12f));
+                        if (value != null) widestText = Math.max(widestText, baseFont.getWidthPoint(value.toString(), normalFont.getSize()));
                     }
                     columnWidths[column] = widestText + 10f;
                 }
                 for (float width : columnWidths) totalWidth += width;
                 float availableWidth = document.right() - document.left();
+                // Wrap the item name first, preserving room for serials, quantities and money.
+                if (totalWidth > availableWidth && columnCount > 1) {
+                    float itemWidth = Math.max(60f, columnWidths[1] - (totalWidth - availableWidth));
+                    totalWidth += itemWidth - columnWidths[1];
+                    columnWidths[1] = itemWidth;
+                }
                 if (totalWidth > availableWidth) {
                     float scale = availableWidth / totalWidth;
                     for (int column = 0; column < columnCount; column++) columnWidths[column] *= scale;
@@ -115,13 +122,17 @@ public final class SaleBillPdf {
                 PdfPTable billTable = new PdfPTable(columnWidths);
                 billTable.setWidthPercentage(100);
                 billTable.setSpacingBefore(10);
+                billTable.setSplitRows(true);
+                billTable.setSplitLate(false);
                 for (int row = 0; row < model.getRowCount(); row++) {
                     for (int column = 0; column < columnCount; column++) {
                         Object value = model.getValueAt(row, column);
                         PdfPCell cell = new PdfPCell(new Phrase(value == null ? "" : value.toString(), normalFont));
                         cell.setPadding(5f);
                         cell.setMinimumHeight(20f);
-                        cell.setNoWrap(true);
+                        cell.setLeading(0, 1.25f);
+                        cell.setUseAscender(true);
+                        cell.setUseDescender(true);
                         billTable.addCell(cell);
                     }
                 }
