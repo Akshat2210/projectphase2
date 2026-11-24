@@ -42,7 +42,7 @@ public class MyClass {
     private static  DatabaseEndpoint DATABASE_ENDPOINT;
     public static  String HOST ;
     public static  String PORT ;
-    public static final int TIMEOUT = 2000;
+    public static final int TIMEOUT = 8000;
     public static final int CONNECTION_POOL_SIZE = 10;
     private static final Object CONNECTION_POOL_LOCK = new Object();
     private static HikariDataSource connectionPool;
