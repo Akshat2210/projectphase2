@@ -802,31 +802,6 @@ public class NewBill extends JFrame {
 
                 if ((col == quantityIndex)) {
 
-                    String designID = UtilityMethods.parseString(tableModel.getValueAt(row, designIdIndex)).trim();
-                    if (notThroughOrderSlip && designID != null && !designID.toString().contentEquals("")) {
-                        String query = "SELECT " + DBStructure.INVENTORY_TOTAL_QUANTITY + " FROM " + DBStructure.INVENTORY_TABLE + " WHERE TRIM(" + DBStructure.INVENTORY_DESIGN_ID + ") = ?";
-
-                        try (Connection con = MyClass.createConnection(); PreparedStatement preparedStatement = con.prepareStatement(query)) {
-
-                            preparedStatement.setString(1, utils.TextNormalization.trimNullable(designID));
-
-                            try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                                if (resultSet.next()) {
-                                    int availableQuantity = resultSet.getInt(DBStructure.INVENTORY_TOTAL_QUANTITY);
-
-                                    if (availableQuantity < quantity) {
-                                        JOptionPane.showMessageDialog(NewBill.this, "Warning: Stock is not remaining.");
-                                    }
-                                }
-                            }
-
-                        } catch (SQLException ex) {
-                            JOptionPane.showMessageDialog(NewBill.this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                            ex.printStackTrace();
-                        }
-
-
-                    }
                     if (snoToItemIdMap.containsKey(snoValue)) {
                         try (Connection con = MyClass.createConnection(); Statement stmt = con.createStatement()) {
                             String query = "select * from " + DBStructure.ORDER_SLIPS_TABLE + " where " + DBStructure.ORDER_SLIPS_ITEM_ID + "=" + snoToItemIdMap.get(snoValue);
