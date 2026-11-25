@@ -86,6 +86,8 @@ public class NewBill extends JFrame {
     private JButton resetButton1;
     private Connection transacTemp;
     private boolean selectionRecoveryFailed;
+    private boolean saveOutcomeUnknown;
+    private boolean saveCommitted;
     public boolean notThroughOrderSlip = true;
 
     public JTable getBillTable() {
@@ -104,6 +106,7 @@ public class NewBill extends JFrame {
     }
 
     private void setStateWhileTimerRunning(boolean enableState) {
+        if (saveOutcomeUnknown || saveCommitted || selectionRecoveryFailed) return;
         billTable.setEnabled(enableState);
         submitButton.setEnabled(enableState);
         if (searchResultWindow != null) {
@@ -121,7 +124,9 @@ public class NewBill extends JFrame {
     }
 
     private boolean insertData() {
+        if (saveOutcomeUnknown || saveCommitted || selectionRecoveryFailed) return false;
         Savepoint savepoint = null;
+        boolean commitStarted = false;
 
         DefaultTableModel model = (DefaultTableModel) billTable.getModel();
         int rowCount = model.getRowCount();
@@ -153,20 +158,20 @@ public class NewBill extends JFrame {
                 e.printStackTrace();
                 return false;
             }
-            PreparedStatement billsTableStatement = conn.prepareStatement(updateBillsTableQuery);
-
-            billsTableStatement.setTimestamp(1, Timestamp.valueOf(getDateTime()));
-            billsTableStatement.setString(2, utils.TextNormalization.trimNullable(getCustomerName()));
-            billsTableStatement.setInt(3, billNumber);
-            System.out.println(billNumber + " is billnumber");
-            billsTableStatement.setInt(4, getCurBillID());
-            billsTableStatement.executeUpdate();
-            billsTableStatement.close();
+            try (PreparedStatement billsTableStatement = conn.prepareStatement(updateBillsTableQuery)) {
+                billsTableStatement.setTimestamp(1, Timestamp.valueOf(getDateTime()));
+                billsTableStatement.setString(2, utils.TextNormalization.trimNullable(getCustomerName()));
+                billsTableStatement.setInt(3, billNumber);
+                System.out.println(billNumber + " is billnumber");
+                billsTableStatement.setInt(4, getCurBillID());
+                billsTableStatement.executeUpdate();
+            }
         } catch (Exception exception) {
             try {
                 conn.rollback(savepoint);
             } catch (Exception e) {
-                JOptionPane.showMessageDialog(NewBill.this, e.getMessage());
+                exception.addSuppressed(e);
+                blockUnknownSaveOutcome(conn, billNumber, exception);
                 return false;
             }
             JOptionPane.showMessageDialog(NewBill.this, exception.getMessage());
@@ -300,32 +305,69 @@ public class NewBill extends JFrame {
             linkTransactionsStatement.setDate(3, java.sql.Date.valueOf(getDateTime().toLocalDate()));
             linkTransactionsStatement.executeUpdate();
 
-            conn.commit(); // Commit transaction
-            JOptionPane.showMessageDialog(NewBill.this, "✨ Bill No. " + billNumber + " has been saved successfully!\nYour bill is ready to print.");            //            JOptionPane.showMessageDialog(null, "Bill details saved successfully! bill id is " + getCurBillID());
-            billTable.repaint();
-            return true;
+            commitStarted = true;
+            conn.commit(); // A missing reply does not prove that MySQL rejected this commit.
+            saveCommitted = true;
+            submitButton.setEnabled(false);
         } catch (Exception ex) {
+            if (commitStarted) {
+                blockUnknownSaveOutcome(conn, billNumber, ex);
+                return false;
+            }
             try {
                 conn.rollback(savepoint);
-            } catch (SQLException e) {
-                JOptionPane.showMessageDialog(NewBill.this, "rollBackFailed\n" + e.getMessage());
+            } catch (SQLException rollbackError) {
+                ex.addSuppressed(rollbackError);
+                blockUnknownSaveOutcome(conn, billNumber, ex);
                 return false;
             }
             JOptionPane.showMessageDialog(NewBill.this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
             return false;
         } finally {
-            try {
-                if (billDetailsStatement != null) billDetailsStatement.close();
-                if (inventoryStatement != null) inventoryStatement.close();
-                if (customerTableStatement != null) customerTableStatement.close();
-                if (linkTransactionsStatement != null) linkTransactionsStatement.close();
-                if (journalEntryStatement != null) journalEntryStatement.close();
-                if (linkDirectJournalEntriesStatement != null) linkDirectJournalEntriesStatement.close();
-            } catch (SQLException closeEx) {
-                Thread.dumpStack();
+            for (PreparedStatement statement : new PreparedStatement[]{billDetailsStatement, inventoryStatement,
+                    customerTableStatement, linkTransactionsStatement, journalEntryStatement,
+                    linkDirectJournalEntriesStatement}) {
+                try {
+                    if (statement != null) statement.close();
+                } catch (SQLException closeEx) {
+                    utils.LogUtils.logError(closeEx);
+                }
             }
         }
+        JOptionPane.showMessageDialog(NewBill.this, "✨ Bill No. " + billNumber + " has been saved successfully!\nYour bill is ready to print.");
+        billTable.repaint();
+        return true;
+    }
+
+    private void blockUnknownSaveOutcome(Connection connection, int billNumber, Exception failure) {
+        saveOutcomeUnknown = true;
+        blockAfterSelectionRecoveryFailure();
+        resetButton1.setEnabled(false);
+        goldRateTextField.setEnabled(false);
+        dateComboBox.setEnabled(false);
+        slipTypeComboBox.setEnabled(false);
+        if (resetButton != null) resetButton.setEnabled(false);
+        if (undoButton != null) undoButton.setEnabled(false);
+        if (searchResultWindow != null) searchResultWindow.dispose();
+        // Discard the physical connection instead of returning an uncertain session to the pool.
+        try {
+            if (connection != null) connection.abort(Runnable::run);
+        } catch (SQLException | RuntimeException abortError) {
+            failure.addSuppressed(abortError);
+        } finally {
+            try {
+                if (connection != null) connection.close();
+            } catch (SQLException closeError) {
+                failure.addSuppressed(closeError);
+            }
+        }
+        utils.LogUtils.logError(failure);
+        JOptionPane.showMessageDialog(this,
+                "The database did not confirm whether this sale bill was saved.\n"
+                        + "Do not enter it again until you check the saved bills and order-slip quantities.\n"
+                        + "Bill ID: " + getCurBillID() + "\nBill number: " + billNumber,
+                "Bill outcome uncertain", JOptionPane.ERROR_MESSAGE);
     }
 
     private void setCurBillID(int billID) {
@@ -462,17 +504,24 @@ public class NewBill extends JFrame {
             dispose();
             if (searchResultWindow != null) searchResultWindow.dispose();
             try {
-                getTransacTemp().rollback();
-                getTransacTemp().close();
+                if (!saveOutcomeUnknown && !saveCommitted && getTransacTemp() != null
+                        && !getTransacTemp().isClosed()) getTransacTemp().rollback();
             } catch (SQLException ex) {
                 JOptionPane.showMessageDialog(NewBill.this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 ex.printStackTrace();
+            } finally {
+                try {
+                    if (getTransacTemp() != null) getTransacTemp().close();
+                } catch (SQLException closeError) {
+                    utils.LogUtils.logError(closeError);
+                }
             }
 
 
         });
         NewBill temp = this;
         submitButton.addActionListener(e -> {
+            if (saveOutcomeUnknown || saveCommitted) return;
             if (selectionRecoveryFailed) {
                 JOptionPane.showMessageDialog(this, "This draft could not be recovered safely. Go Back and reopen it.");
                 return;
@@ -509,6 +558,7 @@ public class NewBill extends JFrame {
         resetButton1.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                if (saveOutcomeUnknown || saveCommitted) return;
                 try {
                     try {
                         getTransacTemp().rollback();
@@ -846,6 +896,7 @@ public class NewBill extends JFrame {
         UtilityMethods.generateAndAddNames(customerComboBox);
         UtilityMethods.generateAndAddDates(dateComboBox, false);
         javax.swing.Timer customerSelectionDelay = new javax.swing.Timer(200, e -> {
+            if (saveOutcomeUnknown || saveCommitted || selectionRecoveryFailed) return;
             try {
                 if (customerComboBox.getSelectedIndex() == 0) {
                     if (searchResultWindow != null) {
@@ -1337,7 +1388,7 @@ public class NewBill extends JFrame {
         }
     }
 
-    boolean canAddOrderSlipSelection() { return !selectionRecoveryFailed; }
+    boolean canAddOrderSlipSelection() { return !selectionRecoveryFailed && !saveOutcomeUnknown && !saveCommitted; }
 
     void blockAfterSelectionRecoveryFailure() {
         selectionRecoveryFailed = true;
