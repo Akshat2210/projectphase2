@@ -148,7 +148,6 @@ public class PurchaseBill extends JFrame {
                 itemName = model.getValueAt(i, itemNameIndex) == null ? "" : model.getValueAt(i, itemNameIndex).toString();
                 BigDecimal price = getDecimalValue(model.getValueAt(i, rawCostIndex));
                 BigDecimal sellPrice = getDecimalValue(model.getValueAt(i, sellPriceIndex));
-                System.out.println(designIDexists(designID));
                 if (designIDexists(designID)) {
                     if (designID.contentEquals("")) continue;
                     updateStmt.setInt(1, quantity);
@@ -312,7 +311,6 @@ public class PurchaseBill extends JFrame {
                     JOptionPane.showMessageDialog(PurchaseBill.this, "Please correct the active cell before submitting.");
                     return;
                 }
-                System.out.println(billid);
 
                 if (customerComboBox.getSelectedItem() != null && customerComboBox.getSelectedIndex() != 0) {
                     if(!allQuantityValid()) {
@@ -346,7 +344,6 @@ public class PurchaseBill extends JFrame {
             int col = e.getColumn();
             int row = e.getFirstRow();
             if (col == -1 || row == -1) {
-                System.out.println("unexpected return from modellisterer");
                 Thread.dumpStack();
                 return;
             }
