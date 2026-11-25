@@ -52,4 +52,5 @@ public class CONSTANTS {
     public static final List<String> BUILT_IN_LEDGER_ACCOUNTS = Collections.unmodifiableList(Arrays.asList(
             "Bank", "Cash", "Expense", "Income", "Purchase", "Sales"
     ));
+    public static final String MARGIN_RATE = "1.15";
 }

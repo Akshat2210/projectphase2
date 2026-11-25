@@ -26,7 +26,8 @@ public class PurchaseBill extends JFrame {
     private final BillingScreen parentWindow;
     private JPanel panel;
     private int billid;
-    private Connection con;
+    private boolean saveOutcomeUnknown;
+    private boolean saveCommitted;
     private SearchResultWindow searchResultWindow;
 
     public int getBillid() {
@@ -66,14 +67,14 @@ public class PurchaseBill extends JFrame {
         return true;
     }
 
-    public PurchaseBill(BillingScreen  billingScreen) {
-    parentWindow=billingScreen;
+    public PurchaseBill(BillingScreen billingScreen) {
+        parentWindow = billingScreen;
     }
 
     private boolean designIDexists(String designID) {
         designID = designID == null ? "" : designID.trim();
         String query = "SELECT 1 FROM " + INVENTORY_TABLE + " WHERE TRIM(" + INVENTORY_DESIGN_ID + ") = ? LIMIT 1";
-        try (PreparedStatement stmt = con.prepareStatement(query)) {
+        try (Connection con = MyClass.createConnection(); PreparedStatement stmt = con.prepareStatement(query)) {
             stmt.setString(1, utils.TextNormalization.trimNullable(designID));
             try (ResultSet rs = stmt.executeQuery()) {
                 return rs.next(); // true if at least one row is found
@@ -85,8 +86,24 @@ public class PurchaseBill extends JFrame {
         }
     }
 
-    boolean insertData() {
+    private boolean designIDexists(String designID, Connection con) throws SQLException {
+        designID = designID == null ? "" : designID.trim();
+        String query = "SELECT 1 FROM " + INVENTORY_TABLE + " WHERE TRIM(" + INVENTORY_DESIGN_ID + ") = ? LIMIT 1";
+        try (PreparedStatement stmt = con.prepareStatement(query)) {
+            stmt.setString(1, utils.TextNormalization.trimNullable(designID));
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next(); // true if at least one row is found
+            }
+        }
+    }
 
+
+    void insertData() throws SQLException {
+        if (saveOutcomeUnknown || saveCommitted) {
+            throw new SQLException("This purchase cannot be submitted again. Check the saved bill first.");
+        }
+        int billNumber = -1;
+        setBillid(0);
         String customerName = utils.TextNormalization.trimToEmpty(customerComboBox.getSelectedItem() == null ? "" : customerComboBox.getSelectedItem().toString());
         String billDetailsTableQuery = "INSERT INTO " + BILLDETAILS_TABLE + " (" + BILLDETAILS_BILL_ID + ", " + BILLDETAILS_SNO + ", " + BILLDETAILS_DESIGN_ID + ", " + BILLDETAILS_ITEM_NAME + ", " + BILLDETAILS_QUANTITY + ", " + BILLDETAILS_RAW_COST + ", " + BILLDETAILS_TOTAL_FINAL_COST + ", " + "" + BILLDETAILS_ORDER_TYPE + ", " + BILLDETAILS_LABOUR_COST + ", " + BILLDETAILS_TOTAL_BASE_COSTING + ", " + BILLDETAILS_GOLD_RATE + ", " + BILLDETAILS_GOLD_PLATING_WEIGHT + ", " + BILLDETAILS_TOTAL_GOLD_COST + ") " + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         String billsTableQuery = "UPDATE " + BILLS_TABLE + " SET " + BILLS_DATE + " = ?, " + BILLS_CUSTOMER_NAME + " = ?, " + BILLS_BILL_NUMBER + " = ? " + "WHERE " + BILLS_BILL_ID + " = ?";
@@ -102,121 +119,164 @@ public class PurchaseBill extends JFrame {
                 JOURNAL_ENTRY_TRANSACTION_ID + ", " +
                 JOURNAL_ENTRY_CREDIT + ", " +
                 JOURNAL_ENTRY_DEBIT + ") VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement billsTableStatement = con.prepareStatement(billsTableQuery); PreparedStatement customersTableStatement = con.prepareStatement(customerTableQuery); PreparedStatement updateStmt = con.prepareStatement(updateInventoryQuery); PreparedStatement insertStmt = con.prepareStatement(insertInventoryQuery); PreparedStatement billStmt = con.prepareStatement(billDetailsTableQuery); PreparedStatement updateRawPriceStatement = con.prepareStatement(updateOtherQuery);
-             PreparedStatement journalEntryStatement = con.prepareStatement(insertJournalEntryQuery);
-        ) {
+        try(Connection con = MyClass.createConnection()) {
             con.setAutoCommit(false);
-            int billNumber = UtilityMethods.getBillNumber(con, CONSTANTS.PURCHASE_ENUM);
+            boolean commitStarted = false;
+            try (PreparedStatement billsTableStatement = con.prepareStatement(billsTableQuery); PreparedStatement customersTableStatement = con.prepareStatement(customerTableQuery); PreparedStatement updateStmt = con.prepareStatement(updateInventoryQuery); PreparedStatement insertStmt = con.prepareStatement(insertInventoryQuery); PreparedStatement billStmt = con.prepareStatement(billDetailsTableQuery); PreparedStatement updateRawPriceStatement = con.prepareStatement(updateOtherQuery);
+                 PreparedStatement journalEntryStatement = con.prepareStatement(insertJournalEntryQuery);
+            ) {
+                setBillid(fetchBillId(con));
+                billNumber = UtilityMethods.getBillNumber(con, CONSTANTS.PURCHASE_ENUM);
 
-            billsTableStatement.setTimestamp(1, Timestamp.valueOf(UtilityMethods.getDate(dateComboBox.getSelectedItem())));
-            billsTableStatement.setString(2, utils.TextNormalization.trimNullable(customerName));
-            billsTableStatement.setInt(3, billNumber);
-            billsTableStatement.setInt(4, billid);
-            BigDecimal grandTotal = BigDecimal.ZERO;
-            for (int i = 0; i < model.getRowCount() - 1; i++) {
-                Object snoObj = model.getValueAt(i, snoIndex);
-                Object designIDObj = model.getValueAt(i, designIDIndex);
-                Object itemNameObj = model.getValueAt(i, itemNameIndex);
-                Object quantityObj = model.getValueAt(i, quantityIndex);
-                Object rawCostObj = model.getValueAt(i, rawCostIndex);
-                Object totalCostObj = model.getValueAt(i, totalIndex);
-                int sno = snoObj == null ? 0 : Integer.parseInt(snoObj.toString());
-                String designID = designIDObj == null ? "" : designIDObj.toString().trim();
-                String itemName = utils.TextNormalization.trimToEmpty(itemNameObj);
-                int quantity = quantityObj == null || quantityObj.toString().isEmpty() ? 0 : Integer.parseInt(quantityObj.toString());
-                BigDecimal rawCost = rawCostObj == null ? BigDecimal.ZERO : new BigDecimal(rawCostObj.toString());
-                BigDecimal totalCost = totalCostObj == null || totalCostObj.toString().isEmpty() ? BigDecimal.ZERO : new BigDecimal(totalCostObj.toString());
-                
-                billStmt.setInt(1, getBillid());
-                billStmt.setInt(2, sno);
-                billStmt.setString(3, utils.TextNormalization.trimNullable(designID));
-                billStmt.setString(4, utils.TextNormalization.trimNullable(itemName));
-                billStmt.setInt(5, -quantity);
-                billStmt.setBigDecimal(6, rawCost);
-                billStmt.setBigDecimal(7, totalCost.negate());
-                grandTotal = grandTotal.add(totalCost);
-                // Fill remaining required fields with defaults
-                billStmt.setString(8, "purchase"); // example OrderType
-                billStmt.setBigDecimal(9, BigDecimal.ZERO); // LabourCost
-                billStmt.setBigDecimal(10, BigDecimal.ZERO); // TotalBaseCosting
-                billStmt.setBigDecimal(11, BigDecimal.ZERO); // GoldRate
-                billStmt.setBigDecimal(12, BigDecimal.ZERO); // GoldPlatingWeight
-                billStmt.setBigDecimal(13, BigDecimal.ZERO); // TotalGoldCost
-                billStmt.addBatch();
-                designID = getDesignIdValue(i);
-                quantity = getIntegerValue(model.getValueAt(i, quantityIndex));
-                itemName = model.getValueAt(i, itemNameIndex) == null ? "" : model.getValueAt(i, itemNameIndex).toString();
-                BigDecimal price = getDecimalValue(model.getValueAt(i, rawCostIndex));
-                BigDecimal sellPrice = getDecimalValue(model.getValueAt(i, sellPriceIndex));
-                if (designIDexists(designID)) {
-                    if (designID.contentEquals("")) continue;
-                    updateStmt.setInt(1, quantity);
-                    updateStmt.setString(2, utils.TextNormalization.trimNullable(designID));
-                    updateRawPriceStatement.setBigDecimal(1, price);
-                    updateRawPriceStatement.setBigDecimal(2, sellPrice);
-                    updateRawPriceStatement.setString(3, utils.TextNormalization.trimNullable(itemName));
-                    updateRawPriceStatement.setString(4, utils.TextNormalization.trimNullable(designID));
-                    updateRawPriceStatement.addBatch();
-                    updateStmt.addBatch();
+                billsTableStatement.setTimestamp(1, Timestamp.valueOf(UtilityMethods.getDate(dateComboBox.getSelectedItem())));
+                billsTableStatement.setString(2, utils.TextNormalization.trimNullable(customerName));
+                billsTableStatement.setInt(3, billNumber);
+                billsTableStatement.setInt(4, billid);
+                BigDecimal grandTotal = BigDecimal.ZERO;
+                for (int i = 0; i < model.getRowCount() - 1; i++) {
+                    Object snoObj = model.getValueAt(i, snoIndex);
+                    Object designIDObj = model.getValueAt(i, designIDIndex);
+                    Object itemNameObj = model.getValueAt(i, itemNameIndex);
+                    Object quantityObj = model.getValueAt(i, quantityIndex);
+                    Object rawCostObj = model.getValueAt(i, rawCostIndex);
+                    Object totalCostObj = model.getValueAt(i, totalIndex);
+                    int sno = snoObj == null ? 0 : Integer.parseInt(snoObj.toString());
+                    String designID = designIDObj == null ? "" : designIDObj.toString().trim();
+                    String itemName = utils.TextNormalization.trimToEmpty(itemNameObj);
+                    int quantity = quantityObj == null || quantityObj.toString().isEmpty() ? 0 : Integer.parseInt(quantityObj.toString());
+                    BigDecimal rawCost = rawCostObj == null ? BigDecimal.ZERO : new BigDecimal(rawCostObj.toString());
+                    BigDecimal totalCost = totalCostObj == null || totalCostObj.toString().isEmpty() ? BigDecimal.ZERO : new BigDecimal(totalCostObj.toString());
 
+                    billStmt.setInt(1, getBillid());
+                    billStmt.setInt(2, sno);
+                    billStmt.setString(3, utils.TextNormalization.trimNullable(designID));
+                    billStmt.setString(4, utils.TextNormalization.trimNullable(itemName));
+                    billStmt.setInt(5, -quantity);
+                    billStmt.setBigDecimal(6, rawCost);
+                    billStmt.setBigDecimal(7, totalCost.negate());
+                    grandTotal = grandTotal.add(totalCost);
+                    // Fill remaining required fields with defaults
+                    billStmt.setString(8, "purchase"); // example OrderType
+                    billStmt.setBigDecimal(9, BigDecimal.ZERO); // LabourCost
+                    billStmt.setBigDecimal(10, BigDecimal.ZERO); // TotalBaseCosting
+                    billStmt.setBigDecimal(11, BigDecimal.ZERO); // GoldRate
+                    billStmt.setBigDecimal(12, BigDecimal.ZERO); // GoldPlatingWeight
+                    billStmt.setBigDecimal(13, BigDecimal.ZERO); // TotalGoldCost
+                    billStmt.addBatch();
+                    designID = getDesignIdValue(i);
+                    quantity = getIntegerValue(model.getValueAt(i, quantityIndex));
+                    itemName = model.getValueAt(i, itemNameIndex) == null ? "" : model.getValueAt(i, itemNameIndex).toString();
+                    BigDecimal price = getDecimalValue(model.getValueAt(i, rawCostIndex));
+                    BigDecimal sellPrice = getDecimalValue(model.getValueAt(i, sellPriceIndex));
+                    if (designIDexists(designID, con)) {
+                        if (designID.contentEquals("")) continue;
+                        updateStmt.setInt(1, quantity);
+                        updateStmt.setString(2, utils.TextNormalization.trimNullable(designID));
+                        updateRawPriceStatement.setBigDecimal(1, price);
+                        updateRawPriceStatement.setBigDecimal(2, sellPrice);
+                        updateRawPriceStatement.setString(3, utils.TextNormalization.trimNullable(itemName));
+                        updateRawPriceStatement.setString(4, utils.TextNormalization.trimNullable(designID));
+                        updateRawPriceStatement.addBatch();
+                        updateStmt.addBatch();
+
+                    } else {
+                        if (designID.contentEquals("")) continue;
+                        insertStmt.setString(1, utils.TextNormalization.trimNullable(designID));
+                        insertStmt.setInt(2, quantity);
+                        insertStmt.setString(3, utils.TextNormalization.trimNullable(itemName));
+                        insertStmt.setBigDecimal(4, price);
+                        insertStmt.setBigDecimal(5, sellPrice);
+                        insertStmt.addBatch();
+                    }
+                }
+
+                // Debit inventory and credit the supplier/customer for the full purchase bill.
+                journalEntryStatement.setString(1, CONSTANTS.PURCHASE_ENUM);
+                journalEntryStatement.setDate(2, java.sql.Date.valueOf(UtilityMethods.getDate(dateComboBox.getSelectedItem()).toLocalDate()));
+                journalEntryStatement.setString(3, "Inventory");
+                journalEntryStatement.setInt(4, getBillid());
+                journalEntryStatement.setNull(5, Types.INTEGER);
+                journalEntryStatement.setBigDecimal(6, BigDecimal.ZERO);
+                journalEntryStatement.setBigDecimal(7, grandTotal);
+                journalEntryStatement.addBatch();
+
+                journalEntryStatement.setString(1, CONSTANTS.PURCHASE_ENUM);
+                journalEntryStatement.setDate(2, java.sql.Date.valueOf(UtilityMethods.getDate(dateComboBox.getSelectedItem()).toLocalDate()));
+                journalEntryStatement.setString(3, utils.TextNormalization.trimNullable(customerName));
+                journalEntryStatement.setInt(4, getBillid());
+                journalEntryStatement.setNull(5, Types.INTEGER);
+                journalEntryStatement.setBigDecimal(6, grandTotal);
+                journalEntryStatement.setBigDecimal(7, BigDecimal.ZERO);
+                journalEntryStatement.addBatch();
+
+                customersTableStatement.setBigDecimal(1, grandTotal);
+                customersTableStatement.setString(2, utils.TextNormalization.trimNullable(customerName));
+                customersTableStatement.executeUpdate();
+                billsTableStatement.executeUpdate();
+                billStmt.executeBatch();
+                updateStmt.executeBatch();
+                updateRawPriceStatement.executeBatch();
+                insertStmt.executeBatch();
+                journalEntryStatement.executeBatch();
+                commitStarted = true;
+                con.commit();
+                saveCommitted = true;
+                submitButton.setEnabled(false);
+
+            }
+            catch (SQLException | RuntimeException saveFailException){
+                if (saveCommitted) {
+                    // Statement cleanup failed after a confirmed commit: never roll back or offer retry.
+                    utils.LogUtils.logError(saveFailException);
+                } else if (commitStarted) {
+                    throw blockUncertainPurchase(con, billNumber, saveFailException);
                 } else {
-                    if (designID.contentEquals("")) continue;
-                    insertStmt.setString(1, utils.TextNormalization.trimNullable(designID));
-                    insertStmt.setInt(2, quantity);
-                    insertStmt.setString(3, utils.TextNormalization.trimNullable(itemName));
-                    insertStmt.setBigDecimal(4, price);
-                    insertStmt.setBigDecimal(5, sellPrice);
-                    insertStmt.addBatch();
+                    try {
+                        con.rollback();
+                    } catch (SQLException rollbackFailException) {
+                        saveFailException.addSuppressed(rollbackFailException);
+                        throw blockUncertainPurchase(con, billNumber, saveFailException);
+                    }
+                    throw new SQLException("Purchase was not saved. All changes were rolled back.\n"
+                            + "Correct the problem and try again.\n" + saveFailException.getMessage(), saveFailException);
                 }
             }
-
-            // Debit inventory and credit the supplier/customer for the full purchase bill.
-            journalEntryStatement.setString(1, CONSTANTS.PURCHASE_ENUM);
-            journalEntryStatement.setDate(2, java.sql.Date.valueOf(UtilityMethods.getDate(dateComboBox.getSelectedItem()).toLocalDate()));
-            journalEntryStatement.setString(3, "Inventory");
-            journalEntryStatement.setInt(4, getBillid());
-            journalEntryStatement.setNull(5, Types.INTEGER);
-            journalEntryStatement.setBigDecimal(6, BigDecimal.ZERO);
-            journalEntryStatement.setBigDecimal(7, grandTotal);
-            journalEntryStatement.addBatch();
-
-            journalEntryStatement.setString(1, CONSTANTS.PURCHASE_ENUM);
-            journalEntryStatement.setDate(2, java.sql.Date.valueOf(UtilityMethods.getDate(dateComboBox.getSelectedItem()).toLocalDate()));
-            journalEntryStatement.setString(3, utils.TextNormalization.trimNullable(customerName));
-            journalEntryStatement.setInt(4, getBillid());
-            journalEntryStatement.setNull(5, Types.INTEGER);
-            journalEntryStatement.setBigDecimal(6, grandTotal);
-            journalEntryStatement.setBigDecimal(7, BigDecimal.ZERO);
-            journalEntryStatement.addBatch();
-
-            customersTableStatement.setBigDecimal(1, grandTotal);
-            customersTableStatement.setString(2, utils.TextNormalization.trimNullable(customerName));
-            customersTableStatement.executeUpdate();
-            billsTableStatement.executeUpdate();
-            billStmt.executeBatch();
-            updateStmt.executeBatch();
-            updateRawPriceStatement.executeBatch();
-            insertStmt.executeBatch();
-            journalEntryStatement.executeBatch();
-            con.commit();
-            JOptionPane.showMessageDialog(PurchaseBill.this, "bill created successfully");
-            return true;
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(PurchaseBill.this, "Error: " + ex.getMessage());
-            try {
-                con.rollback();
-                con.close();
-                dispose();
-            } catch (SQLException e) {
-                JOptionPane.showMessageDialog(PurchaseBill.this, "Error: " + e.getMessage());
-                e.printStackTrace();
-                return false;
-            }
-            return false;
+        } catch (SQLException cleanupOrSaveFailure) {
+            if (!saveCommitted) throw cleanupOrSaveFailure;
+            // Connection.close can fail even though commit already succeeded.
+            utils.LogUtils.logError(cleanupOrSaveFailure);
         }
+        JOptionPane.showMessageDialog(this, "Purchase bill saved successfully.\nBill ID: " + getBillid()
+                + "\nBill number: " + billNumber);
     }
 
-    private int fetchBillId() {
+    private SQLException blockUncertainPurchase(Connection con, int billNumber, Exception failure) {
+        saveOutcomeUnknown = true;
+        submitButton.setEnabled(false);
+        billTable.setEnabled(false);
+        customerComboBox.setEnabled(false);
+        dateComboBox.setEnabled(false);
+        if (searchResultWindow != null) searchResultWindow.dispose();
+        // Abort the physical session; do not reuse an uncertain connection from the pool.
+        try {
+            con.abort(Runnable::run);
+        } catch (SQLException | RuntimeException abortFailure) {
+            failure.addSuppressed(abortFailure);
+        } finally {
+            try {
+                con.close();
+            } catch (SQLException closeFailure) {
+                failure.addSuppressed(closeFailure);
+            }
+        }
+        utils.LogUtils.logError(failure);
+        return new SQLException("The database did not confirm whether this purchase was saved.\n"
+                + "Do not enter it again until you check purchase bills, stock and the supplier balance.\n"
+                + "Bill ID: " + (getBillid() > 0 ? getBillid() : "not assigned")
+                + "\nBill number: " + (billNumber > 0 ? billNumber : "not assigned"), failure);
+    }
+
+    private int fetchBillId(Connection con) throws SQLException {
         String billsTableQuery = "INSERT INTO " + BILLS_TABLE + " (" + BILLS_BILL_TYPE + ") VALUES (?)";
 
         try (PreparedStatement billsTableStatement = con.prepareStatement(
@@ -235,10 +295,8 @@ public class PurchaseBill extends JFrame {
                     return generatedKeys.getInt(1);
                 }
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
         }
-        return -1;
+        throw new SQLException("No generated bill ID was returned.");
     }
 
     public void init() {
@@ -265,37 +323,9 @@ public class PurchaseBill extends JFrame {
             if (searchResultWindow != null) searchResultWindow.dispose();
             setVisible(false);
             dispose();
-            if (con != null) {
-                {
-                    try {
-                        con.rollback();
-                    } catch (SQLException ex) {
-                        JOptionPane.showMessageDialog(PurchaseBill.this, "Error: " + ex.getMessage());
-                        ex.printStackTrace();
-                    }
-                    try {
-                        con.close();
-                    } catch (SQLException ex) {
-                        JOptionPane.showMessageDialog(PurchaseBill.this, "Error: " + ex.getMessage());
-                        ex.printStackTrace();
-                    }
-                }
-            }
-            PurchaseBill purchaseBill = new PurchaseBill(parentWindow);
             parentWindow.setVisible(true);
         });
-        try {
-            con = MyClass.createConnection();
-            con.setAutoCommit(false);
-        } catch (SQLException e) {
-            int option = JOptionPane.showConfirmDialog(PurchaseBill.this, "connection failed\n" + e.getMessage() + "\ntry again?");
-            if (option == JOptionPane.YES_OPTION) {
-                init();
-            } else {
-                backButton.doClick();
-                e.printStackTrace();
-            }
-        }
+
         model = new DefaultTableModel(headers, 1) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -307,28 +337,25 @@ public class PurchaseBill extends JFrame {
         submitButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                if (saveOutcomeUnknown || saveCommitted) return;
                 if (billTable.isEditing() && !billTable.getCellEditor().stopCellEditing()) {
                     JOptionPane.showMessageDialog(PurchaseBill.this, "Please correct the active cell before submitting.");
                     return;
                 }
 
                 if (customerComboBox.getSelectedItem() != null && customerComboBox.getSelectedIndex() != 0) {
-                    if(!allQuantityValid()) {
+                    if (!allQuantityValid()) {
                         return;
                     }
-                    if (insertData() ) {
+                    try {
+                        insertData();
                         if (searchResultWindow != null) searchResultWindow.dispose();
-
                         dispose();
-                        try {
-                            con.close();
-                        } catch (SQLException ex) {
-                            JOptionPane.showMessageDialog(PurchaseBill.this, "Error: " + ex.getMessage());
-                            ex.printStackTrace();
-                        }
                         PurchaseBill purchaseBill = new PurchaseBill(parentWindow);
                         purchaseBill.init();
                         purchaseBill.setVisible(true);
+                    }catch (SQLException ex){
+                        JOptionPane.showMessageDialog(PurchaseBill.this,ex.getMessage());
                     }
 
                 } else {
@@ -422,6 +449,7 @@ public class PurchaseBill extends JFrame {
         UtilityMethods.generateAndAddDates(dateComboBox, false);
 
         javax.swing.Timer customerSelectionDelay = new javax.swing.Timer(200, e -> {
+            if (saveOutcomeUnknown || saveCommitted) return;
             if (customerComboBox.getSelectedIndex() <= 0) {
                 if (searchResultWindow != null) searchResultWindow.dispose();
                 setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -441,12 +469,12 @@ public class PurchaseBill extends JFrame {
         customerSelectionDelay.setRepeats(false);
         customerComboBox.addActionListener(e -> customerSelectionDelay.restart());
 
-        setBillid(fetchBillId());
-        billidLabel.setText("bill id:" + getBillid());
         setExtendedState(JFrame.MAXIMIZED_BOTH);
 
     }
+
     void addInventoryItem(Object designId, Object itemName, Object purchasePrice, int quantity) {
+        if (saveOutcomeUnknown || saveCommitted) return;
         if (billTable.isEditing() && !billTable.getCellEditor().stopCellEditing()) return;
         TableModelListener[] listeners = UtilityMethods.removeModelListener(model);
         try {
@@ -534,7 +562,7 @@ public class PurchaseBill extends JFrame {
     private void fetchAndAppend(String designID, int row) {
         designID = designID == null ? "" : designID.trim();
         String query = "select * from " + INVENTORY_TABLE + " where TRIM(" + INVENTORY_DESIGN_ID + ")=?";
-        try (PreparedStatement preparedStatement = con.prepareStatement(query)) {
+        try (Connection con = MyClass.createConnection(); PreparedStatement preparedStatement = con.prepareStatement(query)) {
             preparedStatement.setString(1, utils.TextNormalization.trimNullable(designID));
             ResultSet rs = preparedStatement.executeQuery();
             if (rs.next()) {
@@ -576,7 +604,9 @@ public class PurchaseBill extends JFrame {
         return getStringValue(model.getValueAt(row, designIDIndex)).trim();
     }
 
-    /** Updates the search window with database stock plus this bill's pending purchases. */
+    /**
+     * Updates the search window with database stock plus this bill's pending purchases.
+     */
     private void updateDisplayedInventory() {
         if (searchResultWindow == null || !searchResultWindow.isDisplayable()) return;
 
@@ -613,12 +643,9 @@ public class PurchaseBill extends JFrame {
     }
 
     private void setDefaultSellPrice(int row) {
-        Object currentSellPrice = model.getValueAt(row, sellPriceIndex);
-
-
         BigDecimal purchasePrice = getDecimalValue(model.getValueAt(row, rawCostIndex));
         if (purchasePrice.signum() > 0) {
-            model.setValueAt(purchasePrice.multiply(new BigDecimal("1.15"))
+            model.setValueAt(purchasePrice.multiply(new BigDecimal(CONSTANTS.MARGIN_RATE))
                     .setScale(2, RoundingMode.HALF_UP), row, sellPriceIndex);
         }
     }
