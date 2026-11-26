@@ -55,11 +55,12 @@ final class SendLotPdf {
         if (!Files.isRegularFile(unicode)) throw new IOException("Mangal font was not found in Windows Fonts.");
         LayoutProcessor.enable();
         BaseFont base = BaseFont.createFont(unicode.toString(), BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-        Font normal = new Font(base, 10 * utils.CONSTANTS.PDF_FONT_SCALE, Font.NORMAL, Color.BLACK);
-        Font bold = new Font(base, 10 * utils.CONSTANTS.PDF_FONT_SCALE, Font.BOLD, NAVY);
-        Font small = new Font(base, 8 * utils.CONSTANTS.PDF_FONT_SCALE, Font.NORMAL, new Color(86, 101, 117));
-        Font title = new Font(base, 22 * utils.CONSTANTS.PDF_FONT_SCALE, Font.BOLD, NAVY);
-        Font white = new Font(base, 9 * utils.CONSTANTS.PDF_FONT_SCALE, Font.BOLD, Color.WHITE);
+        float fontScale = utils.AppSettings.getPdfFontScale();
+        Font normal = new Font(base, 10 * fontScale, Font.NORMAL, Color.BLACK);
+        Font bold = new Font(base, 10 * fontScale, Font.BOLD, NAVY);
+        Font small = new Font(base, 8 * fontScale, Font.NORMAL, new Color(86, 101, 117));
+        Font title = new Font(base, 22 * fontScale, Font.BOLD, NAVY);
+        Font white = new Font(base, 9 * fontScale, Font.BOLD, Color.WHITE);
         Document document = new Document(PageSize.A4, 40, 40, 48, 52);
         try (OutputStream stream = Files.newOutputStream(path)) {
             PdfWriter writer = PdfWriter.getInstance(document, stream);

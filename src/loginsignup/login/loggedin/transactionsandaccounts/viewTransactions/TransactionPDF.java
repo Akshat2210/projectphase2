@@ -71,7 +71,8 @@ public final class TransactionPDF {
         if (!Files.isRegularFile(fontPath)) throw new IOException("Mangal font was not found in Windows Fonts.");
         LayoutProcessor.enable();
         BaseFont base = BaseFont.createFont(fontPath.toString(), BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-        Font heading = new Font(base, 10 * CONSTANTS.PDF_FONT_SCALE, Font.BOLD);
+        float fontScale = utils.AppSettings.getTransactionPdfFontScale();
+        Font heading = new Font(base, 10 * fontScale, Font.BOLD);
         Document document = new Document(PageSize.A4, 30, 30, 35, 35);
         try (OutputStream output = Files.newOutputStream(target)) {
             PdfWriter writer = PdfWriter.getInstance(document, output);
@@ -88,7 +89,7 @@ public final class TransactionPDF {
                         List<Entry> pageEntries = entries.stream().filter(e -> e.date.equals(selectedDay)
                                 && (incoming ? e.amount.signum() > 0 : e.amount.signum() < 0)).toList();
                         float top = writer.getVerticalPosition(true) - 12;
-                        float size = 9 * CONSTANTS.PDF_FONT_SCALE;
+                        float size = 9 * fontScale;
                         ColumnText probe = body(null, pageEntries, incoming, base, size,
                                 document.left(), document.bottom(), document.right(), top);
                         if ((probe.go(true) & ColumnText.NO_MORE_TEXT) == 0) {

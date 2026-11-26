@@ -105,9 +105,10 @@ public final class OrderSlipPdf {
         if (!Files.isRegularFile(font)) throw new IOException("Mangal font was not found in Windows Fonts.");
         LayoutProcessor.enable();
         BaseFont base = BaseFont.createFont(font.toString(), BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-        Font body = new Font(base, 9 * utils.CONSTANTS.PDF_FONT_SCALE);
-        Font bold = new Font(base, 9 * utils.CONSTANTS.PDF_FONT_SCALE, Font.BOLD);
-        Font small = new Font(base, 8 * utils.CONSTANTS.PDF_FONT_SCALE, Font.NORMAL, Color.GRAY);
+        float fontScale = utils.AppSettings.getOrderSlipPdfFontScale();
+        Font body = new Font(base, 9 * fontScale);
+        Font bold = new Font(base, 9 * fontScale, Font.BOLD);
+        Font small = new Font(base, 8 * fontScale, Font.NORMAL, Color.GRAY);
         Document document = new Document(PageSize.A4, 30, 30, 40, 45);
         try (OutputStream output = Files.newOutputStream(target)) {
             PdfWriter writer = PdfWriter.getInstance(document, output);

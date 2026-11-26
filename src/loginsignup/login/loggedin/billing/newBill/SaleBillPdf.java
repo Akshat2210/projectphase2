@@ -76,7 +76,8 @@ public final class SaleBillPdf {
             writer.setPageEvent(pageNumbers);
             document.open();
             try {
-                Font titleFont = new Font(Font.HELVETICA, 18 * utils.CONSTANTS.PDF_FONT_SCALE, Font.BOLD, Color.BLUE);
+                float fontScale = utils.AppSettings.getBillingPdfFontScale();
+                Font titleFont = new Font(Font.HELVETICA, 18 * fontScale, Font.BOLD, Color.BLUE);
                 Path fontPath = java.nio.file.Paths.get(System.getenv().getOrDefault("WINDIR", "C:\\Windows"),
                         "Fonts", "mangal.ttf");
                 if (!Files.isRegularFile(fontPath)) {
@@ -84,8 +85,8 @@ public final class SaleBillPdf {
                 }
                 LayoutProcessor.enable();
                 BaseFont baseFont = BaseFont.createFont(fontPath.toString(), BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-                Font normalFont = new Font(baseFont, 9 * utils.CONSTANTS.PDF_FONT_SCALE, Font.NORMAL, Color.BLACK);
-                Font detailFont = new Font(baseFont, 6 * utils.CONSTANTS.PDF_FONT_SCALE, Font.NORMAL, Color.DARK_GRAY);
+                Font normalFont = new Font(baseFont, 9 * fontScale, Font.NORMAL, Color.BLACK);
+                Font detailFont = new Font(baseFont, 6 * fontScale, Font.NORMAL, Color.DARK_GRAY);
                 renderCopy(document, model, details, date, customerName, titleFont, normalFont, detailFont, false);
                 document.newPage();
                 pageNumbers.startOfficeCopy(writer);

@@ -9,7 +9,6 @@ import loginsignup.login.loggedin.ordermanagement.OrderScreen;
 import loginsignup.login.loggedin.partyManagement.PartyManagementScreen;
 import loginsignup.login.loggedin.processingmanagement.ProcessingManagementScreen;
 import loginsignup.login.loggedin.transactionsandaccounts.TransactionsScreen;
-import loginsignup.login.loggedin.transactionsandaccounts.CashEntry.cashTransaction;
 import mainpack.MyClass;
 import utils.Variables;
 import utils.LogoutGuard;
@@ -37,11 +36,14 @@ public class MainScreen extends JFrame {
         pack();
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         logoutGuard = new LogoutGuard(this, logoutButton);
-        if (Variables.devMode) {
-            developerField.setEnabled(true);
-        } else {
-            developerField.setEnabled(false);
-        }
+        settingsButton.addActionListener(e -> {
+            loginsignup.login.loggedin.settings.settingscreen screen =
+                    new loginsignup.login.loggedin.settings.settingscreen(this);
+            screen.init();
+            screen.setVisible(true);
+            setVisible(false);
+        });
+
         billingButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -129,27 +131,7 @@ public class MainScreen extends JFrame {
                 setProcessingManagementButtonEnabled(false);
             }
         });
-        developerField.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
 
-                String text = developerField.getText();
-                if (text.startsWith("delete ")) {
-                    String date = text.substring(7);
-                    try {
-                        LocalDate localDate = LocalDate.parse(date, DateTimeFormatter.ofPattern("dd-MM-yy"));
-                        deleteAndForwardBalance(localDate);
-                    } catch (DateTimeParseException ex) {
-                        return;
-                    }
-
-                }
-                if (text.startsWith("randomGenerationOfBills ")) {
-                    int numberofDays = Integer.parseInt(text.substring(24));
-                    generateBillsAndTransaction(numberofDays);
-                }
-            }
-        });
         try {
             setTitle("WELCOME " + MyClass.TITLE + ": " + MyClass.login.getLoginID().toUpperCase() + " ji".toUpperCase());
         } catch (NullPointerException ex) {
@@ -279,8 +261,8 @@ public class MainScreen extends JFrame {
     private JButton addPartyButton;
     private JButton inventoryManagementButton;
     private JButton accountingAndLedgerButton;
-    private JTextField developerField;
     private JButton processingManagementButton;
+    private JButton settingsButton;
 
     public void setBillingButtonEnabled(boolean b) {
         billingButton.setEnabled(b);

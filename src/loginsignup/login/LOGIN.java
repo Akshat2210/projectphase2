@@ -181,6 +181,7 @@ public class LOGIN extends JFrame {
                         return;
                     }
                 }
+                utils.AppSettings.selectUser(loginID);
                 try {
                     clearDataFolder();
                 } catch (java.io.IOException | SecurityException ex) {
@@ -278,6 +279,7 @@ public class LOGIN extends JFrame {
     }
 
     public void nullLoginParameters() {
+        utils.AppSettings.clearUser();
         database = null;
         loginID = null;
         if (password != null) {
