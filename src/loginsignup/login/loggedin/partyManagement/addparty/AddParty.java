@@ -12,6 +12,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.UUID;
 
 
 public class AddParty extends JFrame {
@@ -81,7 +82,8 @@ public class AddParty extends JFrame {
                         DBStructure.JOURNAL_ENTRY_BILL_ID + ", " +
                         DBStructure.JOURNAL_ENTRY_TRANSACTION_ID + ", " +
                         DBStructure.JOURNAL_ENTRY_CREDIT + ", " +
-                        DBStructure.JOURNAL_ENTRY_DEBIT + ") VALUES (?, ?, ?, ?, ?, ?, ?)";
+                        DBStructure.JOURNAL_ENTRY_DEBIT + ", " +
+                        DBStructure.JOURNAL_ENTRY_GROUP_ID + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
                 double openingaccount=0;
                 try {
                     openingaccount = Double.parseDouble(openingBalanceTextField.getText()==null || openingBalanceTextField.getText().trim().isEmpty()?"0": openingBalanceTextField.getText());
@@ -107,15 +109,16 @@ public class AddParty extends JFrame {
                         if (openingaccount != 0) {
                             double amount = Math.abs(openingaccount);
                             java.sql.Date entryDate = new java.sql.Date(System.currentTimeMillis());
+                            String journalGroupId = UUID.randomUUID().toString();
 
                             // A positive opening balance is receivable from the customer;
                             // a negative balance is an advance/credit owed to the customer.
                             addOpeningBalanceJournalLine(journalStatement, entryDate, name,
                                     openingaccount > 0 ? 0 : amount,
-                                    openingaccount > 0 ? amount : 0);
+                                    openingaccount > 0 ? amount : 0, journalGroupId);
                             addOpeningBalanceJournalLine(journalStatement, entryDate, "Opening Balance Equity",
                                     openingaccount > 0 ? amount : 0,
-                                    openingaccount > 0 ? 0 : amount);
+                                    openingaccount > 0 ? 0 : amount, journalGroupId);
                             journalStatement.executeBatch();
                         }
 
@@ -153,7 +156,8 @@ public class AddParty extends JFrame {
     }
 
     private void addOpeningBalanceJournalLine(PreparedStatement statement, java.sql.Date entryDate,
-                                               String accountName, double credit, double debit) throws SQLException {
+                                               String accountName, double credit, double debit,
+                                               String journalGroupId) throws SQLException {
         statement.setString(1, CONSTANTS.OPENING_BALANCE_ENUM);
         statement.setDate(2, entryDate);
         statement.setString(3, accountName);
@@ -161,6 +165,7 @@ public class AddParty extends JFrame {
         statement.setNull(5, java.sql.Types.INTEGER);
         statement.setDouble(6, credit);
         statement.setDouble(7, debit);
+        statement.setString(8, journalGroupId);
         statement.addBatch();
     }
 }
