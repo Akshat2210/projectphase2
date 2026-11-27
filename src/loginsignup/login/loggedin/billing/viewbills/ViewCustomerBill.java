@@ -1,6 +1,7 @@
 package loginsignup.login.loggedin.billing.viewbills;
 
 import loginsignup.login.loggedin.billing.newBill.SaleBillPdf;
+import loginsignup.login.loggedin.billing.viewbills.editBill.EditDialog;
 import loginsignup.login.loggedin.processingmanagement.send.BrowserPdfPrint;
 import mainpack.MyClass;
 import utils.CONSTANTS;
@@ -20,8 +21,6 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Vector;
-
-import static utils.UtilityMethods.*;
 
 public class ViewCustomerBill extends JFrame {
     private int billID;
@@ -46,8 +45,24 @@ public class ViewCustomerBill extends JFrame {
     private JButton printButton;
     private JLabel customerNameLabel;
     private JLabel totalLabel;
+    private JButton editButton;
 
     public ViewCustomerBill() {
+        editButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                EditDialog dialog = new EditDialog(getBillID());
+                java.awt.GraphicsConfiguration screen = ViewCustomerBill.this.getGraphicsConfiguration();
+                java.awt.Rectangle bounds = new java.awt.Rectangle(screen.getBounds());
+                java.awt.Insets insets = java.awt.Toolkit.getDefaultToolkit().getScreenInsets(screen);
+                bounds.x += insets.left;
+                bounds.y += insets.top;
+                bounds.width -= insets.left + insets.right;
+                bounds.height -= insets.top + insets.bottom;
+                dialog.setBounds(bounds);
+                dialog.setVisible(true);
+            }
+        });
     }
 
     public String getCustomerName() {
