@@ -61,6 +61,9 @@ public class EditDialog extends JDialog {
         fetchGoldRate();
         fetchTypeListWithSelectedType();
         fetchSelectedBillDetailsIntoTable();
+        customerNameComboBox.setEnabled(false);
+        dateComboBox.setEnabled(false);
+        typeComboBox.setEnabled(false);
         ((javax.swing.text.AbstractDocument) goldRateField.getDocument())
                 .setDocumentFilter(utils.UtilityMethods.getDocFilter());
         goldRateField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
@@ -309,9 +312,7 @@ public class EditDialog extends JDialog {
      */
     private void saveSaleBillChanges() throws SQLException {
         java.util.List<EditedLine> editedLines = readEditedLines();
-        String editedCustomer = selectedText(customerNameComboBox, "Select a customer.");
         String orderType = selectedText(typeComboBox, "Select an order type.");
-        java.time.LocalDate editedDate = selectedDate();
 
         try (Connection connection = MyClass.createConnection()) {
             boolean originalAutoCommit = connection.getAutoCommit();
@@ -327,12 +328,10 @@ public class EditDialog extends JDialog {
                         .map(EditedLine::total).reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
 
                 undoOldSaleEffects(connection, oldLines);
-                applyEditedSaleEffects(connection, editedLines, editedCustomer);
-                updateCustomerBalance(connection, oldHeader.customerName(), oldTotal.negate());
-                updateCustomerBalance(connection, editedCustomer, editedTotal);
-                updateSaleJournal(connection, editedDate, editedCustomer, editedTotal);
+                applyEditedSaleEffects(connection, editedLines, oldHeader.customerName());
+                updateCustomerBalance(connection, oldHeader.customerName(), editedTotal.subtract(oldTotal));
+                updateSaleJournal(connection, editedTotal);
                 updateBillDetails(connection, editedLines, orderType);
-                updateBillHeader(connection, editedDate, editedCustomer);
                 connection.commit();
             } catch (SQLException | RuntimeException failure) {
                 connection.rollback();
@@ -432,7 +431,7 @@ public class EditDialog extends JDialog {
                     update.setInt(3, line.quantity());
                     requireOne(update.executeUpdate(), "The linked order slip cannot be restored.");
                 }
-            } else if (!line.designId().isEmpty()) {
+            } else if (!line.designId().isEmpty() && !line.designId().equals("NoID")) {
                 changeInventory(connection, line.designId(), line.quantity());
             }
         }
@@ -451,7 +450,7 @@ public class EditDialog extends JDialog {
                     update.setInt(4, line.quantity());
                     requireOne(update.executeUpdate(), "The linked order slip is no longer available for this customer or quantity.");
                 }
-            } else if (!line.designId().isEmpty()) {
+            } else if (!line.designId().isEmpty() && !line.designId().equals("NoID")) {
                 changeInventory(connection, line.designId(), -line.quantity());
             }
         }
@@ -475,8 +474,7 @@ public class EditDialog extends JDialog {
         }
     }
 
-    private void updateSaleJournal(Connection connection, java.time.LocalDate date, String customer,
-                                   java.math.BigDecimal total) throws SQLException {
+    private void updateSaleJournal(Connection connection, java.math.BigDecimal total) throws SQLException {
         long customerRow = 0, salesRow = 0;
         try (PreparedStatement select = connection.prepareStatement(
                 "SELECT id, accountname FROM journalentry WHERE billid = ? AND transaction_type = 'sale' FOR UPDATE")) {
@@ -490,25 +488,22 @@ public class EditDialog extends JDialog {
             }
         }
         if (customerRow == 0 || salesRow == 0) throw new SQLException("The sale journal pair is missing or invalid.");
-        updateJournalRow(connection, customerRow, date, customer, java.math.BigDecimal.ZERO, total);
-        updateJournalRow(connection, salesRow, date, "Sales", total, java.math.BigDecimal.ZERO);
+        updateJournalRow(connection, customerRow, java.math.BigDecimal.ZERO, total);
+        updateJournalRow(connection, salesRow, total, java.math.BigDecimal.ZERO);
     }
 
-    private void updateJournalRow(Connection connection, long rowId, java.time.LocalDate date, String account,
+    private void updateJournalRow(Connection connection, long rowId,
                                   java.math.BigDecimal credit, java.math.BigDecimal debit) throws SQLException {
         try (PreparedStatement update = connection.prepareStatement(
-                "UPDATE journalentry SET date = ?, accountname = ?, credit = ?, debit = ? "
+                "UPDATE journalentry SET credit = ?, debit = ? "
                         + "WHERE id = ? AND billid = ? AND transaction_type = 'sale'")) {
-            update.setDate(1, java.sql.Date.valueOf(date));
-            update.setString(2, account);
-            update.setBigDecimal(3, credit);
-            update.setBigDecimal(4, debit);
-            update.setLong(5, rowId);
-            update.setInt(6, billID);
+            update.setBigDecimal(1, credit);
+            update.setBigDecimal(2, debit);
+            update.setLong(3, rowId);
+            update.setInt(4, billID);
             requireOne(update.executeUpdate(), "The sale journal changed while saving.");
         }
     }
-
     private void updateBillDetails(Connection connection, java.util.List<EditedLine> lines, String orderType) throws SQLException {
         String sql = "UPDATE billdetails SET SNo = ?, ItemName = ?, DesignID = ?, ordertype = ?, "
                 + "LabourCost = ?, DullChillaiCost = ?, MeenaColorMeenaCost = ?, RhodiumCost = ?, "
@@ -539,25 +534,6 @@ public class EditDialog extends JDialog {
                 update.setInt(20, billID);
                 requireOne(update.executeUpdate(), "A bill detail changed while saving.");
             }
-        }
-    }
-
-    private void updateBillHeader(Connection connection, java.time.LocalDate date, String customer) throws SQLException {
-        try (PreparedStatement update = connection.prepareStatement(
-                "UPDATE bills SET date = ?, customer_name = ? WHERE BillID = ? AND billType = 'sale'")) {
-            update.setTimestamp(1, Timestamp.valueOf(date.atStartOfDay()));
-            update.setString(2, customer);
-            update.setInt(3, billID);
-            requireOne(update.executeUpdate(), "The bill header changed while saving.");
-        }
-    }
-
-    private java.time.LocalDate selectedDate() {
-        String value = selectedText(dateComboBox, "Select a bill date.");
-        try {
-            return java.time.LocalDate.parse(value, java.time.format.DateTimeFormatter.ofPattern("dd-MM-yy"));
-        } catch (java.time.format.DateTimeParseException invalid) {
-            throw new IllegalArgumentException("Select a valid bill date.");
         }
     }
 
