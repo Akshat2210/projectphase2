@@ -312,7 +312,6 @@ public class EditDialog extends JDialog {
      */
     private void saveSaleBillChanges() throws SQLException {
         java.util.List<EditedLine> editedLines = readEditedLines();
-        String orderType = selectedText(typeComboBox, "Select an order type.");
 
         try (Connection connection = MyClass.createConnection()) {
             boolean originalAutoCommit = connection.getAutoCommit();
@@ -331,7 +330,7 @@ public class EditDialog extends JDialog {
                 applyEditedSaleEffects(connection, editedLines, oldHeader.customerName());
                 updateCustomerBalance(connection, oldHeader.customerName(), editedTotal.subtract(oldTotal));
                 updateSaleJournal(connection, editedTotal);
-                updateBillDetails(connection, editedLines, orderType);
+                updateBillDetails(connection, editedLines);
                 connection.commit();
             } catch (SQLException | RuntimeException failure) {
                 connection.rollback();
@@ -504,8 +503,8 @@ public class EditDialog extends JDialog {
             requireOne(update.executeUpdate(), "The sale journal changed while saving.");
         }
     }
-    private void updateBillDetails(Connection connection, java.util.List<EditedLine> lines, String orderType) throws SQLException {
-        String sql = "UPDATE billdetails SET SNo = ?, ItemName = ?, DesignID = ?, ordertype = ?, "
+    private void updateBillDetails(Connection connection, java.util.List<EditedLine> lines) throws SQLException {
+        String sql = "UPDATE billdetails SET SNo = ?, ItemName = ?, DesignID = ?, "
                 + "LabourCost = ?, DullChillaiCost = ?, MeenaColorMeenaCost = ?, RhodiumCost = ?, "
                 + "NagSettingCost = ?, OtherBaseCosts = ?, OtherBaseCostNotes = ?, TotalBaseCosting = ?, "
                 + "GoldRate = ?, GoldPlatingWeight = ?, TotalGoldCost = ?, TotalFinalCost = ?, RawCost = ?, quantity = ? "
@@ -515,23 +514,22 @@ public class EditDialog extends JDialog {
                 update.setInt(1, line.sno());
                 update.setString(2, line.itemName());
                 update.setString(3, line.designId().isEmpty() ? null : line.designId());
-                update.setString(4, orderType);
-                update.setBigDecimal(5, line.labour());
-                update.setBigDecimal(6, line.dull());
-                update.setBigDecimal(7, line.meena());
-                update.setBigDecimal(8, line.rhodium());
-                update.setBigDecimal(9, line.nag());
-                update.setBigDecimal(10, line.other());
-                update.setString(11, line.notes().isEmpty() ? null : line.notes());
-                update.setBigDecimal(12, line.base());
-                update.setBigDecimal(13, line.goldRate());
-                update.setBigDecimal(14, line.goldWeight());
-                update.setBigDecimal(15, line.goldCost());
-                update.setBigDecimal(16, line.total());
-                update.setBigDecimal(17, line.raw());
-                update.setInt(18, line.quantity());
-                update.setInt(19, line.itemId());
-                update.setInt(20, billID);
+                update.setBigDecimal(4, line.labour());
+                update.setBigDecimal(5, line.dull());
+                update.setBigDecimal(6, line.meena());
+                update.setBigDecimal(7, line.rhodium());
+                update.setBigDecimal(8, line.nag());
+                update.setBigDecimal(9, line.other());
+                update.setString(10, line.notes().isEmpty() ? null : line.notes());
+                update.setBigDecimal(11, line.base());
+                update.setBigDecimal(12, line.goldRate());
+                update.setBigDecimal(13, line.goldWeight());
+                update.setBigDecimal(14, line.goldCost());
+                update.setBigDecimal(15, line.total());
+                update.setBigDecimal(16, line.raw());
+                update.setInt(17, line.quantity());
+                update.setInt(18, line.itemId());
+                update.setInt(19, billID);
                 requireOne(update.executeUpdate(), "A bill detail changed while saving.");
             }
         }
