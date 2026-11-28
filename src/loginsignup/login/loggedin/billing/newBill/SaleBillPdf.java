@@ -101,9 +101,6 @@ public final class SaleBillPdf {
                                    java.sql.Date date, String customerName, Font titleFont,
                                    Font normalFont, Font detailFont, boolean officeCopy) throws Exception {
         BaseFont baseFont = normalFont.getBaseFont();
-        Paragraph title = new Paragraph("Gurukripa Jewellers", titleFont);
-        title.setSpacingAfter(40);
-        document.add(title);
         Paragraph copyLabel = new Paragraph(officeCopy ? "OFFICE COPY - COST BREAKDOWN" : "CUSTOMER COPY", detailFont);
         copyLabel.setSpacingAfter(8);
         document.add(copyLabel);
@@ -135,7 +132,7 @@ public final class SaleBillPdf {
                 // Long receipt/balance labels must not squeeze the monetary columns.
                 if (itemSerial(model.getValueAt(row, 0)) == null && column < columnCount - 1) continue;
                 Object value = model.getValueAt(row, column);
-                if (value != null) widestText = Math.max(widestText, baseFont.getWidthPoint(value.toString(), normalFont.getSize()));
+                if (value != null) widestText = Math.max(widestText, baseFont.getWidthPoint(printedCellValue(model, row, column), normalFont.getSize()));
             }
             columnWidths[column] = widestText + 10f;
         }
@@ -157,26 +154,22 @@ public final class SaleBillPdf {
         billTable.setSpacingBefore(10);
         billTable.setSplitRows(true);
         billTable.setSplitLate(false);
+        boolean transactionsPrinted = false;
         for (int row = 0; row < model.getRowCount(); row++) {
             if (columnCount > 1 && itemSerial(model.getValueAt(row, 0)) == null) {
-                StringJoiner label = new StringJoiner(" ");
-                for (int column = 0; column < columnCount - 1; column++) {
-                    Object value = model.getValueAt(row, column);
-                    if (value != null && !value.toString().isBlank()) label.add(value.toString());
+                if (!transactionsPrinted) {
+                    PdfPCell block = new PdfPCell(transactionBlock(model, normalFont, columnWidths));
+                    block.setColspan(columnCount);
+                    block.setPadding(0);
+                    block.setBorder(Rectangle.BOX);
+                    billTable.addCell(block);
+                    transactionsPrinted = true;
                 }
-                PdfPCell labelCell = summaryCell(label.toString(), normalFont);
-                labelCell.setColspan(columnCount - 1);
-                labelCell.enableBorderSide(Rectangle.LEFT);
-                billTable.addCell(labelCell);
-                Object amount = model.getValueAt(row, columnCount - 1);
-                PdfPCell amountCell = summaryCell(amount == null ? "" : amount.toString(), normalFont);
-                amountCell.enableBorderSide(Rectangle.RIGHT);
-                billTable.addCell(amountCell);
                 continue;
             }
             for (int column = 0; column < columnCount; column++) {
                 Object value = model.getValueAt(row, column);
-                PdfPCell cell = new PdfPCell(new Phrase(value == null ? "" : value.toString(), normalFont));
+                PdfPCell cell = new PdfPCell(new Phrase(printedCellValue(model, row, column), normalFont));
                 cell.setPadding(5f);
                 cell.setMinimumHeight(20f);
                 cell.setLeading(0, 1.25f);
@@ -202,6 +195,112 @@ public final class SaleBillPdf {
         document.add(billTable);
     }
 
+    private static String summaryLabel(DefaultTableModel model, int row) {
+        StringJoiner label = new StringJoiner(" ");
+        for (int column = 0; column < model.getColumnCount() - 1; column++) {
+            Object value = model.getValueAt(row, column);
+            if (value != null && !value.toString().isBlank()) label.add(value.toString());
+        }
+        return label.toString();
+    }
+
+    private static boolean isTransactionSummary(String label) {
+        return label.equalsIgnoreCase("totalRecieved") || label.equalsIgnoreCase("Direct journal total")
+                || label.startsWith("Direct journal/") || label.matches("\\d+/\\d{2}-\\d{2}-\\d{2}.*");
+    }
+
+    private static PdfPTable transactionBlock(DefaultTableModel model, Font font, float[] billWidths) {
+        PdfPTable entries = new PdfPTable(new float[]{75, 25});
+        entries.setWidthPercentage(100);
+        BigDecimal total = BigDecimal.ZERO;
+        int entryCount = 0;
+        String singleEntryLabel = null;
+        BigDecimal singleEntryAmount = null;
+        for (int row = 0; row < model.getRowCount(); row++) {
+            if (itemSerial(model.getValueAt(row, 0)) != null) continue;
+            String label = summaryLabel(model, row);
+            if (!isTransactionSummary(label) || label.equalsIgnoreCase("totalRecieved")
+                    || label.equalsIgnoreCase("Direct journal total")) continue;
+            Object value = model.getValueAt(row, model.getColumnCount() - 1);
+            if (isZeroAmount(value)) continue;
+            BigDecimal amount = new BigDecimal(value.toString().trim());
+            // Journals store debit-minus-credit; receipts use the opposite sign.
+            // Express both as received amounts so their displayed sum agrees with the balance.
+            if (label.startsWith("Direct journal/")) amount = amount.negate();
+            label = label.replaceFirst("^Direct journal/", "")
+                    .replaceFirst("^\\d+/(?=\\d{2}-\\d{2}-\\d{2})", "");
+            addSummaryTotal(entries, label, amount.setScale(2).toPlainString(), font);
+            entryCount++;
+            singleEntryLabel = label;
+            singleEntryAmount = amount;
+            total = total.add(amount);
+        }
+        float totalWidth = 0;
+        for (float width : billWidths) totalWidth += width;
+        float amountWidth = billWidths[billWidths.length - 1];
+        PdfPTable totals = new PdfPTable(new float[]{Math.max(1f, totalWidth * 0.4f - amountWidth), amountWidth});
+        totals.setWidthPercentage(100);
+        for (int row = 0; row < model.getRowCount(); row++) {
+            if (itemSerial(model.getValueAt(row, 0)) != null) continue;
+            String label = summaryLabel(model, row);
+            if (label.equalsIgnoreCase("totalRecieved")) {
+                if (entryCount == 1) {
+                    addSummaryTotal(totals, singleEntryLabel, singleEntryAmount.setScale(2).toPlainString(), font);
+                } else if (entryCount > 1) {
+                    addSummaryTotal(totals, "Total received:", total.setScale(2).toPlainString(), font);
+                }
+            } else if (!isTransactionSummary(label)) {
+                Object value = model.getValueAt(row, model.getColumnCount() - 1);
+                if (!label.isBlank() || (value != null && !value.toString().isBlank())) {
+                    addSummaryTotal(totals, label, value, font);
+                }
+            }
+        }
+        PdfPTable block = new PdfPTable(new float[]{60, 40});
+        block.setWidthPercentage(100);
+        PdfPCell left = entryCount > 1 ? new PdfPCell(entries) : summaryCell("", font);
+        if (entryCount > 1) left.setPadding(0);
+        left.setBorder(Rectangle.RIGHT);
+        block.addCell(left);
+        PdfPCell right = new PdfPCell(totals);
+        right.setPadding(0);
+        right.setBorder(Rectangle.NO_BORDER);
+        right.setVerticalAlignment(Element.ALIGN_TOP);
+        block.addCell(right);
+        return block;
+    }
+    private static void addSummaryTotal(PdfPTable totals, String label, Object amount, Font font) {
+        PdfPCell text = summaryCell(label, font);
+        text.setBorder(Rectangle.NO_BORDER);
+        text.setHorizontalAlignment(Element.ALIGN_LEFT);
+        totals.addCell(text);
+        PdfPCell value = summaryCell(printedNumber(amount), font);
+        value.setBorder(Rectangle.NO_BORDER);
+        // Same left inset as the bill's final amount column above.
+        value.setHorizontalAlignment(Element.ALIGN_LEFT);
+        totals.addCell(value);
+    }
+    private static boolean isZeroAmount(Object value) {
+        if (value == null || value.toString().isBlank()) return true;
+        try {
+            return new BigDecimal(value.toString().trim()).signum() == 0;
+        } catch (NumberFormatException invalid) {
+            return false; // Never hide a value that could not be interpreted.
+        }
+    }
+    private static String printedCellValue(DefaultTableModel model, int row, int column) {
+        Object value = model.getValueAt(row, column);
+        // Bill columns: serial, item, quantity, plating grams, base amount, gold cost, total.
+        // Summary text, item names and plating retain their original punctuation.
+        boolean amount = itemSerial(model.getValueAt(row, 0)) == null
+                ? column == model.getColumnCount() - 1 : column >= 2 && column != 3;
+        return amount ? printedNumber(value) : value == null ? "" : value.toString();
+    }
+
+    private static String printedNumber(Object value) {
+        String text = value == null ? "" : value.toString();
+        return text.matches("[+-]?[0-9,]+\\.[0-9]+") ? text.replace('.', '=') : text;
+    }
     private static PdfPCell summaryCell(String text, Font font) {
         PdfPCell cell = new PdfPCell(new Phrase(text, font));
         cell.setBorder(Rectangle.TOP | Rectangle.BOTTOM);
@@ -345,7 +444,7 @@ public final class SaleBillPdf {
                     for (int i = 0; i < columns.length; i++) {
                         BigDecimal cost = result.getBigDecimal(columns[i]);
                         if (cost != null && cost.signum() != 0) {
-                            breakdown.add(labels[i] + cost.stripTrailingZeros().toPlainString());
+                            breakdown.add(labels[i] + printedNumber(cost.stripTrailingZeros().toPlainString()));
                         }
                     }
                     String notes = result.getString("OtherBaseCostNotes");
